@@ -52,3 +52,11 @@ tmp-jar-extract/
 *.patch
 # old source backup
 .old-src/
+
+# 本地调试草稿 / 编译错误日志 / 构建工具杂物（不要提交）
+/*.txt
+/.gradle-*/
+/crash-report/
+/tools/
+/init.gradle
+versions/*/build_*.txt

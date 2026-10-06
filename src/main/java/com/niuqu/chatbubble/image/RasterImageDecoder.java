@@ -1,7 +1,6 @@
 package com.niuqu.chatbubble.image;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.niuqu.chatbubble.E33Log;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -20,7 +19,6 @@ import net.minecraft.client.texture.NativeImage;
  * instead of allocating a huge BufferedImage (decompression-bomb guard).
  */
 public final class RasterImageDecoder {
-    private static final Logger LOGGER = LogManager.getLogger("e33chat");
     public static final int MAX_DIMENSION = 4096;
 
     public record DecodedImage(NativeImage image, int width, int height) {}
@@ -62,13 +60,13 @@ public final class RasterImageDecoder {
                 }
             }
         } catch (Throwable t) {
-            LOGGER.debug("[e33chat] image decode failed: {}", t.toString());
+            E33Log.debug("[e33chat] image decode failed: {}", t.toString());
             return null;
         }
     }
 
     /** AWT BufferedImage → NativeImage (RGBA, ABGR pixel order). */
-    private static NativeImage fromBufferedImage(BufferedImage bi) {
+    public static NativeImage fromBufferedImage(BufferedImage bi) {
         int w = bi.getWidth();
         int h = bi.getHeight();
         NativeImage out = new NativeImage(NativeImage.Format.RGBA, w, h, false);
@@ -80,13 +78,14 @@ public final class RasterImageDecoder {
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
                 int c = argb[y * w + x];
+                int abgr = (c & 0xFF00FF00) | ((c & 0x00FF0000) >> 16) | ((c & 0x000000FF) << 16);
                 //#if MC >= 12102
-                out.setColorArgb(x, y, c);
+                out.setColorArgb(x, y, abgr);
                 //#else
                 //#if MC >= 11800
-                out.setColor(x, y, (c & 0xFF00FF00) | ((c & 0x00FF0000) >> 16) | ((c & 0x000000FF) << 16));
+                //$$ out.setColor(x, y, abgr);
                 //#else
-                //$$ out.setPixelColor(x, y, (c & 0xFF00FF00) | ((c & 0x00FF0000) >> 16) | ((c & 0x000000FF) << 16));
+                //$$ out.setPixelColor(x, y, abgr);
                 //#endif
                 //#endif
             }

@@ -2,15 +2,11 @@ package com.niuqu.chatbubble.chat.notification;
 
 import com.niuqu.chatbubble.ChatBubbleClientSetup;
 import com.niuqu.chatbubble.ChatBubbleScreen;
-import com.niuqu.chatbubble.ChatMessageStore;
+import com.niuqu.chatbubble.store.ChatMessageStore;
 import com.niuqu.chatbubble.chat.MentionDetector;
 import com.niuqu.chatbubble.chat.notification.MentionNotificationBanner.NotificationType;
 import net.minecraft.client.MinecraftClient;
-//#if MC >= 26000
-//$$ import net.minecraft.client.sound.SimpleSoundInstance;
-//#else
 import net.minecraft.client.sound.PositionedSoundInstance;
-//#endif
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 
@@ -58,21 +54,9 @@ public class MentionNotificationController {
             + " | preview=" + text.substring(0, Math.min(40, text.length())));
 
         if ((!isOwn || selfNotify) && ChatBubbleClientSetup.config().mentionSoundEnabled()) {
-            //#if MC >= 26000
-            //$$ mc.getSoundManager().play(SimpleSoundInstance.forUI(
-            //$$     SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 0.25f,
-            //$$     0.25f * ChatBubbleClientSetup.config().soundVolume() / 100f));
-            //#else
-            //#if MC >= 12111
-            mc.getSoundManager().play(PositionedSoundInstance.ui(
+            NotificationSoundGate.tryPlay(() -> mc.getSoundManager().play(PositionedSoundInstance.master(
                 SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 0.25f,
-                0.25f * ChatBubbleClientSetup.config().soundVolume() / 100f));
-            //#else
-            //$$ mc.getSoundManager().play(PositionedSoundInstance.master(
-            //$$     SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 0.25f,
-            //$$     0.25f * ChatBubbleClientSetup.config().soundVolume() / 100f));
-            //#endif
-            //#endif
+                0.25f * ChatBubbleClientSetup.config().soundVolume() / 100f)));
         }
 
         if ((!isOwn || selfNotify) && ChatBubbleClientSetup.config().mentionBannerEnabled()) {
@@ -98,21 +82,9 @@ public class MentionNotificationController {
 
         boolean selfNotify = isOwn && ChatBubbleClientSetup.config().ownWhisperNotify();
         if ((!isOwn || selfNotify) && ChatBubbleClientSetup.config().soundWhisper()) {
-            //#if MC >= 26000
-            //$$ mc.getSoundManager().play(SimpleSoundInstance.forUI(
-            //$$     SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 0.25f,
-            //$$     0.25f * ChatBubbleClientSetup.config().soundVolume() / 100f));
-            //#else
-            //#if MC >= 12111
-            mc.getSoundManager().play(PositionedSoundInstance.ui(
+            NotificationSoundGate.tryPlay(() -> mc.getSoundManager().play(PositionedSoundInstance.master(
                 SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 0.25f,
-                0.25f * ChatBubbleClientSetup.config().soundVolume() / 100f));
-            //#else
-            //$$ mc.getSoundManager().play(PositionedSoundInstance.master(
-            //$$     SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 0.25f,
-            //$$     0.25f * ChatBubbleClientSetup.config().soundVolume() / 100f));
-            //#endif
-            //#endif
+                0.25f * ChatBubbleClientSetup.config().soundVolume() / 100f)));
         }
 
         if ((!isOwn || selfNotify) && ChatBubbleClientSetup.config().mentionWhisperBanner()) {

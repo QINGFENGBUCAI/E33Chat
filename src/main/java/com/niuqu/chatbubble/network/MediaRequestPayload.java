@@ -13,6 +13,7 @@ public record MediaRequestPayload(String mediaId) implements CustomPayload {
 //#else
 //$$ public record MediaRequestPayload(String mediaId) {
 //#endif
+
     //#if MC >= 12005
     public static final CustomPayload.Id<MediaRequestPayload> ID =
         new CustomPayload.Id<>(
@@ -22,7 +23,11 @@ public record MediaRequestPayload(String mediaId) implements CustomPayload {
             //$$ new Identifier("e33chat", "media_request")
             //#endif
         );
+    //#else
+    //$$ public static final Identifier ID = new Identifier("e33chat", "media_request");
+    //#endif
 
+    //#if MC >= 12005
     public static final PacketCodec<PacketByteBuf, MediaRequestPayload> CODEC = PacketCodec.of(
         //#if MC >= 26000
         (buf, value) -> buf.writeString(value.mediaId),
@@ -31,10 +36,18 @@ public record MediaRequestPayload(String mediaId) implements CustomPayload {
         //#endif
         buf -> new MediaRequestPayload(buf.readString())
     );
+    //#else
+    //$$ public static MediaRequestPayload read(PacketByteBuf buf) {
+    //$$     return new MediaRequestPayload(buf.readString());
+    //$$ }
+    //$$ public PacketByteBuf write(PacketByteBuf buf) {
+    //$$     buf.writeString(mediaId);
+    //$$     return buf;
+    //$$ }
+    //#endif
 
+    //#if MC >= 12005
     @Override
     public Id<MediaRequestPayload> getId() { return ID; }
-    //#else
-    //$$ public static final Identifier ID = new Identifier("e33chat", "media_request");
     //#endif
 }

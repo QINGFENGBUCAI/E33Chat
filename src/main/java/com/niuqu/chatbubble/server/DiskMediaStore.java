@@ -18,8 +18,8 @@ import java.util.regex.Pattern;
  * the URL, without adding an auth layer. Uploads stream through a per-session
  * temp file and are renamed into place on the final chunk.
  *
- * Limits (grilled with the user): max 8 MB per file, 512 MB total quota,
- * TTL off by default. A failed/out-of-order upload discards its session.
+ * Limits (grilled with the user): max 8 MB per file, 512 MB total quota.
+ * TTL is 7 days; cleanup only runs when the server opts in (media_auto_clean).
  * All methods are safe to call from any thread; session state is synchronized
  * on the store instance.
  */
@@ -62,6 +62,19 @@ public final class DiskMediaStore {
 
     public static int totalChunksFor(long size) {
         return (int) ((size + CHUNK_BYTES - 1) / CHUNK_BYTES);
+    }
+
+    /** Upper bound on a legitimately advertised chunk count, derived from the
+     *  per-file limit. The client uses this to bound its reassembly array: the
+     *  count arrives off the wire, so an unclamped value lets one hostile
+     *  response allocate an arbitrarily large array. */
+    public static int maxTotalChunks() {
+        return totalChunksFor(MAX_SINGLE_BYTES);
+    }
+
+    /** Whether a wire-advertised chunk count is plausible for one file. */
+    public static boolean isValidChunkCount(int totalChunks) {
+        return totalChunks >= 1 && totalChunks <= maxTotalChunks();
     }
 
     /** First chunk: validate size/quota and create the session. Null on success, else error reason. */
@@ -129,6 +142,46 @@ public final class DiskMediaStore {
         }
     }
 
+    /** Discard every in-flight upload (server stop). Removes temp files. */
+    public synchronized void discardAllUploads() {
+        for (Session s : sessions.values()) {
+            try { Files.deleteIfExists(s.tmpFile()); } catch (IOException ignored) {}
+        }
+        sessions.clear();
+    }
+
+    /** Discard in-flight uploads started by a player who left (disconnect). */
+    public synchronized void discardUploadsFor(String playerName) {
+        for (Session s : sessions.values()) {
+            if (playerName != null && playerName.equals(s.playerName())) {
+                sessions.remove(s.uploadId());
+                try { Files.deleteIfExists(s.tmpFile()); } catch (IOException ignored) {}
+            }
+        }
+    }
+
+    // 16 still blocks abuse but no longer punishes sending a few images in a
+    // row (upload + the sender's own fetch each cost a slot).
+    private static final int RATE_LIMIT_PER_WINDOW = 16;
+    private static final long RATE_WINDOW_MS = 10_000;
+    private final Map<String, java.util.ArrayDeque<Long>> rateWindows = new ConcurrentHashMap<>();
+
+    /**
+     * Per-player sliding-window throttle for media transfers (one upload session
+     * or one download request = one call). Call once per upload session (index 0),
+     * not per chunk.
+     */
+    public boolean allowTransfer(String playerName) {
+        long now = System.currentTimeMillis();
+        java.util.ArrayDeque<Long> q = rateWindows.computeIfAbsent(playerName, k -> new java.util.ArrayDeque<>());
+        synchronized (q) {
+            while (!q.isEmpty() && now - q.peekFirst() > RATE_WINDOW_MS) q.removeFirst();
+            if (q.size() >= RATE_LIMIT_PER_WINDOW) return false;
+            q.addLast(now);
+            return true;
+        }
+    }
+
     /** Size in bytes of a stored file, or -1 when absent. */
     public long sizeOf(String mediaId) {
         Path f = dir.resolve(mediaId);
@@ -175,7 +228,8 @@ public final class DiskMediaStore {
             try (var stream = Files.list(dir)) {
                 for (Path p : (Iterable<Path>) stream::iterator) {
                     String name = p.getFileName().toString();
-                    if (!isValidMediaId(name)) continue;
+                    boolean orphanTmp = name.startsWith(".upload-");
+                    if (!isValidMediaId(name) && !orphanTmp) continue;
                     long modified = Files.getLastModifiedTime(p).toMillis();
                     if (now - modified > ttlMillis) {
                         Files.deleteIfExists(p);

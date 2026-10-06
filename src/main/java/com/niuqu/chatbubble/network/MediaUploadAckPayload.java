@@ -12,12 +12,13 @@ import net.minecraft.util.Identifier;
  * successful (URL becomes e33chat://media/<mediaId>); otherwise error holds a
  * short reason and mediaId is null.
  */
+//#if MC >= 12005
 public record MediaUploadAckPayload(long uploadId, String mediaId, String error)
-        //#if MC >= 12005
         implements CustomPayload {
-        //#else
-        //$$ {
-        //#endif
+//#else
+//$$ public record MediaUploadAckPayload(long uploadId, String mediaId, String error) {
+//#endif
+
     //#if MC >= 12005
     public static final CustomPayload.Id<MediaUploadAckPayload> ID =
         new CustomPayload.Id<>(
@@ -27,17 +28,25 @@ public record MediaUploadAckPayload(long uploadId, String mediaId, String error)
             //$$ new Identifier("e33chat", "media_upload_ack")
             //#endif
         );
+    //#else
+    //$$ public static final Identifier ID = new Identifier("e33chat", "media_upload_ack");
+    //#endif
 
+    //#if MC >= 12005
     public static final PacketCodec<PacketByteBuf, MediaUploadAckPayload> CODEC = PacketCodec.of(
         //#if MC >= 26000
         (buf, value) -> {
-        //#else
-        //$$ (value, buf) -> {
-        //#endif
             buf.writeLong(value.uploadId);
             buf.writeString(value.mediaId != null ? value.mediaId : "");
             buf.writeString(value.error != null ? value.error : "");
         },
+        //#else
+        //$$ (value, buf) -> {
+        //$$     buf.writeLong(value.uploadId);
+        //$$     buf.writeString(value.mediaId != null ? value.mediaId : "");
+        //$$     buf.writeString(value.error != null ? value.error : "");
+        //$$ },
+        //#endif
         buf -> new MediaUploadAckPayload(
             buf.readLong(),
             nullOrEmpty(buf.readString()),
@@ -45,7 +54,19 @@ public record MediaUploadAckPayload(long uploadId, String mediaId, String error)
         )
     );
     //#else
-    //$$ public static final Identifier ID = new Identifier("e33chat", "media_upload_ack");
+    //$$ public static MediaUploadAckPayload read(PacketByteBuf buf) {
+    //$$     return new MediaUploadAckPayload(
+    //$$         buf.readLong(),
+    //$$         nullOrEmpty(buf.readString()),
+    //$$         nullOrEmpty(buf.readString())
+    //$$     );
+    //$$ }
+    //$$ public PacketByteBuf write(PacketByteBuf buf) {
+    //$$     buf.writeLong(uploadId);
+    //$$     buf.writeString(mediaId != null ? mediaId : "");
+    //$$     buf.writeString(error != null ? error : "");
+    //$$     return buf;
+    //$$ }
     //#endif
 
     private static String nullOrEmpty(String s) { return s == null || s.isEmpty() ? null : s; }

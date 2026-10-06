@@ -8,13 +8,14 @@ import java.util.regex.Pattern;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 
 /**
  * Parses image bracket codes out of chat content.
  *
  * Two wire tags are accepted so the mod interoperates with both ecosystems:
  *   [[CICode,url=...,name=...]]        (ChatImage)
- *   [[ChatUpgrade,url=...,name=...,type=...]]  (chat-upgrade; type=image assumed)
+ *   [[ChatUpgrade,url=...,name=...,type=...]]  (third-party rich-message mod; type=image assumed)
  *
  * {@link #strip(Text)} removes the bracket blocks from the styled component
  * tree (keeping the surrounding styles) and returns the extracted image refs.
@@ -25,9 +26,11 @@ import net.minecraft.text.Text;
 public final class BracketCodec {
     /** [tag,attrs] — attribute values may be URL-encoded, commas are not quoted. */
     private static final Pattern BRACKET = Pattern.compile(
-        "\\[\\[(ChatUpgrade|CICode),([^\\]]+)\\]\\]", Pattern.CASE_INSENSITIVE);
+        "\\[\\[(ChatUpgrade|CICode|E33Emote),([^\\]]+)\\]\\]", Pattern.CASE_INSENSITIVE);
 
-    public record ImageRef(String url, String name) {}
+    public record ImageRef(String url, String name, boolean emote) {
+        public ImageRef(String url, String name) { this(url, name, false); }
+    }
 
     public record ParseResult(Text textWithoutImages, List<ImageRef> images) {}
 
@@ -88,12 +91,13 @@ public final class BracketCodec {
         ParseResult r = parse(text);
         if (!r.images().isEmpty() || text == null) return r;
         List<ImageRef> refs = extractFromHover(text);
+        if (refs.isEmpty()) refs = extractFromShowTextHover(text);
         if (refs.isEmpty()) return r;
         MutableText out = Text.empty();
         text.visit((style, part) -> {
             net.minecraft.text.HoverEvent hover = style.getHoverEvent();
-            if (hover != null && isChatImageHover(hover)) {
-                return Optional.empty(); // drop the [Image] placeholder text
+            if (hover != null && (isChatImageHover(hover) || isEasyBotCICodeHover(hover))) {
+                return Optional.empty(); // drop the [Image]/summary placeholder text
             }
             out.append(Text.literal(part).fillStyle(style));
             return Optional.empty();
@@ -111,7 +115,8 @@ public final class BracketCodec {
         Matcher m = BRACKET.matcher(text.getString());
         if (!m.find()) return text;
         MutableText out = Text.empty();
-        Text placeholder = Text.translatable("e33chat.image.placeholder");
+        Text placeholder = Text.translatable("e33chat.image.placeholder")
+            .formatted(Formatting.GREEN);
         text.visit((style, part) -> {
             int partStart = 0;
             Matcher local = BRACKET.matcher(part);
@@ -151,7 +156,9 @@ public final class BracketCodec {
         // Only images are rendered as cards; audio/video refs stay stripped
         // (their text is dropped so the raw bracket never shows).
         if (type != null && !type.equalsIgnoreCase("image")) return null;
-        return new ImageRef(url, name);
+        // E33Emote is e33chat's own bubble-less emote code; older e33chat
+        // builds / other mods see the raw text, ChatImage ignores it.
+        return new ImageRef(url, name, tag.equalsIgnoreCase("E33Emote"));
     }
 
     /**
@@ -175,40 +182,112 @@ public final class BracketCodec {
         return out;
     }
 
+    /**
+     * Recovers image URLs from EasyBot's relay format: the visible summary run
+     * (e.g. "[图片]") carries a normal SHOW_TEXT hover whose tooltip text is the
+     * {@code [[CICode,url=...,name=...]]} bracket. ChatImage understands this
+     * format; E33Chat now does too.
+     */
+    public static List<ImageRef> extractFromShowTextHover(Text text) {
+        if (text == null) return List.of();
+        List<ImageRef> out = new ArrayList<>();
+        text.visit((style, part) -> {
+            net.minecraft.text.HoverEvent hover = style.getHoverEvent();
+            if (hover != null && isEasyBotCICodeHover(hover)) {
+                String tooltip = hoverText(hover);
+                if (tooltip != null) {
+                    Matcher m = BRACKET.matcher(tooltip);
+                    while (m.find()) {
+                        ImageRef ref = parseAttrs(m.group(2), m.group(1));
+                        if (ref != null) out.add(ref);
+                    }
+                }
+            }
+            return Optional.empty();
+        }, Style.EMPTY);
+        return out;
+    }
+
+    private static boolean isEasyBotCICodeHover(net.minecraft.text.HoverEvent hover) {
+        try {
+            if (hover.getAction() != net.minecraft.text.HoverEvent.Action.SHOW_TEXT) return false;
+            String tooltip = hoverText(hover);
+            return tooltip != null && BRACKET.matcher(tooltip).find();
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    private static String hoverText(net.minecraft.text.HoverEvent hover) {
+        try {
+            Text show = com.niuqu.chatbubble.compat.StyleCompat.hoverShowText(hover);
+            if (show != null) return show.getString();
+            Object value = com.niuqu.chatbubble.compat.StyleCompat.hoverValue(hover);
+            if (value instanceof Text c) return c.getString();
+            if (value instanceof String s) return s;
+        } catch (Throwable t) {
+            return null;
+        }
+        return null;
+    }
+
     private static boolean isChatImageHover(net.minecraft.text.HoverEvent hover) {
         try {
-            String actionId = String.valueOf(hover.getAction());
-            return actionId.toLowerCase().contains("chatimage");
+            if (String.valueOf(hover.getAction()).toLowerCase(java.util.Locale.ROOT).contains("chatimage")) return true;
+            // Some ChatImage builds ship an Action whose toString() is not the
+            // action id — fall back to the payload's class name.
+            Object value = com.niuqu.chatbubble.compat.StyleCompat.hoverValue(hover);
+            return value != null
+                && value.getClass().getName().toLowerCase(java.util.Locale.ROOT).contains("chatimage");
         } catch (Throwable t) {
             return false;
         }
     }
 
     private static String readUrlFromHover(net.minecraft.text.HoverEvent hover) {
-        //#if MC < 12105
         try {
-            Object value = hover.getValue(hover.getAction());
-            // Custom actions carry whatever their codec decoded — ChatImage's
-            // show_chatimage payload is a JSON object {"url":...,"name":...}.
+            Object value = com.niuqu.chatbubble.compat.StyleCompat.hoverValue(hover);
+            // Custom actions carry whatever their codec decoded. ChatImage's
+            // show_chatimage payload has been, across versions, a JSON object
+            // {"url":...}, a plain code string, or (0.13+) a ChatImageCode
+            // object whose toString() is the original "[[CICode,url=...]]".
             if (value instanceof com.google.gson.JsonElement je) {
                 if (je.isJsonObject() && je.getAsJsonObject().has("url")
                         && je.getAsJsonObject().get("url").isJsonPrimitive()) {
-                    return je.getAsJsonObject().get("url").getAsString();
+                    return normalizeUrl(je.getAsJsonObject().get("url").getAsString());
                 }
                 if (je.isJsonPrimitive() && je.getAsJsonPrimitive().isString()) {
-                    return je.getAsString();
+                    return normalizeUrl(je.getAsString());
                 }
             } else if (value instanceof String s) {
-                return s;
+                return normalizeUrl(s);
+            } else if (value != null) {
+                return normalizeUrl(String.valueOf(value));
             }
         } catch (Throwable t) {
             return null;
         }
         return null;
-        //#else
-        //$$ // 1.21.5+: HoverEvent became an interface; getValue(Action) was removed,
-        //$$ // so legacy ChatImage custom hover payloads can no longer be read here.
-        //$$ return null;
-        //#endif
+    }
+
+    /** Accepts a bare http(s) URL, a "[[CICode,...]]" code, or a wrapper around either. */
+    static String normalizeUrl(String s) {
+        if (s == null || s.isBlank()) return null;
+        String fromCode = urlFromCodeText(s);
+        if (fromCode != null) return fromCode;
+        String trimmed = s.trim();
+        String lower = trimmed.toLowerCase(java.util.Locale.ROOT);
+        return (lower.startsWith("http://") || lower.startsWith("https://")) ? trimmed : null;
+    }
+
+    /** Pulls the first image URL back out of a "[[CICode,...]]" code string. */
+    static String urlFromCodeText(String s) {
+        if (s == null || s.isEmpty()) return null;
+        Matcher m = BRACKET.matcher(s);
+        while (m.find()) {
+            ImageRef ref = parseAttrs(m.group(2), m.group(1));
+            if (ref != null) return ref.url();
+        }
+        return null;
     }
 }

@@ -140,5 +140,26 @@ public class DrawContext extends DrawableHelper {
     public void drawTooltip(TextRenderer renderer, java.util.List<OrderedText> lines, Object positioner, int x, int y, boolean useShadow) {
         // Pre-1.20 tooltip rendering is handled via Screen.renderTooltip in GuiCompat
     }
+
+    public void drawTooltip(TextRenderer renderer, java.util.List<OrderedText> lines, Object positioner, int x, int y) {
+        // Pre-1.20 tooltip rendering is handled via Screen.renderTooltip in GuiCompat
+    }
+
+    // ---- drawBorder (compat for 1.16.5 ~ 1.19.x) ----
+    public void drawBorder(int x, int y, int w, int h, int color) {
+        fill(x, y, x + w, y + 1, color);
+        fill(x, y + h - 1, x + w, y + h, color);
+        fill(x, y, x + 1, y + h, color);
+        fill(x + w - 1, y, x + w, y + h, color);
+    }
+
+    // ---- drawHoverEvent / setTooltipForNextFrame (stubs) ----
+    public void drawHoverEvent(TextRenderer renderer, net.minecraft.text.Style style, int x, int y) {
+        // Pre-1.20 hover event handled via Screen.renderTooltip in GuiCompat
+    }
+
+    public void setTooltipForNextFrame(net.minecraft.text.Text text, int x, int y) {
+        // Stub - tooltip rendering is handled differently in pre-1.20
+    }
 }
 //#endif

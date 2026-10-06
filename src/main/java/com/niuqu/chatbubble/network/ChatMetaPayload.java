@@ -1,6 +1,6 @@
 package com.niuqu.chatbubble.network;
 
-import com.niuqu.chatbubble.ChatMessageStore;
+import com.niuqu.chatbubble.store.ChatMessageStore;
 import net.minecraft.network.PacketByteBuf;
 //#if MC >= 12005
 import net.minecraft.network.codec.PacketCodec;
@@ -12,13 +12,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+//#if MC >= 12005
 public record ChatMetaPayload(UUID senderUUID, String senderName, String messageHash,
                                String quoteSender, String quoteContent, List<String> mentionTargets)
-        //#if MC >= 12005
         implements CustomPayload {
-        //#else
-        //$$ {
-        //#endif
+//#else
+//$$ public record ChatMetaPayload(UUID senderUUID, String senderName, String messageHash,
+//$$                                String quoteSender, String quoteContent, List<String> mentionTargets) {
+//#endif
+
     //#if MC >= 12005
     public static final CustomPayload.Id<ChatMetaPayload> ID =
         new CustomPayload.Id<>(
@@ -28,13 +30,14 @@ public record ChatMetaPayload(UUID senderUUID, String senderName, String message
             //$$ new Identifier("e33chat", "chat_meta")
             //#endif
         );
+    //#else
+    //$$ public static final Identifier ID = new Identifier("e33chat", "chat_meta");
+    //#endif
 
+    //#if MC >= 12005
     public static final PacketCodec<PacketByteBuf, ChatMetaPayload> CODEC = PacketCodec.of(
         //#if MC >= 26000
         (buf, value) -> {
-        //#else
-        //$$ (value, buf) -> {
-        //#endif
             buf.writeString(value.senderUUID.toString());
             buf.writeString(value.senderName);
             buf.writeString(value.messageHash);
@@ -42,19 +45,62 @@ public record ChatMetaPayload(UUID senderUUID, String senderName, String message
             buf.writeString(value.quoteContent);
             buf.writeCollection(value.mentionTargets, PacketByteBuf::writeString);
         },
+        //#else
+        //$$ (value, buf) -> {
+        //$$     buf.writeString(value.senderUUID.toString());
+        //$$     buf.writeString(value.senderName);
+        //$$     buf.writeString(value.messageHash);
+        //$$     buf.writeString(value.quoteSender);
+        //$$     buf.writeString(value.quoteContent);
+        //$$     buf.writeCollection(value.mentionTargets, PacketByteBuf::writeString);
+        //$$ },
+        //#endif
         buf -> new ChatMetaPayload(
             UUID.fromString(buf.readString()),
             buf.readString(),
             buf.readString(),
             buf.readString(),
             buf.readString(),
-            buf.readList(PacketByteBuf::readString)
+            readMentions(buf)
         )
     );
+    //#else
+    //$$ public static ChatMetaPayload read(PacketByteBuf buf) {
+    //$$     return new ChatMetaPayload(
+    //$$         UUID.fromString(buf.readString()),
+    //$$         buf.readString(),
+    //$$         buf.readString(),
+    //$$         buf.readString(),
+    //$$         buf.readString(),
+    //$$         readMentions(buf)
+    //$$     );
+    //$$ }
+    //$$ public PacketByteBuf write(PacketByteBuf buf) {
+    //$$     buf.writeVarInt(mentionTargets.size());
+    //$$     for (String s : mentionTargets) buf.writeString(s);
+    //$$     buf.writeString(senderUUID.toString());
+    //$$     buf.writeString(senderName);
+    //$$     buf.writeString(messageHash);
+    //$$     buf.writeString(quoteSender);
+    //$$     buf.writeString(quoteContent);
+    //$$     return buf;
+    //$$ }
+    //#endif
 
+    /** Mention targets are a handful of names; the count comes off the wire, so
+     *  an unclamped pre-allocation (vanilla readList/readCollection sizes the
+     *  list from the wire count) lets one packet OOM the receiver. */
+    private static final int MAX_MENTION_TARGETS = 200;
+
+    private static List<String> readMentions(PacketByteBuf buf) {
+        int count = Math.min(Math.max(buf.readVarInt(), 0), MAX_MENTION_TARGETS);
+        List<String> out = new ArrayList<>(count);
+        for (int i = 0; i < count; i++) out.add(buf.readString());
+        return out;
+    }
+
+    //#if MC >= 12005
     @Override
     public Id<ChatMetaPayload> getId() { return ID; }
-    //#else
-    //$$ public static final Identifier ID = new Identifier("e33chat", "chat_meta");
     //#endif
 }

@@ -1,5 +1,127 @@
 # Changelog
 
+## v2.4.18
+
+**同步上游 v2.4.12~v2.4.17 全部修复/功能（NoWordz/Chat-Mod-E），并完成一轮渲染性能优化（多版本 Fabric 全部 21 个目标编译通过）**
+
+**安全（上游 2.4.13）**
+- **恶意数据包不再能让对端无限分配内存**：`MediaClient` 的重组数组按 `DiskMediaStore.maxTotalChunks()` 校验 chunk 数、重组体交付前校验 ≤8MB；`ConfigSyncV2Payload`/`ChatMetaPayload`/`HistoryPayload` 的列表计数自网络上限钳制（256/200/200）
+
+**崩溃修复（上游 2.4.16/2.4.17）**
+- **进服瞬间的聊天消息不再能崩掉客户端**：`ChatListenerMixin` 的自身 UUID 缓存加判空；`WhisperDetector`/`ChatPipeline` 的「先解引用后判空」改为真正的守卫（本地玩家未就绪时逐层安全退出，消息降级灰字不丢失）
+- **客户端握手只发给协商过 e33chat 通道的服务器**：`ClientHelloPayload.send()` 加 `canSend` 检查 + 日志，发送失败降级为警告，不再影响登录流程
+
+**图片链路（上游 2.4.12/2.4.13）**
+- **发出去的 GIF 会动了**：动图源改为原字节直传（不 `ImageIO.read`、不重编码 PNG），按真实 content-type 上传；发送前按接收端能力（512px/120 帧/8MB）校验，超限明确拒绝并提示具体原因（帧数/尺寸/体积），不再静默降级成首帧
+- **自己发的图不再"莫名加载失败"**：`MediaClient.fetch` 改 `computeIfAbsent` 合并并发请求（此前 `put()` 会顶掉同 id 的前一个请求使其白等 30s）；新增自上传 24 条 LRU（自己的图不花下载额度）；`[[CICode]]` 携带 `name=` 文件名提示
+- **动图上限对齐 AtomChat**：帧数 48→120，新增 800 万像素单图解码预算——超预算裁帧而不是拒绝；表情面板格子改静态缩略图 + `GIF` 角标（26px 格子看不清动画，32 格同时逐帧白吃帧时间）
+- **服务端媒体限流 4→16 次/10 秒**（16 仍挡滥用，不再惩罚正常连发）
+
+**聊天历史（上游 2.4.15）**
+- **服务端历史与本地历史合并去重**：`addHistoryMessages` 不再在本地非空时整包丢弃服务端 backlog，按「剥 § 色码发送者 + 整条内容 + 群名」多集减法合并；合并行落在磁盘历史之上、本次会话消息之下；防刷屏合并气泡按重复次数计数
+- **历史包健壮性**：编码跳过无法写的 null 行并按实际行数写计数（不再出现半截包）；null 字段落回 `UUID(0,0)`/空串；进服下发套 `RuntimeException` 兜底；`historyBuffer` 全部读写收进 `HISTORY_LOCK`，截断改 `pollFirst`；停服时清理 backlog/引用等待表/配置标记
+- **恢复压制只认活行**：磁盘历史恢复时只压制「合并后仍在屏上的那几行」的键，MOTD/进服提示永远顶不掉磁盘上的一行
+
+**解析器（上游 2.4.12/2.4.14）**
+- **EasyBot 冒号形态**：`[标签] 名字：内容`（无尖括号模板）可识别；带系统词闸门（系统/公告/服务器/结尾为 插件/助手 不认领）与 `/` 开头内容不认领；该路径自己解析 UUID（在线玩家的转发保留皮肤）且不再让位给玩家路径（避免污染名字缓存）
+- **名字前分隔符守卫不再误伤括号内装饰**：`[Lv.10|VIP] Steve: hello` 恢复归属；`系统>>Steve`、`[系统|公告]Steve` 等广播仿冒保持拒绝
+- **disguised（无 sender）通道接入服务端精确模板**，模板日志按来源打标签（`System(...)`/`Disguised(...)`）；空 sender 的 chat/disguised 包不再被认领成无名气泡；`ChatPipeline` 增加空 display 保险
+
+**输入修复（上游 2.4.12）**
+- **空输入按 Tab 后聊天框不再失效**：补全器补上 `setCanLeave(false)`（1.20.4+；1.20.1 及以下原版无此开关不受影响）；焦点导航的 blur 加守卫——输入框仍持有焦点时不再清焦点
+
+**新功能（上游 2.4.12）**
+- **自定义面板背景图取景编辑器**：设置 → 聊天框 → 面板 的图片行改为「浏览 / 调整取景 + 清除」；选完图直接进取景编辑器：整图预览 + 锁定面板宽高比的选取框，框内拖动平移、滚轮缩放；取景按归一化「中心 + 缩放」保存（`panel_bg_crop`），面板宽度/窗口大小变化自动适配；清除图片会一并清掉取景；编辑器自行触发加载并显示加载/失败原因
+- **表情包上限 10 → 32**
+
+**性能优化（本 fork 自有）**
+- **消息高度缓存跨帧持久化**：删除每帧 `msgHeightCache.clear()`——此前每帧对全部历史消息（上限 10000 条）重跑文本换行（字体 shaping），是长历史下打开聊天面板掉帧的根源。现在只在布局指纹（面板宽度/字高/头像与气泡尺寸/图片状态）变化或消息列表收缩时重算
+- **GIF 缓存 LRU 淘汰**：`AnimatedImageLoader` 新增 24 条/192 帧预算 + 5 分钟空闲淘汰，淘汰时销毁 GL 纹理（此前无上限，每条 GIF 约 50MB 显存只增不减）；不可见 GIF 停止逐帧推进
+- **消息过滤列表缓存**：`getPublicMessages`/`getWhisperMessages` 按版本号缓存，9 个消息变更点全部接入版本计数
+- **气泡行缓存**：绘制路径每帧的 `wrapContent`（Text 树分配 + shaping）对可见消息跨帧复用（512 条封顶，epoch 失效）
+- **皮肤解析限频**：同一玩家的皮肤解析请求按 TTL 去重（1.16.5 为 20s、1.20.2+ 为 1s），不再每帧重复解析；`nameKey` 正则预编译
+- **零碎开销**：群组页签布局缓存、标题栏时钟秒级缓存、ZOOM 动画宽度进缓存
+
+**跨版本构建**
+- `setCanLeave` 加 26.x Mojang 映射规则（→`setAllowHiding`）；`PanelCropScreen`/表情面板含 1.16.5~26.2 全版本预处理分支。21/21 目标编译通过
+
+**仓库清理**
+- 正式移出 git 索引中 2.4.11 遗留的 6 个 `rendertype_round_rect` shader 资源（e33chat/minecraft 两个命名空间 × fsh/vsh/json——磁盘上早已删除，索引一直没同步）
+- 纳入 git 索引 10 个此前**从未被跟踪**的源码文件（compat 兼容层 6 个、`HeadTextureHelper`、`E33Button`、`SkinTextureDownloaderMixin`、`e33chat.client.optional.mixins.json`——`fabric.mod.json` 引用了它，缺失会导致新克隆无法构建）与本版的 `PanelCropScreen`
+- `.gitignore` 新增本地调试草稿与构建日志规则（根目录 `*.txt`、`.gradle-*/`、`tools/`、`crash-report/`、`init.gradle`、`versions/*/build_*.txt`）
+
+## v2.4.11
+
+**新功能 / 行为变更（2.4.11）**
+- **离线玩家头像灰显（不再退回默认皮肤）**：头像解析现在只缓存玩家**真实**皮肤，Steve/Alex 占位皮一律不入缓存。此前皮肤还在异步下载、或玩家已下线时 `PlayerListEntry` 会给出占位皮并被写进缓存，导致头像永久变成默认皮肤。现在下线玩家继续显示其在线时的真实皮肤，并整体压暗 + 降低不透明度（45% 亮度 / 80% 不透明度）呈现灰显效果；聊天气泡、通知横幅、玩家资料卡三处表现一致。（逐像素去饱和需要自定义着色器或 CPU 灰度贴图，本版未做，故为压暗灰调而非真灰度。）
+- **全版本圆角矩形（1.21.2~26.2 之前是直角）**：`RoundRectRenderer` 改为扫描线 + SDF 覆盖率抗锯齿（4×4 超采样，过渡带 0.75px），只依赖 `DrawContext.fill`，不含任何版本分支。气泡 / 引用块 / 配置界面 / 资料卡 / 通知横幅的圆角在**全部 21 个目标版本**上生效（26.1/26.2 待其编译问题修复后同样生效）。原先 1.19.3~1.21.1 走自定义 shader、1.21.2+ 直接退化成直角（共 15 个版本没有圆角）；shader 路径会泄漏 blend/shader 状态（上游同样因此移除，退出服务器时黑屏），现一并删除，`assets/*/shaders/core/rendertype_round_rect.*` 六个已无引用的资源文件同时移除。
+- **1.21.11 面板背景模糊修复**：1.21.11 的 GUI 走延迟渲染状态，中途的 `glBlitFramebuffer` 抓不到已完成的画面（模糊实际无效）。现该版本改用原生 `DrawContext.applyBlur()`（上游 abbaa946 方案），1.21.11 以下保持原有区域 blit。
+- **上键翻历史不再被补全窗口抢占（回归修复）**：文本变化时无条件重新激活补全窗口（原版 `onChatFieldUpdate` 行为）。此前写成「文本与初始文本相同则不激活」，导致打开聊天框时已带草稿的情况下补全列表与指令红字校验会永久失效。
+
+**修复（2.4.11）**
+- **跨版本编译**：`TextJsonCompat` 的注册表参数固定为 `Object`（`RegistryWrapper.WrapperLookup` 在 1.19.3 之前不存在，而 1.21 以下本就不做序列化）；`RasterImageDecoder` 在 1.17 及以下用 `NativePixel.setPixelColor`；`ServerConfigManager.load` 对新增的可空字段补默认值；`ChatBubbleScreen.removed()` 增加 `world == null` 保护（退服时原版 HUD 可能已拆掉）。
+- **1.16.5 / 1.18.2 / 1.19.2 现在可以完整编译**（此前三个版本编译失败）。
+
+**代码精简（2.4.11）**
+- 删除重复的皮肤解析器 `render/SkinCache.java`（`SkinResolver` 已覆盖其全部职责，且无人调用）。
+- 通知横幅的私有 `getSkin` + 独立 `skinCache` 删除，统一走 `SkinResolver`（顺带修掉横幅头像也可能退回默认皮肤的问题）。
+- 新增 `SkinResolver.drawAvatar(...)` 作为**全工程唯一**的头像绘制入口：face/hat 的 UV 常量与离线灰显参数只出现一次，原先散落在聊天气泡、通知横幅、资料卡三处（含硬编码 `0.45f`）。
+- 清理无用 import（`ChatBubbleScreen` 的 `DefaultSkinHelper`、`PlayerProfileScreen` 的 `ColoredTextureRenderer` / `Identifier`）。
+- 删除 `RenderHelper` 里**从未被调用**的全局 `alphaMultiplier` 机制（`setAlphaMultiplier` / `getAlphaMultiplier` / `resetAlphaMultiplier` / `applyAlpha`）：三处调用点一个都不存在，`applyAlpha` 恒为恒等变换，属于 2.3.9 重构留下的死代码。面板淡入淡出实际由各绘制点自己乘 alpha 实现，行为不变。
+- `BlurRenderer` 增加 `disconnecting` / 世界为空短路、`try/finally` 恢复 FBO 与视口、`catch (Throwable)` 与 `cleanup()`，避免异常后残留临时 FBO 导致黑屏；退服时释放临时帧缓冲。
+
+**跨版本构建（2.4.11）**
+- **21 / 21 目标全部构建通过**（`gradlew build --offline --continue`，21 个版本各有 jar 产出）。此前 `1.16.5 / 1.18.2 / 1.19.2`（见上）与 `26.1 / 26.2` 都无法编译，本版一并修好。
+- **26.x（Mojang 映射）补齐**：`versions/shared/build.gradle` 的 `applyMojangMapping` 补/修约 20 条规则（`ClientPlayerEntity→LocalPlayer`、`GameMode→GameType`、`readUuid/writeUuid→readUUID/writeUUID`、`ChatComponent.addMessage→addPlayerMessage`、`params.chatType().matches(→.is(`、`applyChatDecoration→decorate`、`g.drawTexture(→DrawHelper.drawTexture(g,`、`font.trimToWidth→substrByWidth`、`handleTextClick→defaultHandleClickEvent`、`BuiltInRegistries.createWrapperLookup()→RegistryAccess.fromRegistryOfRegistries(...)` 等），并把 `.texture(`/`.color(` 收窄到 VertexConsumer 形式（原先会误伤 `EmoteStore.texture(f)`、`team.color()`）。
+- **26.x 签名适配**：Fabric 在 26.x 移除了 `HudRenderCallback`，改用 `HudElementRegistry.addLast`；26.x 用 `blurBeforeThisStratum()`（`applyBlur()` 的 26.x 名称）做原生面板模糊；26.2 的 `PlayerTeam.getColor()` 返回 `Optional<TeamColor>`；`InputCompat` 增加 26.x 分支（`keyMatches` / `hasShiftDown`）。
+- **注意（运行时未验证）**：26.1/26.2 目前只做到**编译 + 打包通过**。26.x 的 mixin 描述符（`ChatComponentMixin` 的 `render` / 单参 `addMessage`、`ChatInputSuggestorMixin`、`InGameHudMixin`、各 Accessor、`CommandManagerMixin`）未随 26.x 改名，javac 不校验注解字符串，因此这些注入在 26.x 运行时很可能不生效（功能降级而非崩溃）。HUD 图标的 `HudElementRegistry.addLast` 注册路径同样未实机验证。
+
+**New features / behaviour (2.4.11)**
+- **Offline avatars are greyed out instead of falling back to the default skin**: the skin cache now stores only *real* skins — the Steve/Alex placeholder is never cached. Previously a skin that was still downloading (or a player who had logged off) exposed the placeholder through `PlayerListEntry` and it got cached, permanently turning the head into the default skin. Offline players now keep the real skin they had while online, dimmed to a muted grey tone (45% brightness, 80% opacity). Chat bubbles, notification banners and the player profile all behave the same way. (True per-pixel desaturation would need a custom shader or a CPU-greyscale texture copy; this release does the dimmed-grey treatment.)
+- **Rounded rectangles on every target (they were square from 1.21.2 to 26.2)**: `RoundRectRenderer` now uses a scanline SDF with 4x4 supersampled coverage (0.75px transition band) built only on `DrawContext.fill`. Bubbles, quote blocks, the config screen, the profile card and notification banners get real rounded corners on **all 21 targets**. Previously 1.19.3-1.21.1 used a custom shader and 1.21.2+ silently degraded to square corners (15 targets had none); the shader path leaked blend/shader state (upstream removed it for the same reason — black screen on server exit), so it is gone, together with the six now-unreferenced `assets/*/shaders/core/rendertype_round_rect.*` files.
+- **Panel blur fixed on 1.21.11**: the deferred GUI pipeline there means the mid-frame `glBlitFramebuffer` never captures a finished frame (the blur did nothing). 1.21.11 now uses the native `DrawContext.applyBlur()` (upstream abbaa946); older versions keep the region blit.
+- **Up-arrow history no longer hijacked by the suggestion window (regression fix)**: the suggestion window is re-activated unconditionally on every text change (vanilla `onChatFieldUpdate` behaviour). The previous "don't activate when the text equals the initial text" rule could leave completion and the red command-error tail disabled forever when the chat screen opened with a draft.
+
+**Fixes (2.4.11)**
+- Cross-version compilation: `TextJsonCompat`'s registry parameter is now `Object` (`RegistryWrapper.WrapperLookup` does not exist before 1.19.3, and nothing is serialised below 1.21); `RasterImageDecoder` uses `NativePixel.setPixelColor` on 1.17 and older; `ServerConfigManager.load` fills defaults for the newer nullable fields; `ChatBubbleScreen.removed()` guards against `world == null` (the vanilla HUD may already be torn down on disconnect).
+- 1.16.5 / 1.18.2 / 1.19.2 now compile (all three previously failed).
+
+**Cleanup (2.4.11)**
+- Removed the duplicate skin resolver `render/SkinCache.java` (`SkinResolver` covers it and nothing called it).
+- Removed the notification banner's private `getSkin` plus its own `skinCache`; it now uses `SkinResolver` (which also fixes banner avatars falling back to the default skin).
+- Added `SkinResolver.drawAvatar(...)` as the single avatar-drawing entry point: the face/hat UV constants and the offline grey parameters now exist once instead of being copied across chat bubbles, notification banners and the profile card (including a hardcoded `0.45f`).
+- Dropped unused imports (`DefaultSkinHelper` in `ChatBubbleScreen`, `ColoredTextureRenderer` / `Identifier` in `PlayerProfileScreen`).
+- Removed `RenderHelper`'s global `alphaMultiplier` machinery (`setAlphaMultiplier` / `getAlphaMultiplier` / `resetAlphaMultiplier` / `applyAlpha`) — it had **zero** callers, so `applyAlpha` was the identity function: dead plumbing left over from the 2.3.9 refactor. Panel fades are implemented by multiplying alpha at each draw site; behaviour is unchanged.
+- `BlurRenderer` gained `disconnecting` / null-world early-outs, a `try/finally` that restores the framebuffer and viewport, a `catch (Throwable)` and `cleanup()`, so an exception can no longer leave a temp FBO bound (a black-screen class of bug); the temp framebuffers are released on disconnect.
+
+**Cross-version build (2.4.11)**
+- **All 21 targets now build** (`gradlew build --offline --continue`; each version produces its jar). `1.16.5 / 1.18.2 / 1.19.2` (see above) and `26.1 / 26.2` were all broken before this version.
+- **26.x (Mojang-mapped) support completed**: roughly 20 rules were added or repaired in `versions/shared/build.gradle`'s `applyMojangMapping` (`ClientPlayerEntity→LocalPlayer`, `GameMode→GameType`, `readUuid/writeUuid→readUUID/writeUUID`, `ChatComponent.addMessage→addPlayerMessage`, `params.chatType().matches(→.is(`, `applyChatDecoration→decorate`, `g.drawTexture(→DrawHelper.drawTexture(g,`, `font.trimToWidth→substrByWidth`, `handleTextClick→defaultHandleClickEvent`, `BuiltInRegistries.createWrapperLookup()→RegistryAccess.fromRegistryOfRegistries(...)`, …), and `.texture(`/`.color(` were narrowed to the VertexConsumer forms (they used to corrupt `EmoteStore.texture(f)` and `team.color()`).
+- **26.x signature adaptations**: Fabric removed `HudRenderCallback` on 26.x, so the HUD overlay registers through `HudElementRegistry.addLast`; 26.x uses `blurBeforeThisStratum()` (the 26.x name of `applyBlur()`) for native panel blur; 26.2's `PlayerTeam.getColor()` returns `Optional<TeamColor>`; `InputCompat` gained a 26.x branch (`keyMatches` / `hasShiftDown`).
+- **Caveat (runtime not verified)**: 26.1/26.2 are currently **compile- and build-verified only**. The 26.x mixin descriptors (`ChatComponentMixin`'s `render` / single-arg `addMessage`, `ChatInputSuggestorMixin`, `InGameHudMixin`, the Accessors, `CommandManagerMixin`) were not renamed for 26.x — javac does not validate annotation strings, so those injections are likely inert at runtime on 26.x (a feature degradation, not a crash). The `HudElementRegistry.addLast` path for the HUD icon is likewise unverified in-game.
+
+## v2.4.2
+
+**新功能（2.4.2）**
+- **横幅堆叠**（`banner_max_stack`）：通知横幅支持堆叠显示，多条通知按时间排列、新通知推入顶部并触发平滑位移动画，超过最大堆叠数量时最旧条目渐隐退出。可在「通知」分类中配置最大堆叠数（默认 3）。
+- **通知音效防重**：新增全局 `NotificationSoundGate`，短时间内（500ms 冷却）重复触发的通知音效只播放一次，避免刷屏提示音。
+- **文本拖选复制**：聊天消息支持鼠标拖选文本，选中区域高亮显示，松开鼠标自动复制到剪贴板。跨行选择自动拼接换行，点击可交互文本（链接/@提及）时优先触发交互而非选择。
+- **ModernUI emoji 短码替换**：当 ModernUI 已安装时，输入框中 `:shortcode:` 格式的 emoji 短码自动替换为对应 Unicode 字符，无需手动查找粘贴。
+
+**优化（2.4.2）**
+- **消息分组逻辑完善**：相邻同一发送者的消息合并显示，间距自动收紧，时间超过分组阈值则重新开始分组。
+- **异步历史存盘完善**：历史存盘使用后台 daemon 线程 + 快照机制，避免阻塞渲染线程，存盘失败时安全降级不丢消息。
+
+**New Features (2.4.2)**
+- **Banner stacking** (`banner_max_stack`): Notification banners now stack — new notifications push in from the top with smooth repositioning animation, and the oldest banner fades out when the stack exceeds the configured maximum (default 3). Configure under "Notifications".
+- **Notification sound dedup**: A global `NotificationSoundGate` prevents repeated notification sounds within a 500ms cooldown window from firing more than once, eliminating sound spam.
+- **Text drag-to-select**: Chat messages support mouse drag text selection with highlighted selection background; releasing the mouse copies the selected text to the clipboard. Cross-line selection joins with newlines. Clicking interactive text (links/@mentions) triggers the interaction instead of starting a selection.
+- **ModernUI emoji shortcode**: When ModernUI is installed, `:shortcode:` emoji shortcodes in the input field are automatically replaced with their Unicode characters.
+
+**Improvements (2.4.2)**
+- **Message grouping refined**: Adjacent messages from the same sender are merged with tightened spacing; grouping restarts when the time gap exceeds the grouping threshold.
+- **Async history save enhanced**: History persistence uses a background daemon thread with a snapshot copy mechanism to avoid blocking the render thread; save failures degrade gracefully without losing messages.
+
 ## v2.3.15
 
 **新功能（2.3.15）**
