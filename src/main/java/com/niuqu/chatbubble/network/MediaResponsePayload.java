@@ -12,12 +12,13 @@ import net.minecraft.util.Identifier;
  * (index 0, totalChunks 1, empty chunk) signals "not found" so the client can
  * fail the fetch instead of hanging.
  */
+//#if MC >= 12005
 public record MediaResponsePayload(String mediaId, int index, int totalChunks, byte[] chunk)
-        //#if MC >= 12005
         implements CustomPayload {
-        //#else
-        //$$ {
-        //#endif
+//#else
+//$$ public record MediaResponsePayload(String mediaId, int index, int totalChunks, byte[] chunk) {
+//#endif
+
     //#if MC >= 12005
     public static final CustomPayload.Id<MediaResponsePayload> ID =
         new CustomPayload.Id<>(
@@ -27,18 +28,27 @@ public record MediaResponsePayload(String mediaId, int index, int totalChunks, b
             //$$ new Identifier("e33chat", "media_response")
             //#endif
         );
+    //#else
+    //$$ public static final Identifier ID = new Identifier("e33chat", "media_response");
+    //#endif
 
+    //#if MC >= 12005
     public static final PacketCodec<PacketByteBuf, MediaResponsePayload> CODEC = PacketCodec.of(
         //#if MC >= 26000
         (buf, value) -> {
-        //#else
-        //$$ (value, buf) -> {
-        //#endif
             buf.writeString(value.mediaId);
             buf.writeInt(value.index);
             buf.writeInt(value.totalChunks);
             buf.writeByteArray(value.chunk);
         },
+        //#else
+        //$$ (value, buf) -> {
+        //$$     buf.writeString(value.mediaId);
+        //$$     buf.writeInt(value.index);
+        //$$     buf.writeInt(value.totalChunks);
+        //$$     buf.writeByteArray(value.chunk);
+        //$$ },
+        //#endif
         buf -> new MediaResponsePayload(
             buf.readString(),
             buf.readInt(),
@@ -46,10 +56,26 @@ public record MediaResponsePayload(String mediaId, int index, int totalChunks, b
             buf.readByteArray()
         )
     );
+    //#else
+    //$$ public static MediaResponsePayload read(PacketByteBuf buf) {
+    //$$     return new MediaResponsePayload(
+    //$$         buf.readString(),
+    //$$         buf.readInt(),
+    //$$         buf.readInt(),
+    //$$         buf.readByteArray()
+    //$$     );
+    //$$ }
+    //$$ public PacketByteBuf write(PacketByteBuf buf) {
+    //$$     buf.writeString(mediaId);
+    //$$     buf.writeInt(index);
+    //$$     buf.writeInt(totalChunks);
+    //$$     buf.writeByteArray(chunk);
+    //$$     return buf;
+    //$$ }
+    //#endif
 
+    //#if MC >= 12005
     @Override
     public Id<MediaResponsePayload> getId() { return ID; }
-    //#else
-    //$$ public static final Identifier ID = new Identifier("e33chat", "media_response");
     //#endif
 }

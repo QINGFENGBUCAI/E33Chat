@@ -1,6 +1,6 @@
 package com.niuqu.chatbubble.mixin;
 
-import com.niuqu.chatbubble.BedScreen;
+import com.niuqu.chatbubble.ui.BedScreen;
 import com.niuqu.chatbubble.ChatBubbleClientSetup;
 import com.niuqu.chatbubble.ChatBubbleScreen;
 import net.minecraft.client.MinecraftClient;
@@ -14,22 +14,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.lang.reflect.Field;
 
-//#if MC >= 260200
-import net.minecraft.client.gui.Gui;
-//#endif
-
-//#if MC >= 260200
-@Mixin(Gui.class)
-//#else
 @Mixin(MinecraftClient.class)
-//#endif
 public class MinecraftClientMixin {
 
-    //#if MC < 11700
-    @Inject(method = "openScreen", at = @At("HEAD"), cancellable = true)
-    //#else
-    //$$ @Inject(method = "setScreen", at = @At("HEAD"), cancellable = true)
-    //#endif
+    @Inject(method = "setScreen", at = @At("HEAD"), cancellable = true)
     private void onSetScreen(Screen screen, CallbackInfo ci) {
         var cfg = ChatBubbleClientSetup.config();
         if (cfg == null || !cfg.enabled()) return;

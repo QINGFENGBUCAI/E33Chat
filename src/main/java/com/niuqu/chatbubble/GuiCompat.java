@@ -11,8 +11,10 @@ import net.minecraft.sound.SoundEvent;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
+import com.mojang.authlib.GameProfile;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.UUID;
 
 /**
  * GUI/API compatibility helpers for pre-1.20 client classes.
@@ -267,6 +269,26 @@ public final class GuiCompat {
             } catch (Exception ignored) {
             }
         }
+    }
+
+    // ---- GameProfile helpers (26.x authlib renamed getName/getId to name/id) ----
+
+    public static String profileName(GameProfile profile) {
+        if (profile == null) return null;
+        //#if MC >= 12109
+        return profile.name();
+        //#else
+        //$$ return profile.getName();
+        //#endif
+    }
+
+    public static UUID profileId(GameProfile profile) {
+        if (profile == null) return null;
+        //#if MC >= 12109
+        return profile.id();
+        //#else
+        //$$ return profile.getId();
+        //#endif
     }
 
     // ---- reflection helpers (MC < 1.19) ----

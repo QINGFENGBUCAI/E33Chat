@@ -1,7 +1,7 @@
 package com.niuqu.chatbubble.mixin;
 
 //#if MC >= 11900
-import com.niuqu.chatbubble.ChatMessageStore.SenderMeta;
+import com.niuqu.chatbubble.store.ChatMessageStore.SenderMeta;
 import net.minecraft.client.network.message.MessageHandler;
 import net.minecraft.text.Text;
 import org.spongepowered.asm.mixin.Mixin;

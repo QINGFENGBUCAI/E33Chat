@@ -1,7 +1,7 @@
 package com.niuqu.chatbubble.image;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.niuqu.chatbubble.E33Log;
+import com.niuqu.chatbubble.compat.TextureCompat;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -35,7 +35,6 @@ import net.minecraft.util.Identifier;
  *    hostile 16MB image costs ~230KB of GPU memory.
  */
 public final class ImageLoader {
-    private static final Logger LOGGER = LogManager.getLogger("e33chat");
     private static final Map<String, ImageEntry> CACHE = new ConcurrentHashMap<>();
     private static final Deque<String> LRU = new ArrayDeque<>();
     private static final Deque<ImageEntry> PENDING = new ArrayDeque<>();
@@ -75,8 +74,10 @@ public final class ImageLoader {
     static final long RATE_WINDOW_MS = 10_000;
     static final int QUEUE_CAP = 32;
     static final int CACHE_CAP = 64;
-    static final int CARD_W = 320;
-    static final int CARD_H = 180;
+    // Decode cap: large images keep enough pixels to fill the panel (which can
+    // be wider than the old 180px card), while small images are never upscaled.
+    static final int CARD_W = 512;
+    static final int CARD_H = 512;
 
     // Dead links (bad URLs, 404s) used to retry every 10s, spamming the log and
     // stealing anti-flood download slots from real images; 2 minutes is plenty.
@@ -251,7 +252,7 @@ public final class ImageLoader {
                 // The request-level timeout (HttpRequest.timeout) is what marks
                 // the entry FAILED; this future safety net must NOT flip state,
                 // otherwise a slow-but-finished download is discarded.
-                LOGGER.info("[e33chat] image fetch {} -> future timeout after {}s (download may still finish)",
+                E33Log.info("[e33chat] image fetch {} -> future timeout after {}s (download may still finish)",
                     url, REQUEST_TIMEOUT_SECONDS + 5);
                 return null;
             });
@@ -267,7 +268,7 @@ public final class ImageLoader {
                 t1 = System.currentTimeMillis();
                 if (body == null) {
                     entry.markFailed("server media fetch failed");
-                    LOGGER.info("[e33chat] image fetch {} -> server media fetch failed ({}ms)",
+                    E33Log.info("[e33chat] image fetch {} -> server media fetch failed ({}ms)",
                         url, t1 - t0);
                     return;
                 }
@@ -278,20 +279,20 @@ public final class ImageLoader {
                 t1 = System.currentTimeMillis();
                 if (resp.statusCode() < 200 || resp.statusCode() >= 300) {
                     entry.markFailed("http " + resp.statusCode());
-                    LOGGER.info("[e33chat] image fetch {} -> HTTP {} ({}ms)", url, resp.statusCode(), t1 - t0);
+                    E33Log.info("[e33chat] image fetch {} -> HTTP {} ({}ms)", url, resp.statusCode(), t1 - t0);
                     return;
                 }
                 body = resp.body();
                 if (body == null || body.length == 0 || body.length > MAX_RECEIVE_BYTES) {
                     entry.markFailed("empty or too large");
-                    LOGGER.info("[e33chat] image fetch {} -> bad body {} bytes ({}ms)", url, body == null ? 0 : body.length, t1 - t0);
+                    E33Log.info("[e33chat] image fetch {} -> bad body {} bytes ({}ms)", url, body == null ? 0 : body.length, t1 - t0);
                     return;
                 }
             }
             RasterImageDecoder.DecodedImage decoded = RasterImageDecoder.decode(body);
             if (decoded == null) {
                 entry.markFailed("unsupported format");
-                LOGGER.info("[e33chat] image fetch {} -> decode failed ({} bytes, {}ms)", url, body.length, t1 - t0);
+                E33Log.info("[e33chat] image fetch {} -> decode failed ({} bytes, {}ms)", url, body.length, t1 - t0);
                 return;
             }
             // Scale down before upload: a hostile full-size image costs ~230KB
@@ -307,13 +308,13 @@ public final class ImageLoader {
                     scaled.close();
                     decoded.image().close();
                     entry.markFailed("scale: " + t);
-                    LOGGER.info("[e33chat] image fetch {} -> scale failed: {}", url, t.toString());
+                    E33Log.info("[e33chat] image fetch {} -> scale failed: {}", url, t.toString());
                     return;
                 }
                 decoded.image().close();
                 decoded = new RasterImageDecoder.DecodedImage(scaled, sc[0], sc[1]);
             }
-            LOGGER.info("[e33chat] image fetch {} -> {}x{} ({} bytes, {}ms)",
+            E33Log.info("[e33chat] image fetch {} -> {}x{} ({} bytes, {}ms)",
                 url, decoded.width(), decoded.height(), body.length, t1 - t0);
 
             final RasterImageDecoder.DecodedImage uploadImage = decoded;
@@ -321,7 +322,7 @@ public final class ImageLoader {
             MinecraftClient.getInstance().execute(() -> {
                 if (entry.state() != ImageEntry.State.LOADING) {
                     uploadImage.image().close();
-                    LOGGER.info("[e33chat] image upload SKIPPED (state {}) for {}", entry.state(), url);
+                    E33Log.info("[e33chat] image upload SKIPPED (state {}) for {}", entry.state(), url);
                     return;
                 }
                 // NOTE: getTexture(id) returns the MISSING texture (black/purple)
@@ -332,16 +333,12 @@ public final class ImageLoader {
                     Identifier id = Identifier.of("e33chat", "img/" + hash(url));
                     TextureManager tm = MinecraftClient.getInstance().getTextureManager();
                     tm.destroyTexture(id);
-                    //#if MC >= 12105
-                    tm.registerTexture(id, new NativeImageBackedTexture(() -> id.toString(), uploadImage.image()));
-                    //#else
-                    //$$ tm.registerTexture(id, new NativeImageBackedTexture(uploadImage.image()));
-                    //#endif
+                    tm.registerTexture(id, TextureCompat.create(id.getPath(), uploadImage.image()));
                     entry.markLoaded(id, uploadImage.image());
-                    LOGGER.info("[e33chat] image upload OK {} -> {}x{} @ {}", url, entry.width(), entry.height(), id);
+                    E33Log.info("[e33chat] image upload OK {} -> {}x{} @ {}", url, entry.width(), entry.height(), id);
                 } catch (Throwable t) {
                     entry.markFailed("upload: " + t);
-                    LOGGER.info("[e33chat] image upload FAILED {}: {}", url, t.toString());
+                    E33Log.info("[e33chat] image upload FAILED {}: {}", url, t.toString());
                 }
             });
         } catch (InterruptedException e) {
@@ -349,7 +346,7 @@ public final class ImageLoader {
             entry.markFailed("interrupted");
         } catch (Throwable t) {
             long t1 = System.currentTimeMillis();
-            LOGGER.info("[e33chat] image fetch {} -> exception ({}ms): {}", url, t1 - t0, t.toString());
+            E33Log.info("[e33chat] image fetch {} -> exception ({}ms): {}", url, t1 - t0, t.toString());
             entry.markFailed(String.valueOf(t));
         }
     }

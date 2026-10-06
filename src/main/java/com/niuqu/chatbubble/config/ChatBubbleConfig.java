@@ -8,6 +8,8 @@ public record ChatBubbleConfig(
     String theme,
     boolean redDotEnabled,
     boolean hideChatIcon,
+    @SerializedName("hud_icon_x") Integer hudIconX,
+    @SerializedName("hud_icon_y") Integer hudIconY,
     boolean animationEnabled,
     boolean systemChatAsBubble,
     boolean antiSpam,
@@ -15,6 +17,7 @@ public record ChatBubbleConfig(
     int historyRetentionDays,
     int timeSeparatorMinutes,
     int panelWidth,
+    boolean panelFullscreen,
     int bubbleCornerRadius,
     String ownBubbleColor,
     String otherBubbleColor,
@@ -31,27 +34,28 @@ public record ChatBubbleConfig(
     List<String> quickChatPhrases,
     boolean mentionBannerEnabled,
     boolean systemBannerEnabled,
-    int mentionBannerDuration,
+    Integer mentionBannerDuration,
     boolean mentionSoundEnabled,
     boolean mentionRequireAt,
     boolean mentionWhisperBanner,
     boolean blurEnabled,
-    int panelOpacity,
-    int soundVolume,
+    Integer panelOpacity,
+    Integer soundVolume,
     boolean ownMentionNotify,
     boolean ownQuoteNotify,
     boolean ownWhisperNotify,
-    int bannerCornerRadius,
+    Integer bannerCornerRadius,
     @SerializedName("banner_offset_x") int bannerOffsetX,
     @SerializedName("banner_offset_y") int bannerOffsetY,
+    @SerializedName("banner_max_stack") Integer bannerMaxStack,
     String panelAnimStyle,
     String bannerAnimStyle,
     String popupAnimStyle,
     String messageAnimStyle,
     Boolean imageRenderEnabled,
     Boolean receiveImages,
-    // Image upload host (2.3.11). null/blank = Litterbox default; response:
-    // "text" (body is the URL) or "json:<field>".
+    // Image upload host (2.3.11). null/blank = uguu.se default (~3h expiry);
+    // response: "text" (body is the URL) or "json:<field>" (default json:files[0].url).
     String uploadUrl,
     String uploadField,
     String uploadExtra,
@@ -61,22 +65,29 @@ public record ChatBubbleConfig(
     Boolean hideRepeatedAvatars,
     boolean closeChatOnSend,
     Integer bannerOpacity,
-    Integer bubbleScale
+    Integer bubbleSize,
+    // 2.4.10 custom panel background (client-only). null/blank = default texture.
+    @SerializedName("panel_bg_image") String panelBgImage,
+    @SerializedName("panel_bg_opacity") Integer panelBgOpacity,
+    // 2.4.12 crop framing for the background image: "centerX,centerY,zoom"
+    // (normalized). null/blank = centered cover-crop.
+    @SerializedName("panel_bg_crop") String panelBgCrop
 ) {
     public static ChatBubbleConfig defaults() {
         return new ChatBubbleConfig(
-            true, "dark", true, false, true,
+            true, "dark", true, false, 3, 20, true,
             false, true,
-            false, 0, 5, 1000, 4,
+            false, 0, 5, 1000, false, 4,
             "#1E90FF", "#4A4A4A", "#FFFFFF", "#FFFFFF",
             false, false, true, false, true, false,
             List.of(), List.of(), List.of(),
             true, true, 4, true, true, true,
-            false, 80, 80, false, false, false, 4, 0, 0,
+            false, 80, 80, false, false, false, 4, 0, 0, 3,
             "slide", "slide", "fade", "fade",
             true, true,
             null, null, null, null,
-            6, 20, true, false, 100, 100
+            6, 20, false, false, 100, 9,
+            "", 100, null
         );
     }
 
@@ -92,55 +103,69 @@ public record ChatBubbleConfig(
     }
 
     public ChatBubbleConfig withTheme(String theme) {
-        return new ChatBubbleConfig(enabled, theme, redDotEnabled, hideChatIcon, animationEnabled,
+        return new ChatBubbleConfig(enabled, theme, redDotEnabled, hideChatIcon, hudIconX, hudIconY, animationEnabled,
             systemChatAsBubble, antiSpam,
             chatHistoryEnabled, historyRetentionDays, timeSeparatorMinutes,
-            panelWidth, bubbleCornerRadius, ownBubbleColor, otherBubbleColor, ownTextColor, otherTextColor,
+            panelWidth, panelFullscreen, bubbleCornerRadius, ownBubbleColor, otherBubbleColor, ownTextColor, otherTextColor,
             soundPublic, soundSystem, soundWhisper, debugLog, preserveInput, colorCodes, sidebarHidePatterns, blockedPlayers, quickChatPhrases,
             mentionBannerEnabled, systemBannerEnabled, mentionBannerDuration, mentionSoundEnabled, mentionRequireAt, mentionWhisperBanner,
-            blurEnabled, panelOpacity, soundVolume, ownMentionNotify, ownQuoteNotify, ownWhisperNotify, bannerCornerRadius, bannerOffsetX, bannerOffsetY,
+            blurEnabled, panelOpacity, soundVolume, ownMentionNotify, ownQuoteNotify, ownWhisperNotify, bannerCornerRadius, bannerOffsetX, bannerOffsetY, bannerMaxStack,
             panelAnimStyle, bannerAnimStyle, popupAnimStyle, messageAnimStyle, imageRenderEnabled, receiveImages,
-            uploadUrl, uploadField, uploadExtra, uploadResponse,
-            messageGap, avatarSize, hideRepeatedAvatars, closeChatOnSend, bannerOpacity, bubbleScale);
+            uploadUrl, uploadField, uploadExtra, uploadResponse, messageGap, avatarSize, hideRepeatedAvatars, closeChatOnSend, bannerOpacity, bubbleSize,
+            "", 100, null);
     }
 
     public ChatBubbleConfig withQuickChatPhrases(List<String> phrases) {
-        return new ChatBubbleConfig(enabled, theme, redDotEnabled, hideChatIcon, animationEnabled,
+        return new ChatBubbleConfig(enabled, theme, redDotEnabled, hideChatIcon, hudIconX, hudIconY, animationEnabled,
             systemChatAsBubble, antiSpam,
             chatHistoryEnabled, historyRetentionDays, timeSeparatorMinutes,
-            panelWidth, bubbleCornerRadius, ownBubbleColor, otherBubbleColor, ownTextColor, otherTextColor,
+            panelWidth, panelFullscreen, bubbleCornerRadius, ownBubbleColor, otherBubbleColor, ownTextColor, otherTextColor,
             soundPublic, soundSystem, soundWhisper, debugLog, preserveInput, colorCodes, sidebarHidePatterns, blockedPlayers, phrases,
             mentionBannerEnabled, systemBannerEnabled, mentionBannerDuration, mentionSoundEnabled, mentionRequireAt, mentionWhisperBanner,
-            blurEnabled, panelOpacity, soundVolume, ownMentionNotify, ownQuoteNotify, ownWhisperNotify, bannerCornerRadius, bannerOffsetX, bannerOffsetY,
+            blurEnabled, panelOpacity, soundVolume, ownMentionNotify, ownQuoteNotify, ownWhisperNotify, bannerCornerRadius, bannerOffsetX, bannerOffsetY, bannerMaxStack,
             panelAnimStyle, bannerAnimStyle, popupAnimStyle, messageAnimStyle, imageRenderEnabled, receiveImages,
-            uploadUrl, uploadField, uploadExtra, uploadResponse,
-            messageGap, avatarSize, hideRepeatedAvatars, closeChatOnSend, bannerOpacity, bubbleScale);
+            uploadUrl, uploadField, uploadExtra, uploadResponse, messageGap, avatarSize, hideRepeatedAvatars, closeChatOnSend, bannerOpacity, bubbleSize, panelBgImage, panelBgOpacity, panelBgCrop);
     }
 
     public ChatBubbleConfig withSidebarHidePatterns(List<String> patterns) {
-        return new ChatBubbleConfig(enabled, theme, redDotEnabled, hideChatIcon, animationEnabled,
+        return new ChatBubbleConfig(enabled, theme, redDotEnabled, hideChatIcon, hudIconX, hudIconY, animationEnabled,
             systemChatAsBubble, antiSpam,
             chatHistoryEnabled, historyRetentionDays, timeSeparatorMinutes,
-            panelWidth, bubbleCornerRadius, ownBubbleColor, otherBubbleColor, ownTextColor, otherTextColor,
+            panelWidth, panelFullscreen, bubbleCornerRadius, ownBubbleColor, otherBubbleColor, ownTextColor, otherTextColor,
             soundPublic, soundSystem, soundWhisper, debugLog, preserveInput, colorCodes, patterns, blockedPlayers, quickChatPhrases,
             mentionBannerEnabled, systemBannerEnabled, mentionBannerDuration, mentionSoundEnabled, mentionRequireAt, mentionWhisperBanner,
-            blurEnabled, panelOpacity, soundVolume, ownMentionNotify, ownQuoteNotify, ownWhisperNotify, bannerCornerRadius, bannerOffsetX, bannerOffsetY,
+            blurEnabled, panelOpacity, soundVolume, ownMentionNotify, ownQuoteNotify, ownWhisperNotify, bannerCornerRadius, bannerOffsetX, bannerOffsetY, bannerMaxStack,
             panelAnimStyle, bannerAnimStyle, popupAnimStyle, messageAnimStyle, imageRenderEnabled, receiveImages,
-            uploadUrl, uploadField, uploadExtra, uploadResponse,
-            messageGap, avatarSize, hideRepeatedAvatars, closeChatOnSend, bannerOpacity, bubbleScale);
+            uploadUrl, uploadField, uploadExtra, uploadResponse, messageGap, avatarSize, hideRepeatedAvatars, closeChatOnSend, bannerOpacity, bubbleSize, panelBgImage, panelBgOpacity, panelBgCrop);
     }
 
     public ChatBubbleConfig withBlockedPlayers(List<String> blocked) {
-        return new ChatBubbleConfig(enabled, theme, redDotEnabled, hideChatIcon, animationEnabled,
+        return new ChatBubbleConfig(enabled, theme, redDotEnabled, hideChatIcon, hudIconX, hudIconY, animationEnabled,
             systemChatAsBubble, antiSpam,
             chatHistoryEnabled, historyRetentionDays, timeSeparatorMinutes,
-            panelWidth, bubbleCornerRadius, ownBubbleColor, otherBubbleColor, ownTextColor, otherTextColor,
+            panelWidth, panelFullscreen, bubbleCornerRadius, ownBubbleColor, otherBubbleColor, ownTextColor, otherTextColor,
             soundPublic, soundSystem, soundWhisper, debugLog, preserveInput, colorCodes, sidebarHidePatterns, blocked, quickChatPhrases,
             mentionBannerEnabled, systemBannerEnabled, mentionBannerDuration, mentionSoundEnabled, mentionRequireAt, mentionWhisperBanner,
-            blurEnabled, panelOpacity, soundVolume, ownMentionNotify, ownQuoteNotify, ownWhisperNotify, bannerCornerRadius, bannerOffsetX, bannerOffsetY,
+            blurEnabled, panelOpacity, soundVolume, ownMentionNotify, ownQuoteNotify, ownWhisperNotify, bannerCornerRadius, bannerOffsetX, bannerOffsetY, bannerMaxStack,
             panelAnimStyle, bannerAnimStyle, popupAnimStyle, messageAnimStyle, imageRenderEnabled, receiveImages,
-            uploadUrl, uploadField, uploadExtra, uploadResponse,
-            messageGap, avatarSize, hideRepeatedAvatars, closeChatOnSend, bannerOpacity, bubbleScale);
+            uploadUrl, uploadField, uploadExtra, uploadResponse, messageGap, avatarSize, hideRepeatedAvatars, closeChatOnSend, bannerOpacity, bubbleSize, panelBgImage, panelBgOpacity, panelBgCrop);
+    }
+
+    public ChatBubbleConfig withPanelBg(String image, Integer opacity, String crop) {
+        return new ChatBubbleConfig(enabled, theme, redDotEnabled, hideChatIcon, hudIconX, hudIconY, animationEnabled,
+            systemChatAsBubble, antiSpam,
+            chatHistoryEnabled, historyRetentionDays, timeSeparatorMinutes,
+            panelWidth, panelFullscreen, bubbleCornerRadius, ownBubbleColor, otherBubbleColor, ownTextColor, otherTextColor,
+            soundPublic, soundSystem, soundWhisper, debugLog, preserveInput, colorCodes, sidebarHidePatterns, blockedPlayers, quickChatPhrases,
+            mentionBannerEnabled, systemBannerEnabled, mentionBannerDuration, mentionSoundEnabled, mentionRequireAt, mentionWhisperBanner,
+            blurEnabled, panelOpacity, soundVolume, ownMentionNotify, ownQuoteNotify, ownWhisperNotify, bannerCornerRadius, bannerOffsetX, bannerOffsetY, bannerMaxStack,
+            panelAnimStyle, bannerAnimStyle, popupAnimStyle, messageAnimStyle, imageRenderEnabled, receiveImages,
+            uploadUrl, uploadField, uploadExtra, uploadResponse, messageGap, avatarSize, hideRepeatedAvatars, closeChatOnSend, bannerOpacity, bubbleSize,
+            image, opacity, crop);
+    }
+
+    public ChatBubbleConfig withPanelBgCrop(String crop) {
+        return withPanelBg(panelBgImage, panelBgOpacity, crop);
     }
 
     public boolean isSidebarHidden(String playerName) {

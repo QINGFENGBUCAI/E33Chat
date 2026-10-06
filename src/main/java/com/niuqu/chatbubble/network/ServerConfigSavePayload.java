@@ -20,14 +20,19 @@ import java.util.List;
  * Client -> server: save the server-config GUI edits. The server re-validates
  * every template, persists to the JSON file, and rebroadcasts to all players.
  */
+//#if MC >= 12005
 public record ServerConfigSavePayload(boolean useTpa, boolean historyEnabled, boolean templateDebug,
-                                      List<String> chatTemplates, List<String> whisperTemplates,
-                                      boolean mediaEnabled, boolean mediaAutoClean)
-        //#if MC >= 12005
+                                      boolean mediaEnabled, boolean mediaAutoClean, boolean easyBotCompat,
+                                      boolean groupsEnabled,
+                                      List<String> chatTemplates, List<String> whisperTemplates)
         implements CustomPayload {
-        //#else
-        //$$ {
-        //#endif
+//#else
+//$$ public record ServerConfigSavePayload(boolean useTpa, boolean historyEnabled, boolean templateDebug,
+//$$                                       boolean mediaEnabled, boolean mediaAutoClean, boolean easyBotCompat,
+//$$                                       boolean groupsEnabled,
+//$$                                       List<String> chatTemplates, List<String> whisperTemplates) {
+//#endif
+
     //#if MC >= 12005
     public static final CustomPayload.Id<ServerConfigSavePayload> ID =
         new CustomPayload.Id<>(
@@ -37,36 +42,46 @@ public record ServerConfigSavePayload(boolean useTpa, boolean historyEnabled, bo
             //$$ new Identifier("e33chat", "server_config_save")
             //#endif
         );
-
-    public static final PacketCodec<PacketByteBuf, ServerConfigSavePayload> CODEC = PacketCodec.of(
-        //#if MC >= 26000
-        (buf, value) -> {
-        //#else
-        //$$ (value, buf) -> {
-        //#endif
-            buf.writeBoolean(value.useTpa);
-            buf.writeBoolean(value.historyEnabled);
-            buf.writeBoolean(value.templateDebug);
-            ConfigSyncV2Payload.writeList(buf, value.chatTemplates);
-            ConfigSyncV2Payload.writeList(buf, value.whisperTemplates);
-            buf.writeBoolean(value.mediaEnabled);
-            buf.writeBoolean(value.mediaAutoClean);
-        },
-        buf -> new ServerConfigSavePayload(
-            buf.readBoolean(),
-            buf.readBoolean(),
-            buf.readBoolean(),
-            ConfigSyncV2Payload.readList(buf),
-            ConfigSyncV2Payload.readList(buf),
-            buf.readBoolean(),
-            buf.readBoolean()
-        )
-    );
-
-    @Override
-    public Id<ServerConfigSavePayload> getId() { return ID; }
     //#else
     //$$ public static final Identifier ID = new Identifier("e33chat", "server_config_save");
+    //#endif
+
+    //#if MC >= 12005
+    public static final PacketCodec<PacketByteBuf, ServerConfigSavePayload> CODEC = PacketCodec.of(
+        //#if MC >= 26000
+        (buf, value) -> ServerConfigDto.encode(new ServerConfigDto(
+            value.useTpa, value.historyEnabled, value.templateDebug, value.mediaEnabled,
+            value.mediaAutoClean, value.easyBotCompat, value.groupsEnabled, value.chatTemplates, value.whisperTemplates), buf),
+        //#else
+        //$$ (value, buf) -> ServerConfigDto.encode(new ServerConfigDto(
+        //$$     value.useTpa, value.historyEnabled, value.templateDebug, value.mediaEnabled,
+        //$$     value.mediaAutoClean, value.easyBotCompat, value.groupsEnabled, value.chatTemplates, value.whisperTemplates), buf),
+        //#endif
+        buf -> {
+            ServerConfigDto d = ServerConfigDto.decode(buf);
+            return new ServerConfigSavePayload(d.useTpa(), d.historyEnabled(), d.templateDebug(),
+                d.mediaEnabled(), d.mediaAutoClean(), d.easyBotCompat(), d.groupsEnabled(),
+                d.chatTemplates(), d.whisperTemplates());
+        }
+    );
+    //#else
+    //$$ public static ServerConfigSavePayload read(PacketByteBuf buf) {
+    //$$     ServerConfigDto d = ServerConfigDto.decode(buf);
+    //$$     return new ServerConfigSavePayload(d.useTpa(), d.historyEnabled(), d.templateDebug(),
+    //$$         d.mediaEnabled(), d.mediaAutoClean(), d.easyBotCompat(), d.groupsEnabled(),
+    //$$         d.chatTemplates(), d.whisperTemplates());
+    //$$ }
+    //$$ public PacketByteBuf write(PacketByteBuf buf) {
+    //$$     ServerConfigDto.encode(new ServerConfigDto(
+    //$$         useTpa, historyEnabled, templateDebug, mediaEnabled,
+    //$$         mediaAutoClean, easyBotCompat, groupsEnabled, chatTemplates, whisperTemplates), buf);
+    //$$     return buf;
+    //$$ }
+    //#endif
+
+    //#if MC >= 12005
+    @Override
+    public Id<ServerConfigSavePayload> getId() { return ID; }
     //#endif
 
     /** Server-side handler: validate, persist, rebroadcast (called from ChatBubbleMod). */
@@ -75,29 +90,22 @@ public record ServerConfigSavePayload(boolean useTpa, boolean historyEnabled, bo
         Text error = validateTemplates(true, payload.chatTemplates());
         if (error == null) error = validateTemplates(false, payload.whisperTemplates());
         if (error != null) {
-            //#if MC >= 26000
-            //$$ player.sendSystemMessage(Text.translatable("e33chat.server.save_failed", error)
-            //$$     .formatted(Formatting.RED));
-            //#else
             player.sendMessage(Text.translatable("e33chat.server.save_failed", error)
                 .formatted(Formatting.RED), false);
-            //#endif
             return;
         }
         ServerConfig cfg = new ServerConfig();
         cfg.use_tpa = payload.useTpa();
         cfg.history_enabled = payload.historyEnabled();
         cfg.template_debug = payload.templateDebug();
-        cfg.chat_templates = new ArrayList<>(payload.chatTemplates());
-        cfg.whisper_templates = new ArrayList<>(payload.whisperTemplates());
         cfg.media_enabled = payload.mediaEnabled();
         cfg.media_auto_clean = payload.mediaAutoClean();
+        cfg.easy_bot_compat = payload.easyBotCompat();
+        cfg.groups_enabled = payload.groupsEnabled();
+        cfg.chat_templates = new ArrayList<>(payload.chatTemplates());
+        cfg.whisper_templates = new ArrayList<>(payload.whisperTemplates());
         applyAndSave.accept(cfg);
-        //#if MC >= 26000
-        //$$ player.sendSystemMessage(Text.translatable("e33chat.server.saved"));
-        //#else
         player.sendMessage(Text.translatable("e33chat.server.saved"), false);
-        //#endif
     }
 
     private static Text validateTemplates(boolean chat, List<String> templates) {

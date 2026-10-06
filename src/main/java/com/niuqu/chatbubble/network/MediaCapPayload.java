@@ -19,6 +19,7 @@ public record MediaCapPayload(boolean mediaEnabled) implements CustomPayload {
 //#else
 //$$ public record MediaCapPayload(boolean mediaEnabled) {
 //#endif
+
     //#if MC >= 12005
     public static final CustomPayload.Id<MediaCapPayload> ID =
         new CustomPayload.Id<>(
@@ -28,7 +29,11 @@ public record MediaCapPayload(boolean mediaEnabled) implements CustomPayload {
             //$$ new Identifier("e33chat", "media_cap")
             //#endif
         );
+    //#else
+    //$$ public static final Identifier ID = new Identifier("e33chat", "media_cap");
+    //#endif
 
+    //#if MC >= 12005
     public static final PacketCodec<PacketByteBuf, MediaCapPayload> CODEC = PacketCodec.of(
         //#if MC >= 26000
         (buf, value) -> buf.writeBoolean(value.mediaEnabled),
@@ -37,11 +42,19 @@ public record MediaCapPayload(boolean mediaEnabled) implements CustomPayload {
         //#endif
         buf -> new MediaCapPayload(buf.readBoolean())
     );
+    //#else
+    //$$ public static MediaCapPayload read(PacketByteBuf buf) {
+    //$$     return new MediaCapPayload(buf.readBoolean());
+    //$$ }
+    //$$ public PacketByteBuf write(PacketByteBuf buf) {
+    //$$     buf.writeBoolean(mediaEnabled);
+    //$$     return buf;
+    //$$ }
+    //#endif
 
+    //#if MC >= 12005
     @Override
     public Id<MediaCapPayload> getId() { return ID; }
-    //#else
-    //$$ public static final Identifier ID = new Identifier("e33chat", "media_cap");
     //#endif
 
     public static void handle(MediaCapPayload payload) {

@@ -1,19 +1,27 @@
 package com.niuqu.chatbubble;
+import com.niuqu.chatbubble.config.ChatBubbleConfigScreen;
+import com.niuqu.chatbubble.render.ChatBubbleHudOverlay;
+import com.niuqu.chatbubble.render.RoundRectRenderer;
 
 import com.niuqu.chatbubble.config.ChatBubbleConfig;
+import com.niuqu.chatbubble.store.ChatMessageStore;
+import com.niuqu.chatbubble.config.ServerConfigScreen;
 import com.niuqu.chatbubble.config.ConfigManager;
 import com.niuqu.chatbubble.image.ImageLoader;
 import com.niuqu.chatbubble.network.ChatMetaPayload;
 import com.niuqu.chatbubble.network.ConfigSyncPayload;
 import com.niuqu.chatbubble.network.ConfigSyncV2Payload;
+import com.niuqu.chatbubble.network.EasyBotConfigPayload;
 import com.niuqu.chatbubble.network.HistoryPayload;
 import com.niuqu.chatbubble.network.MediaCapPayload;
 import com.niuqu.chatbubble.network.ServerConfigScreenPayload;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
-//#if MC < 26000
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+//#if MC >= 26000
+import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
+//#else
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 //#endif
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
@@ -31,7 +39,6 @@ public class ChatBubbleClientSetup implements ClientModInitializer {
     private static ChatBubbleConfig config = ChatBubbleConfig.defaults();
     private static Path configPath;
     private static boolean leftWasDown;
-    private static boolean wasInWorld;
 
     public static ChatBubbleConfig config() { return config; }
 
@@ -43,14 +50,53 @@ public class ChatBubbleClientSetup implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        configPath = MinecraftClient.getInstance().runDirectory.toPath().resolve("config/e33chat-client.json");
-        // v2.3.x renamed the file from e33chat.json to e33chat-client.json (aligns with
-        // Forge/Neo); migrate an existing old file so users keep their settings
-        Path legacyPath = MinecraftClient.getInstance().runDirectory.toPath().resolve("config/e33chat.json");
-        if (!Files.exists(configPath) && Files.exists(legacyPath)) {
+        Path configDir = MinecraftClient.getInstance().runDirectory.toPath().resolve("config/e33chat");
+        configPath = configDir.resolve("e33chat-client.json");
+        // Migration chain for the client config path (most recent first):
+        // config/e33chat/client.json -> config/e33chat/e33chat-client.json
+        // config/e33chat-client.json (2.3.1+) and config/e33chat.json (legacy) also move here.
+        Path recentDirPath = configDir.resolve("client.json");
+        Path legacyPath = MinecraftClient.getInstance().runDirectory.toPath().resolve("config/e33chat-client.json");
+        Path oldFlatPath = MinecraftClient.getInstance().runDirectory.toPath().resolve("config/e33chat.json");
+        if (!Files.exists(configPath)) {
+            if (Files.exists(recentDirPath)) {
+                try {
+                    Files.move(recentDirPath, configPath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                    E33Log.info("[e33chat] Migrated config from config/e33chat/client.json to config/e33chat/e33chat-client.json");
+                } catch (Exception e) {
+                    E33Log.warn("[e33chat] Config migration failed", e);
+                }
+            } else if (Files.exists(legacyPath)) {
+                try {
+                    Files.createDirectories(configDir);
+                    Files.move(legacyPath, configPath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                    E33Log.info("[e33chat] Migrated config from config/e33chat-client.json to config/e33chat/e33chat-client.json");
+                } catch (Exception e) {
+                    E33Log.warn("[e33chat] Config migration failed", e);
+                }
+            } else if (Files.exists(oldFlatPath)) {
+                config = ConfigManager.load(oldFlatPath);
+                ConfigManager.save(configPath, config);
+                try {
+                    Files.delete(oldFlatPath);
+                } catch (Exception e) {
+                    E33Log.warn("[e33chat] Legacy config cleanup failed", e);
+                }
+                E33Log.info("[e33chat] Migrated config from config/e33chat.json to config/e33chat/e33chat-client.json");
+            }
+        }
+        // Load is unconditional once the new path exists — the static field
+        // starts as defaults() (non-null), so a null check can never trigger.
+        if (Files.exists(configPath)) {
+            config = ConfigManager.load(configPath);
+        } else if (Files.exists(recentDirPath)) {
+            // Migration move failed earlier (locked/IO) — read in place so
+            // settings are never silently replaced by defaults.
+            config = ConfigManager.load(recentDirPath);
+        } else if (Files.exists(legacyPath)) {
             config = ConfigManager.load(legacyPath);
-            ConfigManager.save(configPath, config);
-            E33Log.info("[e33chat] Migrated config from config/e33chat.json to config/e33chat-client.json");
+        } else if (Files.exists(oldFlatPath)) {
+            config = ConfigManager.load(oldFlatPath);
         } else {
             config = ConfigManager.load(configPath);
         }
@@ -61,83 +107,156 @@ public class ChatBubbleClientSetup implements ClientModInitializer {
                 payload.senderUUID(), payload.senderName(), payload.messageHash(),
                 payload.quoteSender(), payload.quoteContent(), payload.mentionTargets()));
         });
+        //#else
+        //$$ ClientPlayNetworking.registerGlobalReceiver(ChatMetaPayload.ID, (client, handler, buf, responseSender) -> {
+        //$$     ChatMetaPayload payload = ChatMetaPayload.read(buf);
+        //$$     client.execute(() -> ChatMessageStore.applyChatMeta(
+        //$$         payload.senderUUID(), payload.senderName(), payload.messageHash(),
+        //$$         payload.quoteSender(), payload.quoteContent(), payload.mentionTargets()));
+        //$$ });
+        //#endif
+
+        //#if MC >= 12005
         ClientPlayNetworking.registerGlobalReceiver(HistoryPayload.ID, (payload, context) -> {
             context.client().execute(() -> ChatMessageStore.addHistoryMessages(payload.entries()));
         });
+        //#else
+        //$$ ClientPlayNetworking.registerGlobalReceiver(HistoryPayload.ID, (client, handler, buf, responseSender) -> {
+        //$$     HistoryPayload payload = HistoryPayload.read(buf);
+        //$$     client.execute(() -> ChatMessageStore.addHistoryMessages(payload.entries()));
+        //$$ });
+        //#endif
+
+        //#if MC >= 12005
         ClientPlayNetworking.registerGlobalReceiver(ConfigSyncPayload.ID, (payload, context) -> {
             context.client().execute(() -> ConfigSyncPayload.handle(payload));
         });
+        //#else
+        //$$ ClientPlayNetworking.registerGlobalReceiver(ConfigSyncPayload.ID, (client, handler, buf, responseSender) -> {
+        //$$     ConfigSyncPayload payload = ConfigSyncPayload.read(buf);
+        //$$     client.execute(() -> ConfigSyncPayload.handle(payload));
+        //$$ });
+        //#endif
+
+        //#if MC >= 12005
         ClientPlayNetworking.registerGlobalReceiver(ConfigSyncV2Payload.ID, (payload, context) -> {
             context.client().execute(() -> ConfigSyncV2Payload.handle(payload));
         });
+        //#else
+        //$$ ClientPlayNetworking.registerGlobalReceiver(ConfigSyncV2Payload.ID, (client, handler, buf, responseSender) -> {
+        //$$     ConfigSyncV2Payload payload = ConfigSyncV2Payload.read(buf);
+        //$$     client.execute(() -> ConfigSyncV2Payload.handle(payload));
+        //$$ });
+        //#endif
+
+        //#if MC >= 12005
+        ClientPlayNetworking.registerGlobalReceiver(EasyBotConfigPayload.ID, (payload, context) -> {
+            context.client().execute(() -> EasyBotConfigPayload.handle(payload));
+        });
+        //#else
+        //$$ ClientPlayNetworking.registerGlobalReceiver(EasyBotConfigPayload.ID, (client, handler, buf, responseSender) -> {
+        //$$     EasyBotConfigPayload payload = EasyBotConfigPayload.read(buf);
+        //$$     client.execute(() -> EasyBotConfigPayload.handle(payload));
+        //$$ });
+        //#endif
+
         // Server-config GUI: opened on the client only (server never loads the Screen)
+        //#if MC >= 12005
         ClientPlayNetworking.registerGlobalReceiver(ServerConfigScreenPayload.ID, (payload, context) -> {
             context.client().execute(() -> MinecraftClient.getInstance().setScreen(new ServerConfigScreen(
                 MinecraftClient.getInstance().currentScreen,
                 payload.useTpa(), payload.historyEnabled(), payload.templateDebug(),
-                payload.chatTemplates(), payload.whisperTemplates(), payload.mediaEnabled(), payload.mediaAutoClean())));
+                payload.mediaEnabled(), payload.mediaAutoClean(), payload.easyBotCompat(),
+                payload.groupsEnabled(),
+                payload.chatTemplates(), payload.whisperTemplates())));
         });
+        //#else
+        //$$ ClientPlayNetworking.registerGlobalReceiver(ServerConfigScreenPayload.ID, (client, handler, buf, responseSender) -> {
+        //$$     ServerConfigScreenPayload payload = ServerConfigScreenPayload.read(buf);
+        //$$     client.execute(() -> MinecraftClient.getInstance().setScreen(new ServerConfigScreen(
+        //$$         MinecraftClient.getInstance().currentScreen,
+        //$$         payload.useTpa(), payload.historyEnabled(), payload.templateDebug(),
+        //$$         payload.mediaEnabled(), payload.mediaAutoClean(), payload.easyBotCompat(),
+        //$$         payload.groupsEnabled(),
+        //$$         payload.chatTemplates(), payload.whisperTemplates())));
+        //$$ });
+        //#endif
 
         com.niuqu.chatbubble.image.MediaClient.registerReceivers();
+
+        // 2.4.10 group chat: announce the mod on join (server routes group chat
+        // as payloads + pushes the group directory); reset state on disconnect.
+        ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
+            com.niuqu.chatbubble.chat.GroupChannelState.reset();
+            com.niuqu.chatbubble.render.BlurRenderer.setDisconnecting(false);
+            com.niuqu.chatbubble.network.ClientHelloPayload.send();
+        });
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
+            com.niuqu.chatbubble.chat.GroupChannelState.reset();
+            // Stop the panel blur (its temp framebuffers belong to the dying GL
+            // context) and release them.
+            com.niuqu.chatbubble.render.BlurRenderer.setDisconnecting(true);
+            com.niuqu.chatbubble.render.BlurRenderer.cleanup();
+        });
+
+        //#if MC >= 12005
+        ClientPlayNetworking.registerGlobalReceiver(com.niuqu.chatbubble.network.GroupChatPayload.ID, (payload, context) -> {
+            context.client().execute(() -> com.niuqu.chatbubble.network.GroupChatPayload.handleClient(payload));
+        });
+        //#else
+        //$$ ClientPlayNetworking.registerGlobalReceiver(com.niuqu.chatbubble.network.GroupChatPayload.ID, (client, handler, buf, responseSender) -> {
+        //$$     com.niuqu.chatbubble.network.GroupChatPayload payload = com.niuqu.chatbubble.network.GroupChatPayload.read(buf);
+        //$$     client.execute(() -> com.niuqu.chatbubble.network.GroupChatPayload.handleClient(payload));
+        //$$ });
+        //#endif
+
+        //#if MC >= 12005
+        ClientPlayNetworking.registerGlobalReceiver(com.niuqu.chatbubble.network.GroupListPayload.ID, (payload, context) -> {
+            context.client().execute(() -> com.niuqu.chatbubble.network.GroupListPayload.handleClient(payload));
+        });
+        //#else
+        //$$ ClientPlayNetworking.registerGlobalReceiver(com.niuqu.chatbubble.network.GroupListPayload.ID, (client, handler, buf, responseSender) -> {
+        //$$     com.niuqu.chatbubble.network.GroupListPayload payload = com.niuqu.chatbubble.network.GroupListPayload.read(buf);
+        //$$     client.execute(() -> com.niuqu.chatbubble.network.GroupListPayload.handleClient(payload));
+        //$$ });
+        //#endif
+
+        //#if MC >= 12005
         ClientPlayNetworking.registerGlobalReceiver(MediaCapPayload.ID, (payload, context) -> {
             context.client().execute(() -> MediaCapPayload.handle(payload));
         });
+        //#else
+        //$$ ClientPlayNetworking.registerGlobalReceiver(MediaCapPayload.ID, (client, handler, buf, responseSender) -> {
+        //$$     MediaCapPayload payload = MediaCapPayload.read(buf);
+        //$$     client.execute(() -> MediaCapPayload.handle(payload));
+        //$$ });
         //#endif
 
-        // On disconnect: immediately set the volatile flag from the network thread.
-        // This is thread-safe (volatile write) and ensures blurPanel() and all
-        // render/tick paths see it on the very next frame — BEFORE mc.world becomes
-        // null. We also disable ImageLoader entirely so no new downloads or texture
-        // uploads start during the disconnect transition. ImageLoader is re-enabled
-        // when the next world is entered (see tick handler below).
-        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
-            BlurRenderer.disconnecting = true;
-            ImageLoader.setEnabled(false);
-        });
+        ChatMessageStore.setMessageEffectObserver(
+            new com.niuqu.chatbubble.chat.notification.ChatMessageEffects());
 
-        //#if MC < 26000
-        //#if MC >= 12000
-        HudRenderCallback.EVENT.register((drawContext, tickDelta) -> {
+        //#if MC >= 26000
+        // 26.x: Fabric 移除了 HudRenderCallback，改用 HudElementRegistry 注册 HUD 元素
+        // （HudElement.extractRenderState(GuiGraphicsExtractor, DeltaTracker)）
+        HudElementRegistry.addLast(Identifier.of("e33chat", "bubble_overlay"), (drawContext, tickDelta) -> {
             if (!config.enabled()) return;
-            if (BlurRenderer.isDisconnecting()) return;
             ChatBubbleHudOverlay.render(drawContext);
         });
         //#else
-        //$$ HudRenderCallback.EVENT.register((matrices, tickDelta) -> {
-        //$$     if (!config.enabled()) return;
-        //$$     ChatBubbleHudOverlay.render(new DrawContext(matrices));
-        //$$ });
-        //#endif
+        HudRenderCallback.EVENT.register((drawContext, tickDelta) -> {
+            if (!config.enabled()) return;
+            //#if MC >= 12000
+            ChatBubbleHudOverlay.render(drawContext);
+            //#else
+            // Fabric HudRenderCallback passes a MatrixStack in pre-1.20 → wrap in the compat DrawContext
+            //$$ ChatBubbleHudOverlay.render(new com.niuqu.chatbubble.DrawContext((net.minecraft.client.util.math.MatrixStack) drawContext));
+            //#endif
+        });
         //#endif
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            // World state transitions must be checked even during disconnect,
-            // otherwise the "entered new world" branch never runs and the
-            // disconnecting flag + ImageLoader disabled state would stick forever.
-            boolean inWorld = client.world != null && client.player != null;
-            if (wasInWorld && !inWorld) {
-                BlurRenderer.disconnecting = true;
-                ImageLoader.setEnabled(false);
-                if (client.currentScreen instanceof ChatBubbleScreen) {
-                    client.setScreen(null);
-                }
-            }
-            if (!wasInWorld && inWorld) {
-                BlurRenderer.disconnecting = false;
-                ImageLoader.setEnabled(true);
-            }
-            wasInWorld = inWorld;
-
-            // Short-circuit ALL remaining e33chat tick logic the moment disconnect
-            // begins. The BlurRenderer.disconnecting flag is set from the network
-            // thread the instant DISCONNECT fires — it is visible on the render
-            // thread on the very next tick. We skip ImageLoader, history saves,
-            // everything — any work that could interact with the tearing-down
-            // world or GL state is deferred until the next world.
-            if (BlurRenderer.isDisconnecting()) return;
-
             ImageLoader.tick();
-
+            com.niuqu.chatbubble.image.AnimatedImageLoader.tick();
             // 纹理全部走 drawTexture(Identifier) 懒加载（getTexture 自动 new ResourceTexture），F3+T 重载后自动重读资源包新 PNG
             if (!config.enabled()) return;
 
@@ -170,39 +289,27 @@ public class ChatBubbleClientSetup implements ClientModInitializer {
             }
         });
 
-        //#if MC < 26000
-        //#if MC >= 12000
         ScreenEvents.BEFORE_INIT.register((client, screen, width, height) ->
             ScreenEvents.afterRender(screen).register((scr, g, mouseX, mouseY, delta) -> {
-                if (config.enabled() && !BlurRenderer.isDisconnecting())
+                if (config.enabled()) {
+                    //#if MC >= 12000
                     ChatBubbleHudOverlay.renderBannerForScreen(g);
+                    //#else
+                    // ScreenEvents.afterRender passes a MatrixStack in pre-1.20 → wrap in the compat DrawContext
+                    //$$ ChatBubbleHudOverlay.renderBannerForScreen(new com.niuqu.chatbubble.DrawContext((net.minecraft.client.util.math.MatrixStack) g));
+                    //#endif
+                }
             })
         );
-        //#else
-        //$$ ScreenEvents.BEFORE_INIT.register((client, screen, width, height) ->
-        //$$     ScreenEvents.afterRender(screen).register((scr, matrices, mouseX, mouseY, delta) -> {
-        //$$         if (config.enabled()) ChatBubbleHudOverlay.renderBannerForScreen(new DrawContext(matrices));
-        //$$     })
-        //$$ );
-        //#endif
-        //#endif
 
         ResourceManagerHelper.get(ResourceType.CLIENT_RESOURCES).registerReloadListener(
             new SimpleSynchronousResourceReloadListener() {
                 @Override
                 public Identifier getFabricId() {
-                    //#if MC >= 12000
                     return Identifier.of(ChatBubbleMod.MOD_ID, "shader_reload");
-                    //#else
-                    //$$ return new Identifier(ChatBubbleMod.MOD_ID, "shader_reload");
-                    //#endif
                 }
                 @Override
-                //#if MC >= 26000
-                //$$ public void onResourceManagerReload(ResourceManager manager) {
-                //#else
                 public void reload(ResourceManager manager) {
-                //#endif
                     RoundRectRenderer.resetShader();
                 }
             }

@@ -153,9 +153,77 @@ abstract class PreprocessTask extends DefaultTask {
                         String processed = uncommentPreprocessLine(line)
                         if (targetMcVersion >= 26000) {
                             processed = applyMojangMapping(processed, targetMcVersion)
+                            // 26.x input rework: Element overrides take the KeyEvent /
+                            // MouseButtonEvent records. The source keeps the flat form and
+                            // the body re-extracts the original locals so every existing
+                            // reference inside the method keeps working.
+                            def ind = '(\\s*)'
+                            processed = processed.replaceAll(
+                                "(?m)^${ind}public boolean keyPressed\\(int keyCode, int scanCode, int modifiers\\) \\{",
+                                '$1public boolean keyPressed(net.minecraft.client.input.KeyEvent keyInput) {\n' +
+                                '$1    int keyCode = keyInput.key();\n' +
+                                '$1    int scanCode = keyInput.scancode();\n' +
+                                '$1    int modifiers = keyInput.modifiers();')
+                            // ChatScreen gained a `draft` flag; the source keeps the one-arg form
+                            processed = processed.replaceAll("(?m)^(\\s*)super\\(\"\"\\);", '$1super("", false);')
+                            processed = processed.replaceAll(
+                                "(?m)^${ind}public boolean mouseClicked\\(double mouseX, double mouseY, int button\\) \\{",
+                                '$1public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent clickInput, boolean doubled) {\n' +
+                                '$1    double mouseX = clickInput.x();\n' +
+                                '$1    double mouseY = clickInput.y();\n' +
+                                '$1    int button = clickInput.button();')
+                            processed = processed.replaceAll(
+                                "(?m)^${ind}public boolean mouseDragged\\(double mouseX, double mouseY, int button, double (\\w+), double (\\w+)\\) \\{",
+                                '$1public boolean mouseDragged(net.minecraft.client.input.MouseButtonEvent clickInput, double $2, double $3) {\n' +
+                                '$1    double mouseX = clickInput.x();\n' +
+                                '$1    double mouseY = clickInput.y();\n' +
+                                '$1    int button = clickInput.button();')
+                            processed = processed.replaceAll(
+                                "(?m)^${ind}public boolean mouseReleased\\(double mouseX, double mouseY, int button\\) \\{",
+                                '$1public boolean mouseReleased(net.minecraft.client.input.MouseButtonEvent clickInput) {\n' +
+                                '$1    double mouseX = clickInput.x();\n' +
+                                '$1    double mouseY = clickInput.y();\n' +
+                                '$1    int button = clickInput.button();')
+                            processed = processed.replaceAll("super\\.keyPressed\\(keyCode, scanCode, modifiers\\)", "super.keyPressed(keyInput)")
+                            processed = processed.replaceAll("super\\.mouseClicked\\(mouseX, mouseY, button\\)", "super.mouseClicked(clickInput, doubled)")
+                            processed = processed.replaceAll("super\\.mouseDragged\\(mouseX, mouseY, button, ", "super.mouseDragged(clickInput, ")
+                            processed = processed.replaceAll("super\\.mouseReleased\\(mouseX, mouseY, button\\)", "super.mouseReleased(clickInput)")
+                            processed = processed.replaceAll("this\\.getFocused\\(\\)\\.keyPressed\\(keyCode, scanCode, modifiers\\)",
+                                'this.getFocused().keyPressed(com.niuqu.chatbubble.compat.InputCompat.key(keyCode, scanCode, modifiers))')
+                            processed = processed.replaceAll("commandSuggestions\\.keyPressed\\(keyCode, scanCode, modifiers\\)",
+                                'commandSuggestions.keyPressed(com.niuqu.chatbubble.compat.InputCompat.key(keyCode, scanCode, modifiers))')
+                            processed = processed.replaceAll("commandSuggestions\\.mouseClicked\\(\\(int\\) mouseX, \\(int\\) mouseY, button\\)",
+                                'commandSuggestions.mouseClicked(com.niuqu.chatbubble.compat.InputCompat.click(mouseX, mouseY, button))')
+                            // widget.onClick(x, y) / widget.mouseClicked(x, y, button)
+                            processed = processed.replaceAll(
+                                "(\\w+(?:\\.\\w+)*)\\.onClick\\(([^,()]+), ([^,()]+)\\)",
+                                'com.niuqu.chatbubble.compat.InputCompat.onClick($1, $2, $3)')
+                            processed = processed.replaceAll(
+                                "(\\w+(?:\\.\\w+)*)\\.mouseClicked\\(([^,()]+), ([^,()]+), ([^,()]+)\\)",
+                                'com.niuqu.chatbubble.compat.InputCompat.mouseClicked($1, $2, $3, $4)')
+                            // Screen.hasShiftDown() was removed with the flat input params
+                            processed = processed.replaceAll("Screen\\.hasShiftDown\\(\\)",
+                                "com.niuqu.chatbubble.compat.InputCompat.hasShiftDown()")
+                            // 26.x: KeyMapping.matches 只接受 KeyEvent / InputConstants.Key 了
+                            processed = processed.replaceAll(
+                                "(\\w+(?:\\.\\w+)*)\\.matches\\(keyCode, scanCode\\)",
+                                'com.niuqu.chatbubble.compat.InputCompat.keyMatches($1, keyCode, scanCode)')
+                            // 26.x: Screen.handleTextClick(Style) 换成了静态的
+                            // defaultHandleClickEvent(ClickEvent, Minecraft, Screen)
+                            processed = processed.replaceAll(
+                                "\\bhandleTextClick\\(([^()]+)\\)",
+                                'defaultHandleClickEvent($1.getClickEvent(), this.minecraft, this)')
+                            // Screen.resize/init dropped their leading MinecraftClient parameter
+                            processed = processed.replaceAll(
+                                "(?m)^(\\s*)public void resize\\(Minecraft \\w+, int (\\w+), int (\\w+)\\) \\{",
+                                '$1public void resize(int $2, int $3) {')
+                            processed = processed.replaceAll("this\\.init\\(\\w+, (\\w+), (\\w+)\\)", 'this.init($1, $2)')
                         }
                         // Pre-1.19: Text API uses constructors instead of factory methods (Text.literal introduced in 1.19)
                         if (targetMcVersion < 11900 && targetMcVersion < 26000) {
+                            processed = processed.replaceAll("net\\.minecraft\\.text\\.Text\\.literal\\(", "new LiteralText(")
+                            processed = processed.replaceAll("net\\.minecraft\\.text\\.Text\\.translatable\\(", "new TranslatableText(")
+                            processed = processed.replaceAll("net\\.minecraft\\.text\\.Text\\.empty\\(\\)", 'new LiteralText("")')
                             processed = processed.replaceAll("Text\\.literal\\(", "new LiteralText(")
                             processed = processed.replaceAll("Text\\.translatable\\(", "new TranslatableText(")
                             processed = processed.replaceAll("Text\\.empty\\(\\)", 'new LiteralText("")')
@@ -168,16 +236,275 @@ abstract class PreprocessTask extends DefaultTask {
                             processed = processed.replaceAll("\\.fillStyle\\(", ".setStyle(")
                             // Pre-1.19: networkHandler.sendChatCommand/sendChatMessage → player.sendChatMessage
                             // (ClientPlayNetworkHandler doesn't have these in pre-1.19; PlayerEntity does)
-                            processed = processed.replaceAll("client\\.player\\.networkHandler\\.sendChatCommand\\(", 'client.player.sendChatMessage("/" + ')
-                            processed = processed.replaceAll("client\\.player\\.networkHandler\\.sendChatMessage\\(", "client.player.sendChatMessage(")
+                            processed = processed.replaceAll("(\\w+)\\.player\\.networkHandler\\.sendChatCommand\\(", '$1.player.sendChatMessage("/" + ')
+                            processed = processed.replaceAll("(\\w+)\\.player\\.networkHandler\\.sendChatMessage\\(", '$1.player.sendChatMessage(')
                             // Pre-1.19: Identifier.of() → new Identifier()
                             processed = processed.replaceAll("Identifier\\.of\\(", "new Identifier(")
                             // Pre-1.19: Formatting.getColorValue() returns Integer, use Formatting directly
                             processed = processed.replaceAll("Formatting\\.([A-Z_]+)\\.getColorValue\\(\\) != null \\? Formatting\\.\\1\\.getColorValue\\(\\) : null", 'Formatting.$1')
+                            // Pre-1.19: TranslatableTextContent doesn't exist (added in 1.19) — Text itself is the content
+                            processed = processed.replaceAll("TranslatableTextContent", "TranslatableText")
+                            processed = processed.replaceAll("(\\w+)\\.getContent\\(\\)", '$1')
+                            processed = processed.replaceAll("instanceof net\\.minecraft\\.text\\.TranslatableText\\b", "instanceof TranslatableText")
+                            // Pre-1.19: SoundEvents fields are plain SoundEvent (RegistryEntry.value() came later)
+                            processed = processed.replaceAll("SoundEvents\\.(\\w+)\\.value\\(\\)", 'SoundEvents.$1')
+                            // Pre-1.19: ScreenTexts class doesn't exist (added in 1.19.2)
+                            processed = processed.replaceAll("net\\.minecraft\\.screen\\.ScreenTexts\\.BUTTON_CANCEL", 'new TranslatableText("gui.cancel")')
+                            processed = processed.replaceAll("net\\.minecraft\\.screen\\.ScreenTexts\\.BUTTON_DONE", 'new TranslatableText("gui.done")')
+                            processed = processed.replaceAll("net\\.minecraft\\.screen\\.ScreenTexts\\.BUTTON_OK", 'new TranslatableText("gui.ok")')
+                            processed = processed.replaceAll("net\\.minecraft\\.screen\\.ScreenTexts\\.ON", 'new TranslatableText("options.on")')
+                            processed = processed.replaceAll("net\\.minecraft\\.screen\\.ScreenTexts\\.OFF", 'new TranslatableText("options.off")')
+                            processed = processed.replaceAll("net\\.minecraft\\.screen\\.ScreenTexts\\.DONE", 'new TranslatableText("gui.done")')
+                            processed = processed.replaceAll("import net\\.minecraft\\.screen\\.ScreenTexts;", '//import net.minecraft.screen.ScreenTexts;')
+                            processed = processed.replaceAll("ScreenTexts\\.BUTTON_CANCEL", 'new TranslatableText("gui.cancel")')
+                            processed = processed.replaceAll("ScreenTexts\\.BUTTON_DONE", 'new TranslatableText("gui.done")')
+                            processed = processed.replaceAll("ScreenTexts\\.BUTTON_OK", 'new TranslatableText("gui.ok")')
+                            processed = processed.replaceAll("ScreenTexts\\.ON", 'new TranslatableText("options.on")')
+                            processed = processed.replaceAll("ScreenTexts\\.OFF", 'new TranslatableText("options.off")')
+                            processed = processed.replaceAll("ScreenTexts\\.DONE", 'new TranslatableText("gui.done")')
+                        }
+                        // Pre-1.19.3: GameRenderer shader getters are named *Shader (renamed to *Program in 1.19.3),
+                        // ButtonWidget.builder() doesn't exist (added in 1.19.3)
+                        if (targetMcVersion >= 11700 && targetMcVersion < 11903) {
+                            processed = processed.replaceAll("getPositionTexColorProgram", "getPositionTexColorShader")
+                            processed = processed.replaceAll("getPositionTexLightmapColorProgram", "getPositionTexLightmapColorShader")
+                            processed = processed.replaceAll("getPositionColorProgram", "getPositionColorShader")
+                            processed = processed.replaceAll("getPositionTexProgram", "getPositionTexShader")
+                            processed = processed.replaceAll("ButtonWidget\\.builder\\(", "com.niuqu.chatbubble.gui.E33Button.builder(")
+                        }
+                        // Pre-1.20: ServerCommandSource.sendFeedback takes a Text directly; the
+                        // Supplier<Text> overload only arrived in 1.20.1. Strip the lambda so
+                        // src.sendFeedback(() -> new X(...), false) becomes src.sendFeedback(new X(...), false)
+                        if (targetMcVersion < 12000) {
+                            processed = processed.replaceAll("sendFeedback\\(\\(\\) -> ", "sendFeedback(")
                         }
                         // Pre-1.20: DrawContext wrapper is in com.niuqu.chatbubble (avoids Loom excluding net.minecraft.* sources)
                         if (targetMcVersion < 12000) {
                             processed = processed.replaceAll("import net\\.minecraft\\.client\\.gui\\.DrawContext;", "import com.niuqu.chatbubble.DrawContext;")
+                            // Inline FQN references (method params/casts) too — "import X;" above only catches the import statement
+                            processed = processed.replaceAll("net\\.minecraft\\.client\\.gui\\.DrawContext", "com.niuqu.chatbubble.DrawContext")
+                            // Pre-1.20: Screen/widget render(DrawContext g, mouseX, mouseY, delta) → render(MatrixStack) that
+                            // wraps the stack in the compat DrawContext, so the body stays source-compatible
+                            processed = processed.replaceAll(
+                                'public void render\\((?:com\\.niuqu\\.chatbubble\\.)?DrawContext (\\w+), int mouseX, int mouseY, float (\\w+)\\) \\{$',
+                                'public void render(net.minecraft.client.util.math.MatrixStack matrices, int mouseX, int mouseY, float $2) {\n    com.niuqu.chatbubble.DrawContext $1 = new com.niuqu.chatbubble.DrawContext(matrices);'
+                            )
+                            // Pre-1.20: renderBackground(g) takes a MatrixStack, not the compat DrawContext
+                            processed = processed.replaceAll("\\brenderBackground\\(g\\)", "renderBackground(g.getMatrices())")
+                        }
+                        // Pre-1.21: Tessellator.getInstance().begin(mode, format) was only added in 1.21.1;
+                        // before that the buffer must be fetched with getBuffer() and begun manually
+                        if (targetMcVersion >= 11700 && targetMcVersion < 12100) {
+                            processed = processed.replaceAll(
+                                "(\\w+) = Tessellator\\.getInstance\\(\\)\\.begin\\(",
+                                '$1 = Tessellator.getInstance().getBuffer();\n$1.begin('
+                            )
+                        }
+                        // Pre-1.19: BufferBuilder.end() returns void (BuiltBuffer came in 1.19.0), so the
+                        // drawWithGlobalProgram(bb.end()) idiom must be split into end() + draw()
+                        if (targetMcVersion >= 11700 && targetMcVersion < 11900) {
+                            processed = processed.replaceAll(
+                                "BufferRenderer\\.drawWithGlobalProgram\\((\\w+)\\.end\\(\\)\\)",
+                                '$1.end(); BufferRenderer.draw($1);'
+                            )
+                        }
+                        // 1.19.0-1.19.2: the buffer draw entry point is named drawWithShader
+                        if (targetMcVersion >= 11900 && targetMcVersion < 11903) {
+                            processed = processed.replaceAll(
+                                "BufferRenderer\\.drawWithGlobalProgram\\(",
+                                "BufferRenderer.drawWithShader("
+                            )
+                            // ClientPlayNetworkHandler.sendChatCommand/sendChatMessage arrived in 1.19.3;
+                            // ChatSender bridges the older ClientPlayerEntity signatures
+                            processed = processed.replaceAll("(\\w+)\\.player\\.networkHandler\\.sendChatCommand\\(", 'com.niuqu.chatbubble.compat.ChatSender.sendCommand($1.player, ')
+                            processed = processed.replaceAll("(\\w+)\\.player\\.networkHandler\\.sendChatMessage\\(", 'com.niuqu.chatbubble.compat.ChatSender.sendChat($1.player, ')
+                        }
+                        // 1.20.x (MC < 1.21): team record accessors → getter methods (PlayerTeam/Team)
+                        if (targetMcVersion >= 12000 && targetMcVersion < 12100) {
+                            // Only match "team.prefix()/team.suffix()/team.color()" to avoid matching our own record classes
+                            processed = processed.replaceAll("(?<=\\bteam)\\.prefix\\(\\)", ".getPrefix()")
+                            processed = processed.replaceAll("(?<=\\bteam)\\.suffix\\(\\)", ".getSuffix()")
+                            processed = processed.replaceAll("(?<=\\bteam)\\.color\\(\\)", ".getColor()")
+                            // getScoreboardTeam returns AbstractTeam, cast to Team for prefix/suffix
+                            processed = processed.replaceAll("\\bteam\\.getPrefix\\(\\)", "((net.minecraft.scoreboard.Team)team).getPrefix()")
+                            processed = processed.replaceAll("\\bteam\\.getSuffix\\(\\)", "((net.minecraft.scoreboard.Team)team).getSuffix()")
+                            // 1.20.x: KeyBinding.matches(keyCode, scanCode) → matchesKey(keyCode, scanCode)
+                            processed = processed.replaceAll("\\.matches\\(keyCode, scanCode\\)", ".matchesKey(keyCode, scanCode)")
+                        }
+                        // Pre-1.20.2: setCursorToEnd(boolean) → setCursorToEnd() (no param; 1.20.2+ kept the boolean)
+                        if (targetMcVersion < 12002) {
+                            processed = processed.replaceAll("\\.setCursorToEnd\\(false\\)", ".setCursorToEnd()")
+                        }
+                        // 1.21.2+: DrawContext.drawTexture first param changed from Identifier to Function<Identifier, RenderLayer>
+                        // Redirect all g.drawTexture(...) calls to DrawHelper.drawTexture(g, ...) which handles version differences
+                        if (targetMcVersion >= 12102 && targetMcVersion < 26000) {
+                            processed = processed.replaceAll("g\\.drawTexture\\(", "DrawHelper.drawTexture(g, ")
+                            // 1.21.2+: GameRenderer shader program method references replaced with ShaderProgramKey fields
+                            processed = processed.replaceAll(
+                                "RenderSystem\\.setShader\\(GameRenderer::getPositionTexProgram\\)",
+                                "RenderSystem.setShader(net.minecraft.client.gl.ShaderProgramKeys.POSITION_TEX)")
+                            processed = processed.replaceAll(
+                                "RenderSystem\\.setShader\\(GameRenderer::getPositionTexColorProgram\\)",
+                                "RenderSystem.setShader(net.minecraft.client.gl.ShaderProgramKeys.POSITION_TEX_COLOR)")
+                        }
+                        // 1.21.4+: API renames
+                        if (targetMcVersion >= 12104 && targetMcVersion < 26000) {
+                            // Screen.filesDragged → Screen.onFilesDropped
+                            processed = processed.replaceAll("\\bfilesDragged\\b", "onFilesDropped")
+                        }
+                        // 1.21.6: DrawContext.getMatrices() switched from MatrixStack to the JOML
+                        // Matrix3x2fStack, whose stack ops are pushMatrix/popMatrix and whose
+                        // translate/scale take only (x, y). The source keeps the MatrixStack form.
+                        if (targetMcVersion >= 12106 && targetMcVersion < 26000) {
+                            processed = processed.replaceAll("\\.getMatrices\\(\\)\\.push\\(\\)", ".getMatrices().pushMatrix()")
+                            processed = processed.replaceAll("\\.getMatrices\\(\\)\\.pop\\(\\)", ".getMatrices().popMatrix()")
+                            processed = processed.replaceAll("\\.getMatrices\\(\\)\\.translate\\((.+?), (.+?), [^)]+\\)", ".getMatrices().translate(\$1, \$2)")
+                            processed = processed.replaceAll("\\.getMatrices\\(\\)\\.scale\\((.+?), (.+?), [^)]+\\)", ".getMatrices().scale(\$1, \$2)")
+                        }
+                        // 1.21.9: input rework. Element/Screen overrides take the KeyInput/Click
+                        // records instead of flat int/double parameter lists, DrawContext.drawBorder
+                        // became drawStrokedRectangle, and authlib 7 turned GameProfile into a record.
+                        // The source keeps the flat/old form; the body re-extracts the original locals
+                        // so every existing reference inside the method keeps working.
+                        if (targetMcVersion >= 12109 && targetMcVersion < 26000) {
+                            def indent = '(\\s*)'
+                            processed = processed.replaceAll(
+                                "(?m)^${indent}public boolean keyPressed\\(int keyCode, int scanCode, int modifiers\\) \\{",
+                                '$1public boolean keyPressed(net.minecraft.client.input.KeyInput keyInput) {\n' +
+                                '$1    int keyCode = keyInput.key();\n' +
+                                '$1    int scanCode = keyInput.scancode();\n' +
+                                '$1    int modifiers = keyInput.modifiers();')
+                            // ChatScreen gained a `draft` flag; the source keeps the old one-arg form
+                            processed = processed.replaceAll("(?m)^(\\s*)super\\(\"\"\\);", '$1super("", false);')
+                            // The injected parameter is named clickInput, not click: method bodies may
+                            // already declare a local named `click` (e.g. the ClickEvent branch).
+                            processed = processed.replaceAll(
+                                "(?m)^${indent}public boolean mouseClicked\\(double mouseX, double mouseY, int button\\) \\{",
+                                '$1public boolean mouseClicked(net.minecraft.client.gui.Click clickInput, boolean doubled) {\n' +
+                                '$1    double mouseX = clickInput.x();\n' +
+                                '$1    double mouseY = clickInput.y();\n' +
+                                '$1    int button = clickInput.button();')
+                            processed = processed.replaceAll(
+                                "(?m)^${indent}public boolean mouseDragged\\(double mouseX, double mouseY, int button, double (\\w+), double (\\w+)\\) \\{",
+                                '$1public boolean mouseDragged(net.minecraft.client.gui.Click clickInput, double $2, double $3) {\n' +
+                                '$1    double mouseX = clickInput.x();\n' +
+                                '$1    double mouseY = clickInput.y();\n' +
+                                '$1    int button = clickInput.button();')
+                            processed = processed.replaceAll(
+                                "(?m)^${indent}public boolean mouseReleased\\(double mouseX, double mouseY, int button\\) \\{",
+                                '$1public boolean mouseReleased(net.minecraft.client.gui.Click clickInput) {\n' +
+                                '$1    double mouseX = clickInput.x();\n' +
+                                '$1    double mouseY = clickInput.y();\n' +
+                                '$1    int button = clickInput.button();')
+                            // super and Element/KeyBinding call sites that pass the flat parameters
+                            processed = processed.replaceAll("super\\.keyPressed\\(keyCode, scanCode, modifiers\\)", "super.keyPressed(keyInput)")
+                            processed = processed.replaceAll("super\\.mouseClicked\\(mouseX, mouseY, button\\)", "super.mouseClicked(clickInput, doubled)")
+                            processed = processed.replaceAll("super\\.mouseDragged\\(mouseX, mouseY, button, ", "super.mouseDragged(clickInput, ")
+                            processed = processed.replaceAll("super\\.mouseReleased\\(mouseX, mouseY, button\\)", "super.mouseReleased(clickInput)")
+                            // ClickableWidget.onClick/onRelease/onDrag take Click too
+                            processed = processed.replaceAll(
+                                "(\\w+(?:\\.\\w+)*)\\.onClick\\(([^,()]+), ([^,()]+)\\)",
+                                'com.niuqu.chatbubble.compat.InputCompat.onClick($1, $2, $3)')
+                            processed = processed.replaceAll("this\\.getFocused\\(\\)\\.keyPressed\\(keyCode, scanCode, modifiers\\)",
+                                'this.getFocused().keyPressed(com.niuqu.chatbubble.compat.InputCompat.key(keyCode, scanCode, modifiers))')
+                            processed = processed.replaceAll("commandSuggestions\\.keyPressed\\(keyCode, scanCode, modifiers\\)",
+                                'commandSuggestions.keyPressed(com.niuqu.chatbubble.compat.InputCompat.key(keyCode, scanCode, modifiers))')
+                            processed = processed.replaceAll("commandSuggestions\\.mouseClicked\\(\\(int\\) mouseX, \\(int\\) mouseY, button\\)",
+                                'commandSuggestions.mouseClicked(com.niuqu.chatbubble.compat.InputCompat.click(mouseX, mouseY, button))')
+                            processed = processed.replaceAll("client\\.options\\.chatKey\\.matchesKey\\(keyCode, scanCode\\)",
+                                'client.options.chatKey.matchesKey(com.niuqu.chatbubble.compat.InputCompat.key(keyCode, scanCode, 0))')
+                            // widget.mouseClicked(x, y, button) → ClickableWidget.mouseClicked(Click, boolean)
+                            processed = processed.replaceAll(
+                                "(\\w+(?:\\.\\w+)*)\\.mouseClicked\\(([^,()]+), ([^,()]+), ([^,()]+)\\)",
+                                'com.niuqu.chatbubble.compat.InputCompat.mouseClicked($1, $2, $3, $4)')
+                            processed = processed.replaceAll("Screen\\.hasShiftDown\\(\\)",
+                                "com.niuqu.chatbubble.compat.InputCompat.hasShiftDown()")
+                            // 1.21.9 renamed DrawContext.drawBorder to drawStrokedRectangle (same params)
+                            processed = processed.replaceAll("\\.drawBorder\\(", ".drawStrokedRectangle(")
+                            // authlib 7 (used from 1.21.9 on) turned GameProfile into a record
+                            processed = processed.replaceAll("\\.getProfile\\(\\)\\.getName\\(\\)", ".getProfile().name()")
+                            processed = processed.replaceAll("\\.getProfile\\(\\)\\.getId\\(\\)", ".getProfile().id()")
+                            processed = processed.replaceAll("\\bgameProfile\\.getName\\(\\)", "gameProfile.name()")
+                            processed = processed.replaceAll("\\bgameProfile\\.getId\\(\\)", "gameProfile.id()")
+                            // ServerPlayerEntity.getServer() removed → reach the server through the world
+                            processed = processed.replaceAll("\\b(sender|player)\\.getServer\\(\\)", '$1.getEntityWorld().getServer()')
+                        }
+                        // 1.21.11: permission / sound / text-click / screen-sizing rework.
+                        // - ServerCommandSource and ServerPlayerEntity lost hasPermissionLevel(int);
+                        //   the check now goes through the level-backed PermissionPredicate
+                        //   (LeveledPermissionPredicate.hasPermission(Permission.Level) is ">= level").
+                        // - PositionedSoundInstance.master was renamed to ui (same parameters).
+                        // - Screen.handleTextClick(Style) was replaced by the static
+                        //   handleClickEvent(ClickEvent, MinecraftClient, Screen).
+                        // - Screen.resize/init dropped their leading MinecraftClient parameter.
+                        if (targetMcVersion >= 12111 && targetMcVersion < 26000) {
+                            processed = processed.replaceAll(
+                                "(\\w+(?:\\.\\w+)*)\\.hasPermissionLevel\\((\\d+)\\)",
+                                '$1.getPermissions().hasPermission(new net.minecraft.command.permission.Permission.Level(net.minecraft.command.permission.PermissionLevel.fromLevel($2)))')
+                            processed = processed.replaceAll("PositionedSoundInstance\\.master\\(", "PositionedSoundInstance.ui(")
+                            processed = processed.replaceAll(
+                                "\\bhandleTextClick\\(([^()]+)\\)",
+                                'handleClickEvent($1.getClickEvent(), this.client, this)')
+                            processed = processed.replaceAll(
+                                "(?m)^(\\s*)public void resize\\(MinecraftClient \\w+, int (\\w+), int (\\w+)\\) \\{",
+                                '$1public void resize(int $2, int $3) {')
+                            processed = processed.replaceAll("this\\.init\\(client, (\\w+), (\\w+)\\)", 'this.init($1, $2)')
+                        }
+                        // Pre-1.19.3: ClickableWidget getX()/getY()/setY() → direct field access.
+                        // The accessors only appeared in 1.19.3, when the x/y fields turned private.
+                        if (targetMcVersion < 11903) {
+                            processed = processed.replaceAll("(\\w+)\\.setY\\(([^)]+)\\)", '$1.y = $2')
+                            processed = processed.replaceAll("(\\w+)\\.getX\\(\\)", '$1.x')
+                            processed = processed.replaceAll("(\\w+)\\.getY\\(\\)", '$1.y')
+                            // Rect2i keeps private x/y fields in every version, so restore its accessors
+                            // (the rewrite above cannot tell the receiver type apart)
+                            processed = processed.replaceAll("\\barea\\.y = ([^;]+);", 'area.setY($1);')
+                            processed = processed.replaceAll("\\barea\\.x\\b", "area.getX()")
+                            processed = processed.replaceAll("\\barea\\.y\\b", "area.getY()")
+                        }
+                        // Pre-1.20: widget/screen shims that only apply below 1.20
+                        if (targetMcVersion < 12000) {
+                            // Undo the getX/getY swap for Mouse: in 1.16.5 client.mouse.x/y ARE private
+                            // (fields private, getter getX()/getY() public) — only ClickableWidget fields are public.
+                            processed = processed.replaceAll("\\bclient\\.mouse\\.x\\b", "client.mouse.getX()")
+                            processed = processed.replaceAll("\\bclient\\.mouse\\.y\\b", "client.mouse.getY()")
+                            // Pre-1.20: ClickableWidget.setFocused(boolean) is protected; Screen.setFocused(Element) handles focus
+                            processed = processed.replaceAll("(\\w+)\\.setFocused\\(false\\)", '/* focus handled by Screen */')
+                            // Pre-1.20: Style.withColor(int) → Style.withColor(TextColor.fromRgb(int))
+                            processed = processed.replaceAll("\\.withColor\\((\\w+)\\)", '.withColor(TextColor.fromRgb($1))')
+                            // Pre-1.20: DrawContext.render(g,...) → widget.render(g.getMatrices(),...)
+                            processed = processed.replaceAll("(\\w+)\\.render\\(g,", '$1.render(g.getMatrices(),')
+                            // ...but our own panels/banners are NOT vanilla widgets: they take the compat
+                            // DrawContext directly, so undo the rewrite for them
+                            processed = processed.replaceAll("\\b(settingsMenu|emojiPanel|quickChatPanel|searchPanel|groupBrowser)\\.render\\(g\\.getMatrices\\(\\)", '$1.render(g')
+                            processed = processed.replaceAll("MentionNotificationBanner\\.INSTANCE\\.render\\(g\\.getMatrices\\(\\)", "MentionNotificationBanner.INSTANCE.render(g")
+                            // Pre-1.20: renderBackground(MatrixStack) — convert the override declaration
+                            processed = processed.replaceAll("public void renderBackground\\(DrawContext g\\)", "public void renderBackground(net.minecraft.client.util.math.MatrixStack matrices)")
+                            // Pre-1.20: DrawContext.drawHoverEvent already stubbed in compat class
+                            // ScreenTexts is left alone here: the class exists from 1.19.2 onwards and the
+                            // pre-1.19 branch below already substitutes it with TranslatableText.
+                            // Pre-1.20: import TextColor for withColor replacement
+                            processed = processed.replaceAll("import net\\.minecraft\\.text\\.Style;", 'import net.minecraft.text.Style;\nimport net.minecraft.text.TextColor;')
+                        }
+                        // Pre-1.19.3: org.joml isn't on the classpath; use net.minecraft.util.math
+                        if (targetMcVersion < 11903 && targetMcVersion < 26000) {
+                            processed = processed.replaceAll("import org\\.joml\\.Matrix4f;", "import net.minecraft.util.math.Matrix4f;")
+                            processed = processed.replaceAll("import org\\.joml\\.Vector4f;", "import net.minecraft.util.math.Vector4f;")
+                            // Pre-1.19: getPositionMatrix() → getModel() (MatrixStack peek returns different type)
+                            if (targetMcVersion < 11700) {
+                                processed = processed.replaceAll("\\.getPositionMatrix\\(\\)", ".getModel()")
+                            }
+                        }
+                        // Pre-1.19.3: SoundEvents fields are plain SoundEvent (RegistryEntry.value() came in 1.19.3)
+                        if (targetMcVersion >= 11900 && targetMcVersion < 11903) {
+                            processed = processed.replaceAll("SoundEvents\\.(\\w+)\\.value\\(\\)", 'SoundEvents.$1')
+                        }
+                        // Pre-1.20: AbstractTeam has no getPrefix()/getSuffix() — they live on the Team
+                        // interface/class, so widen the receiver type (getScoreboardTeam() returns
+                        // AbstractTeam until 1.20.1)
+                        if (targetMcVersion >= 11700 && targetMcVersion < 12000) {
+                            processed = processed.replaceAll("\\bteam\\.getPrefix\\(\\)", "((net.minecraft.scoreboard.Team)team).getPrefix()")
+                            processed = processed.replaceAll("\\bteam\\.getSuffix\\(\\)", "((net.minecraft.scoreboard.Team)team).getSuffix()")
                         }
                         if (targetMcVersion < 11700) {
                             // 1.16.5 only: setScreen → openScreen
@@ -187,6 +514,35 @@ abstract class PreprocessTask extends DefaultTask {
                             processed = processed.replaceAll("\\bchatKey\\b", "keyChat")
                             // 1.16.5: addDrawableChild → addButton (addDrawableChild introduced in 1.17)
                             processed = processed.replaceAll("\\baddDrawableChild\\(", "addButton(")
+                            // 1.16.5: ButtonWidget has no .builder() — route through a compat fluent page
+                            // builder so the full `.dimensions()/.position()/.size()/.build()` chain still works
+                            // (raw regex cannot reorder constructor args around a lambda, so a compat class is used)
+                            processed = processed.replaceAll("ButtonWidget\\.builder\\(", "com.niuqu.chatbubble.gui.E33Button.builder(")
+                            // 1.16.5: Screen.clearChildren() doesn't exist — clear the two backing lists
+                            processed = processed.replaceAll("\\bclearChildren\\(\\);", "this.buttons.clear(); this.children.clear();")
+                            // 1.16.5: ScreenTexts.DONE → TranslatableText (ScreenTexts class added in 1.19.3)
+                            processed = processed.replaceAll("ScreenTexts\\.DONE", 'new TranslatableText("gui.done")')
+                            // 1.16.5: ServerCommandSource.getServer() → getMinecraftServer()
+                            processed = processed.replaceAll("\\b(source|src)\\.getServer\\(\\)", '$1.getMinecraftServer()')
+                            // 1.16.5: Screen.shouldPause() → isPauseScreen() (renamed in 1.19.3)
+                            processed = processed.replaceAll("\\bshouldPause\\(\\)", "isPauseScreen()")
+                            // 1.16.5: SoundEvents.X.value() → SoundEvents.X (SoundEvent is a direct field, not RegistryEntry)
+                            processed = processed.replaceAll("SoundEvents\\.(\\w+)\\.value\\(\\)", 'SoundEvents.$1')
+                            // 1.16.5: TranslatableTextContent → TranslatableText (Text content API doesn't exist)
+                            processed = processed.replaceAll("TranslatableTextContent", "TranslatableText")
+                            // 1.16.5: message.getContent() → message (Text itself is the content in 1.16.5)
+                            processed = processed.replaceAll("(\\w+)\\.getContent\\(\\)", '$1')
+                            // 1.16.5: instanceof TranslatableTextContent → instanceof TranslatableText
+                            processed = processed.replaceAll("instanceof net\\.minecraft\\.text\\.TranslatableText", "instanceof TranslatableText")
+                            // 1.16.5: AbstractTeam.getPrefix()/getSuffix() → cast to Team
+                            processed = processed.replaceAll("\\bteam\\.getPrefix\\(\\)", "((net.minecraft.scoreboard.Team)team).getPrefix()")
+                            processed = processed.replaceAll("\\bteam\\.getSuffix\\(\\)", "((net.minecraft.scoreboard.Team)team).getSuffix()")
+                            // 1.16.5: GlStateManager lacks texture mgmt methods → raw GL30 (blaze3d API added in 1.17)
+                            processed = processed.replaceAll("GlStateManager\\._genTexture\\(\\)", "GL30.glGenTextures()")
+                            processed = processed.replaceAll("GlStateManager\\._bindTexture\\((\\w+)\\)", "GL30.glBindTexture(GL30.GL_TEXTURE_2D, \$1)")
+                            processed = processed.replaceAll("GlStateManager\\._texParameter\\((\\w+), (\\w+), (\\w+)\\)", "GL30.glTexParameteri(\$1, \$2, \$3)")
+                            processed = processed.replaceAll("GlStateManager\\._texImage2D\\(", "GL30.glTexImage2D(")
+                            processed = processed.replaceAll("GlStateManager\\._deleteTexture\\((\\w+)\\)", "GL30.glDeleteTextures(\$1)")
                             // 1.16.5: NativeImage(NativeImage.Format.RGBA, w, h, useLinear) → NativeImage(w, h, useLinear) (no Format enum)
                             processed = processed.replaceAll("new NativeImage\\(NativeImage\\.Format\\.RGBA, ", "new NativeImage(")
                             // 1.16.5: JsonParser.parseString(x) → new JsonParser().parse(x) (parse is instance method in older Gson)
@@ -194,13 +550,40 @@ abstract class PreprocessTask extends DefaultTask {
                             // 1.16.5: VertexFormat.DrawMode.QUADS → 7 (GL_QUADS int, no DrawMode enum)
                             processed = processed.replaceAll("VertexFormat\\.DrawMode\\.QUADS", "7")
                             // 1.16.5: RenderSystem.setShaderTexture(0, tex) → TextureManager.bindTexture(tex)
-                            processed = processed.replaceAll("RenderSystem\\.setShaderTexture\\(0, ([^)]+)\\)", 'MinecraftClient.getInstance().getTextureManager().bindTexture($1)')
-                            // 1.16.5: Remove RenderSystem.setShader(GameRenderer::getPositionTexShader) - fixed-function pipeline
-                            processed = processed.replaceAll("RenderSystem\\.setShader\\(GameRenderer::getPositionTexShader\\);", "// shader not needed in 1.16.5")
+                            // (fully-qualified MinecraftClient: some files don't import it)
+                            processed = processed.replaceAll("RenderSystem\\.setShaderTexture\\(0, ([^)]+)\\)", 'net.minecraft.client.MinecraftClient.getInstance().getTextureManager().bindTexture($1)')
+                            // 1.16.5: Remove RenderSystem.setShader(GameRenderer::*) - fixed-function pipeline
+                            processed = processed.replaceAll("RenderSystem\\.setShader\\(GameRenderer::\\w+\\);", "// shader not needed in 1.16.5")
                             // 1.16.5: buffer.end() → Tessellator.getInstance().draw() (1.17+ split into end+draw)
                             processed = processed.replaceAll("buffer\\.end\\(\\);", "Tessellator.getInstance().draw();")
                             // 1.16.5: BufferRenderer.draw(buffer) already handled by Tessellator.draw()
                             processed = processed.replaceAll("BufferRenderer\\.draw\\(buffer\\);", "// handled by Tessellator.draw()")
+                            // 1.16.5: org.joml → net.minecraft.client.util.math
+                            processed = processed.replaceAll("import org\\.joml\\.Matrix4f;", "import net.minecraft.client.util.math.Matrix4f;")
+                            processed = processed.replaceAll("import org\\.joml\\.Vector4f;", "import net.minecraft.client.util.math.Vector4f;")
+                            // 1.16.5: getPositionMatrix() → getModel()
+                            processed = processed.replaceAll("\\.getPositionMatrix\\(\\)", ".getModel()")
+                            // 1.16.5: m00() → m00 (field access, not method)
+                            processed = processed.replaceAll("\\.m00\\(\\)", ".m00")
+                            // 1.16.5: BufferRenderer.drawWithGlobalProgram(x.end()) → Tessellator.getInstance().draw()
+                            processed = processed.replaceAll("BufferRenderer\\.drawWithGlobalProgram\\([^)]+\\.end\\(\\)\\)", "Tessellator.getInstance().draw()")
+                            // 1.16.5: Tessellator.getInstance().begin(mode, format) → getBuffer() + begin()
+                            processed = processed.replaceAll(
+                                "(\\w+) = Tessellator\\.getInstance\\(\\)\\.begin\\(",
+                                '$1 = Tessellator.getInstance().getBuffer();\n$1.begin('
+                            )
+                            // 1.16.5: Remove RenderSystem.setShader(GameRenderer::*) already handled above
+                            // 1.16.5: Remove RenderSystem.setShader(() -> var) - custom shader
+                            processed = processed.replaceAll("RenderSystem\\.setShader\\(\\(\\) -> \\w+\\);", "// shader not needed in 1.16.5")
+                            // 1.16.5: Matrix4f.transform(Vector4f) → Vector4f.multiply(Matrix4f) in-place
+                            processed = processed.replaceAll(
+                                "Vector4f (\\w+) = (\\w+)\\.transform\\(new Vector4f\\((.+?)\\)\\);",
+                                'Vector4f $1 = new Vector4f($3); $1.multiply($2);'
+                            )
+                            // 1.16.5: Screen.close() → Screen.onClose() (renamed in 1.17)
+                            processed = processed.replaceAll("public void close\\(\\)", "public void onClose()")
+                            processed = processed.replaceAll("(?<![\\w.])close\\(\\);", "onClose();")
+                            processed = processed.replaceAll("super\\.close\\(\\)", "super.onClose()")
                         }
                         outLines.add(processed)
                     }
@@ -221,6 +604,37 @@ abstract class PreprocessTask extends DefaultTask {
                             !outLines.any { it.trim() == "import net.minecraft.network.chat.contents.TranslatableContents;" })
                             toAdd.add("import net.minecraft.network.chat.contents.TranslatableContents;")
                         if (toAdd) outLines.addAll(pkgIdx + 1, toAdd)
+                    }
+                }
+                // 1.21.2+: 注入 DrawHelper import（g.drawTexture → DrawHelper.drawTexture 重定向需要）
+                if (targetMcVersion >= 12102 && targetMcVersion < 26000) {
+                    def pkgIdx = -1
+                    for (int i = 0; i < outLines.size(); i++) {
+                        if (outLines[i].startsWith("package ")) { pkgIdx = i; break }
+                    }
+                    if (pkgIdx >= 0) {
+                        def content = outLines.join("\n")
+                        def toAdd = []
+                        if (content.contains("DrawHelper.drawTexture") &&
+                            !outLines.any { it.trim() == "import com.niuqu.chatbubble.DrawHelper;" })
+                            toAdd.add("import com.niuqu.chatbubble.DrawHelper;")
+                        if (toAdd) outLines.addAll(pkgIdx + 1, toAdd)
+                    }
+                }
+                // 26.x: 直接调用点统一改走 DrawHelper（blit 需要显式 RenderPipeline），
+                // 因此和 1.21.2~1.21.11 一样需要注入 import（方法名此时已映射为 blit）
+                if (targetMcVersion >= 26000) {
+                    def pkgIdx = -1
+                    for (int i = 0; i < outLines.size(); i++) {
+                        if (outLines[i].startsWith("package ")) { pkgIdx = i; break }
+                    }
+                    if (pkgIdx >= 0 && outLines[pkgIdx].trim() != "package com.niuqu.chatbubble;") {
+                        def content26 = outLines.join("\n")
+                        def toAdd26 = []
+                        if (content26.contains("DrawHelper.blit") &&
+                            !outLines.any { it.trim() == "import com.niuqu.chatbubble.DrawHelper;" })
+                            toAdd26.add("import com.niuqu.chatbubble.DrawHelper;")
+                        if (toAdd26) outLines.addAll(pkgIdx + 1, toAdd26)
                     }
                 }
                 // Pre-1.19: 注入 LiteralText/TranslatableText import
@@ -294,8 +708,25 @@ abstract class PreprocessTask extends DefaultTask {
         line = line.replaceAll("net\\.minecraft\\.client\\.texture\\.NativeImage\\b", "com.mojang.blaze3d.platform.NativeImage")
         line = line.replaceAll("net\\.minecraft\\.client\\.sound\\.PositionedSoundInstance\\b", "net.minecraft.client.resources.sounds.SimpleSoundInstance")
         line = line.replaceAll("net\\.minecraft\\.client\\.util\\.DefaultSkinHelper\\b", "net.minecraft.client.resources.DefaultPlayerSkin")
+        line = line.replaceAll("net\\.minecraft\\.client\\.Mouse\\b", "net.minecraft.client.MouseHandler")
         line = line.replaceAll("net\\.minecraft\\.client\\.input\\.MouseInput\\b", "net.minecraft.client.input.MouseButtonInfo")
         line = line.replaceAll("net\\.minecraft\\.entity\\.player\\.SkinTextures\\b", "net.minecraft.world.entity.player.PlayerSkin")
+        // 26.x: ClientPlayerEntity 从 network 包迁到 client.player，并改名为 LocalPlayer
+        line = line.replaceAll("net\\.minecraft\\.client\\.network\\.ClientPlayerEntity\\b", "net.minecraft.client.player.LocalPlayer")
+        // 26.x: ClientCommandC2SPacket 拆分为 ServerboundPlayerCommandPacket（Mode → Action）
+        line = line.replaceAll("net\\.minecraft\\.network\\.packet\\.c2s\\.play\\.ClientCommandC2SPacket\\b",
+            "net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket")
+        // 26.x: GameMode 迁到 world.level 包并改名为 GameType
+        line = line.replaceAll("net\\.minecraft\\.world\\.GameMode\\b", "net.minecraft.world.level.GameType")
+        // 26.x: blaze3d rendering classes moved to blaze3d.vertex / blaze3d.opengl
+        line = line.replaceAll("net\\.minecraft\\.client\\.render\\.BufferBuilder\\b", "com.mojang.blaze3d.vertex.BufferBuilder")
+        line = line.replaceAll("net\\.minecraft\\.client\\.render\\.Tessellator\\b", "com.mojang.blaze3d.vertex.Tesselator")
+        line = line.replaceAll("net\\.minecraft\\.client\\.render\\.VertexFormat\\b", "com.mojang.blaze3d.vertex.VertexFormat")
+        line = line.replaceAll("net\\.minecraft\\.client\\.render\\.VertexFormats\\b", "com.mojang.blaze3d.vertex.DefaultVertexFormat")
+        line = line.replaceAll("net\\.minecraft\\.client\\.render\\.BufferRenderer\\b", "com.mojang.blaze3d.vertex.BufferUploader")
+        line = line.replaceAll("com\\.mojang\\.blaze3d\\.platform\\.GlStateManager\\b", "com.mojang.blaze3d.opengl.GlStateManager")
+        line = line.replaceAll("net\\.minecraft\\.client\\.gl\\.GlUniform\\b", "com.mojang.blaze3d.opengl.Uniform")
+        line = line.replaceAll("net\\.minecraft\\.client\\.gl\\.ShaderProgram\\b", "net.minecraft.client.renderer.ShaderManager")
         line = line.replaceAll("net\\.minecraft\\.network\\.packet\\.CustomPayload\\b", "net.minecraft.network.protocol.common.custom.CustomPacketPayload")
         line = line.replaceAll("net\\.minecraft\\.network\\.message\\.MessageType\\b", "net.minecraft.network.chat.ChatType")
         line = line.replaceAll("net\\.minecraft\\.network\\.message\\.SignedMessage\\b", "net.minecraft.network.chat.PlayerChatMessage")
@@ -370,14 +801,45 @@ abstract class PreprocessTask extends DefaultTask {
             if (is26_2) {
                 line = line.replaceAll("\\b(MinecraftClient\\.getInstance\\(\\)|Minecraft\\.getInstance\\(\\)|minecraft|mc|this\\.minecraft)\\.screen\\b", "\$1.gui.screen()")
             }
+            // 26.x: authlib 7 turned GameProfile into a record (getId/getName → id/name).
+            // Must run before the generic getId→type rewrite in Step 4.
+            line = line.replaceAll("\\.getProfile\\(\\)\\.getName\\(\\)", ".getProfile().name()")
+            line = line.replaceAll("\\.getProfile\\(\\)\\.getId\\(\\)", ".getProfile().id()")
+            line = line.replaceAll("\\bgameProfile\\.getName\\(\\)", "gameProfile.name()")
+            line = line.replaceAll("\\bgameProfile\\.getId\\(\\)", "gameProfile.id()")
         }
 
         // Step 4: Method name replacements (after field mapping so context patterns work)
+        // 26.x: GuiGraphicsExtractor.blit 必须显式传 RenderPipeline；直接调用点统一改走
+        // DrawHelper（下面的 drawTexture→blit 规则会把方法名一并改掉），避免逐个补 pipeline 参数
+        line = line.replaceAll("\\bg\\.drawTexture\\(", "DrawHelper.drawTexture(g, ")
         line = line.replaceAll("\\bdrawText\\b", "text")
         line = line.replaceAll("\\bdrawCenteredText\\b", "centeredText")
         line = line.replaceAll("\\bdrawTexture\\b", "blit")
         line = line.replaceAll("\\bdrawTooltip\\b", "setTooltipForNextFrame")
         line = line.replaceAll("\\bgetMatrices\\b", "pose")
+        // 26.x: PoseStack was replaced with Matrix3x2fStack (JOML) which uses pushMatrix/popMatrix
+        // Yarn pushMatrix/popMatrix → Mojang pushPose/popPose (for 1.21.6~1.21.11), but 26.x reverted to JOML names
+        line = line.replaceAll("\\bpushMatrix\\b", "pushPose")
+        line = line.replaceAll("\\bpopMatrix\\b", "popPose")
+        // 26.x: Matrix3x2fStack uses JOML pushMatrix/popMatrix, not PoseStack's pushPose/popPose
+        line = line.replaceAll("\\bpushPose\\b", "pushMatrix")
+        line = line.replaceAll("\\bpopPose\\b", "popMatrix")
+        // 26.x: Matrix3x2fStack.push()/pop() → pushMatrix()/popMatrix() (Yarn push/pop not matched by pushPose mapping)
+        line = line.replaceAll("\\.pose\\(\\)\\.push\\(\\)", ".pose().pushMatrix()")
+        line = line.replaceAll("\\.pose\\(\\)\\.pop\\(\\)", ".pose().popMatrix()")
+        // 26.x: Matrix3x2fStack translate/scale take 2 params (2D), drop the Z parameter
+        line = line.replaceAll("\\.pose\\(\\)\\.translate\\((.+?), (.+?), [^)]+\\)", ".pose().translate(\$1, \$2)")
+        line = line.replaceAll("\\.pose\\(\\)\\.scale\\((.+?), (.+?), [^)]+\\)", ".pose().scale(\$1, \$2)")
+        // 26.x: PoseStack.Entry methods (Yarn peek/getPositionMatrix → Mojang last/pose)
+        line = line.replaceAll("\\.peek\\(\\)", ".last()")
+        line = line.replaceAll("\\bgetPositionMatrix\\b", "pose")
+        // 26.x: VertexConsumer method renames (Yarn vertex/texture/color → Mojang addVertex/setUv/setColor, since 1.21)
+        line = line.replaceAll("\\.vertex\\(", ".addVertex(")
+        // texture/color 只用于 VertexConsumer 链式调用：texture(u,v) 是两个参数、color(...) 至少一个参数。
+        // 必须排除 texture() / texture(File) / team.color() 这类同名的业务方法。
+        line = line.replaceAll("\\.texture\\(([^(),]+),([^()]+)\\)", ".setUv(\$1,\$2)")
+        line = line.replaceAll("\\.color\\(([^()]+)\\)", ".setColor(\$1)")
         line = line.replaceAll("\\bcreateNewRootLayer\\b", "nextStratum")
         line = line.replaceAll("\\bmatchesKey\\b", "matches")
         line = line.replaceAll("\\bgetBoundKeyLocalizedText\\b", "getTranslatedKeyMessage")
@@ -390,6 +852,10 @@ abstract class PreprocessTask extends DefaultTask {
         line = line.replaceAll("\\bgetSkinProvider\\b", "getSkinManager")
         line = line.replaceAll("\\bsupplySkinTextures\\b", "createLookup")
         line = line.replaceAll("\\bfont\\.getWidth\\b", "font.width")
+        // 26.x: TextRenderer.trimToWidth 在 Mojang 侧按实参类型拆成两个方法：
+        //   String → Font.plainSubstrByWidth，FormattedText/Component → Font.substrByWidth。
+        // 源码里 sn 是唯一的 Text 实参（其余都是 String），故按变量名区分。
+        line = line.replaceAll("\\bfont\\.trimToWidth\\(sn,", "font.substrByWidth(sn,")
         line = line.replaceAll("\\bfont\\.trimToWidth\\b", "font.plainSubstrByWidth")
         line = line.replaceAll("\\bminecraft\\.getServer\\b", "minecraft.getSingleplayerServer")
         line = line.replaceAll("\\bgetMeasuringTimeMs\\b", "getMillis")
@@ -412,8 +878,12 @@ abstract class PreprocessTask extends DefaultTask {
         line = line.replaceAll("\\.address\\b", ".ip")
         line = line.replaceAll("\\bENTITY_EXPERIENCE_ORB_PICKUP\\b", "EXPERIENCE_ORB_PICKUP")
         line = line.replaceAll("\\bBLOCK_NOTE_BLOCK_CHIME\\b", "NOTE_BLOCK_CHIME")
-        line = line.replaceAll("\\breadString\\b", "readUtf")
-        line = line.replaceAll("\\bwriteString\\b", "writeUtf")
+        // 26.x: Files.readString/writeString 是 JDK API，不能被 FriendlyByteBuf 的改名波及
+        line = line.replaceAll("(?<!Files\\.)\\breadString\\b", "readUtf")
+        line = line.replaceAll("(?<!Files\\.)\\bwriteString\\b", "writeUtf")
+        // 26.x: FriendlyByteBuf 的 UUID 读写方法改名 (readUuid → readUUID)
+        line = line.replaceAll("\\breadUuid\\b", "readUUID")
+        line = line.replaceAll("\\bwriteUuid\\b", "writeUUID")
         line = line.replaceAll("\\bgetId\\b", "type")
         line = line.replaceAll("\\bsetDrawsBackground\\b", "setBordered")
         line = line.replaceAll("\\bsetEditableColor\\b", "setTextColor")
@@ -436,8 +906,9 @@ abstract class PreprocessTask extends DefaultTask {
         line = line.replaceAll("\\bwithUnderline\\b", "withUnderlined")
         line = line.replaceAll("\\btuple\\b", "of")
         line = line.replaceAll("\\bregisterTexture\\b", "register")
-        // 26.x: setColorArgb → setPixelRGBA → setPixelABGR (两步转换)
+        // 26.x: setColorArgb/getColorArgb → setPixelRGBA/getPixelRGBA → setPixelABGR/getPixelABGR (两步转换)
         line = line.replaceAll("\\bsetColorArgb\\b", "setPixelRGBA")
+        line = line.replaceAll("\\bgetColorArgb\\b", "getPixelRGBA")
         line = line.replaceAll("\\bgetSavePath\\b", "getWorldPath")
         line = line.replaceAll("getPlayerList\\(\\)\\.getOnlinePlayers", "getPlayerList().getPlayers")
         line = line.replaceAll("\\bgetContent\\b", "getContents")
@@ -448,6 +919,8 @@ abstract class PreprocessTask extends DefaultTask {
         line = line.replaceAll("\\bgetOperatingSystem\\b", "getPlatform")
         // 26.x: Util.OS.open() → openUri() (方法重命名，适用于所有 26.x)
         line = line.replaceAll("getPlatform\\(\\)\\.open\\(", "getPlatform().openUri(")
+        // 26.x: Util.OS.openUri 只接受 URI，不再接受 File
+        line = line.replaceAll("getPlatform\\(\\)\\.openUri\\((\\w+)\\)", "getPlatform().openUri(\$1.toURI())")
         line = line.replaceAll("chatField\\.write\\(", "chatField.insertText(")
         // 26.x: ChatScreen.chatField → ChatScreen.input (field rename)
         line = line.replaceAll("\\bchatField\\b", "input")
@@ -456,6 +929,8 @@ abstract class PreprocessTask extends DefaultTask {
         line = line.replaceAll("\\bgetTexture\\(\\)", "getDefaultTexture()")
         // 26.x: HoverEvent.getAction → action (interface method)
         line = line.replaceAll("\\bgetAction\\b", "action")
+        // 26.x: ClickEvent.getValue → value (record-style accessor, only for click variable to avoid EditBox.getValue)
+        line = line.replaceAll("\\bclick\\.getValue\\(\\)", "click.value()")
         // 26.x: RegistryOps.of → RegistryOps.create
         line = line.replaceAll("RegistryOps\\.of\\(", "RegistryOps.create(")
         // 26.x: Screen.handleClickEvent → defaultHandleClickEvent
@@ -470,15 +945,26 @@ abstract class PreprocessTask extends DefaultTask {
         line = line.replaceAll("FormattedText\\.concat\\b", "FormattedText.composite")
         line = line.replaceAll("Language\\.getInstance\\(\\)\\.reorder\\b", "Language.getInstance().getVisualOrder")
         line = line.replaceAll("\\bsetWindowActive\\b", "setAllowSuggestions")
+        line = line.replaceAll("\\bsetCanLeave\\b", "setAllowHiding")
         line = line.replaceAll("\\brefresh\\b", "updateCommandInfo")
         line = line.replaceAll("\\bIdentifier\\.of\\b", "Identifier.fromNamespaceAndPath")
         line = line.replaceAll("\\bhasPermissions\\b", "hasPermission")
         line = line.replaceAll("\\bsendMessage\\b", "sendSystemMessage")
+        // 26.x: sendMessage(Text, boolean) 拆成两个方法 —— 动作栏走 sendOverlayMessage，
+        // 普通系统消息仍走单参 sendSystemMessage（源码里只用到 false 分支）
+        line = line.replaceAll("\\.sendSystemMessage\\((.+), false\\)", ".sendSystemMessage(\$1)")
+        line = line.replaceAll("\\.sendSystemMessage\\((.+), true\\)", ".sendOverlayMessage(\$1)")
         line = line.replaceAll("\\bgetDisplayName\\b", "getTabListDisplayName")
         line = line.replaceAll("\\bsetUneditableColor\\b", "setTextColorUneditable")
         line = line.replaceAll("\\bshouldPause\\b", "isPauseScreen")
         line = line.replaceAll("\\brenderBackground\\b", "extractBackground")
+        // 26.x: Screen.filesDragged → onFilesDrop（1.21.4 的 onFilesDropped 名字在 26.x 又少了结尾的 d）
+        line = line.replaceAll("\\bfilesDragged\\b", "onFilesDrop")
         line = line.replaceAll("\\bpublic void close\\(\\)", "public void onClose()")
+        // 26.x: Screen 只保留 onClose()，无参 close() 调用点（自身关闭）必须同步改名；
+        // 带接收者的 close()（NativeImage 等）不受影响
+        line = line.replaceAll("(?<![\\w.])close\\(\\);", "onClose();")
+        line = line.replaceAll("\\bdrawOrderedTooltip\\b", "setTooltipForNextFrame")
         line = line.replaceAll("\\bdrawHoverEvent\\b", "setTooltipForNextFrame")
         line = line.replaceAll("\\bonChatMessage\\b", "handlePlayerChatMessage")
         line = line.replaceAll("\\bonProfilelessMessage\\b", "handleDisguisedChatMessage")
@@ -496,6 +982,7 @@ abstract class PreprocessTask extends DefaultTask {
         line = line.replaceAll("settingsMenu\\.extractRenderState\\(", "settingsMenu.render(")
         line = line.replaceAll("emojiPanel\\.extractRenderState\\(", "emojiPanel.render(")
         line = line.replaceAll("quickChatPanel\\.extractRenderState\\(", "quickChatPanel.render(")
+        line = line.replaceAll("groupBrowser\\.extractRenderState\\(", "groupBrowser.render(")
         // ChatComponent methods
         line = line.replaceAll("\\bgetMessageHistory\\b", "getRecentChat")
         line = line.replaceAll("\\baddToMessageHistory\\b", "addRecentChat")
@@ -518,16 +1005,24 @@ abstract class PreprocessTask extends DefaultTask {
         line = line.replaceAll("\\bgetNavigationPath\\b", "nextFocusPath")
         line = line.replaceAll("\\bswitchFocus\\b", "changeFocus")
         line = line.replaceAll("\\bblur\\(\\)", "clearFocus()")
-        // Simplify withColor ternary: ChatFormatting.X.getColor() != null ? ChatFormatting.X.getColor() : null → ChatFormatting.X.getColor()
-        line = line.replaceAll("ChatFormatting\\.(\\w+)\\.getColor\\(\\) != null \\? ChatFormatting\\.\\1\\.getColor\\(\\) : null", "ChatFormatting.\$1.getColor()")
         // Style.withFormatting → applyFormat
         line = line.replaceAll("\\bwithFormatting\\b", "applyFormat")
         // Resource.getInputStream → open
         line = line.replaceAll("\\bgetInputStream\\b", "open")
         // ChatType.Bound.type() → chatType()
         line = line.replaceAll("\\bparams\\.type\\(\\)", "params.chatType()")
-        // setPixelRGBA → setPixelABGR (NativeImage ARGB→ABGR format change)
+        // 26.x: chatType() 返回 Holder<ChatType>，判定条件用 is(ResourceKey) 而不是 matchesKey
+        line = line.replaceAll("\\.chatType\\(\\)\\.matches\\(", ".chatType().is(")
+        // 26.x: ChatType.Bound.applyChatDecoration → decorate
+        line = line.replaceAll("\\bapplyChatDecoration\\b", "decorate")
+        // 26.x: GameType 只有 getShortDisplayName()/getLongDisplayName()，没有 getTranslatableName()
+        line = line.replaceAll("\\bgetTranslatableName\\b", "getShortDisplayName")
+        // 26.x: NativeImage pixel access — getPixelABGR is private, getPixel is public
+        // setPixelRGBA → setPixelABGR (public), getPixelRGBA → getPixel (public)
         line = line.replaceAll("\\bsetPixelRGBA\\b", "setPixelABGR")
+        line = line.replaceAll("\\bgetPixelRGBA\\b", "getPixel")
+        // setPixel → setPixelABGR (both public in 26.x, ABGR is the canonical name)
+        line = line.replaceAll("\\bsetPixel\\b", "setPixelABGR")
 
         // Step 5: Class name replacements (word-boundary regex, longest names first)
         line = line.replaceAll("\\bRegistryWrapper\\.WrapperLookup\\b", "HolderLookup.Provider")
@@ -545,6 +1040,8 @@ abstract class PreprocessTask extends DefaultTask {
         line = line.replaceAll("\\bServerPlayerEntity\\b", "ServerPlayer")
         line = line.replaceAll("\\bPlayerEntity\\b", "Player")
         line = line.replaceAll("\\bPlayerListEntry\\b", "PlayerInfo")
+        line = line.replaceAll("\\bClientPlayerEntity\\b", "LocalPlayer")
+        line = line.replaceAll("\\bGameMode\\b", "GameType")
         line = line.replaceAll("\\bClientPlayNetworkHandler\\b", "ClientPacketListener")
         line = line.replaceAll("\\bPositionedSoundInstance\\b", "SimpleSoundInstance")
         line = line.replaceAll("\\bPacketByteBuf\\b", "FriendlyByteBuf")
@@ -575,12 +1072,13 @@ abstract class PreprocessTask extends DefaultTask {
         line = line.replaceAll("\\bMessageType\\b", "ChatType")
         line = line.replaceAll("\\bSignedMessage\\b", "PlayerChatMessage")
         line = line.replaceAll("\\bMessageSignatureData\\b", "MessageSignature")
-        line = line.replaceAll("\\bClientCommandC2SPacket\\b", "ServerboundClientCommandPacket")
+        line = line.replaceAll("\\bClientCommandC2SPacket\\b", "ServerboundPlayerCommandPacket")
         line = line.replaceAll("\\bRegistryEntryList\\b", "HolderSet")
         line = line.replaceAll("\\bRegistryEntry\\b", "Holder")
         line = line.replaceAll("\\bKeyBinding\\b", "KeyMapping")
         line = line.replaceAll("\\bKeyInput\\b", "KeyEvent")
         line = line.replaceAll("\\bMouseInput\\b", "MouseButtonInfo")
+        line = line.replaceAll("\\bMouse\\b", "MouseHandler")
         line = line.replaceAll("\\bStringVisitable\\b", "FormattedText")
         line = line.replaceAll("\\bWorldSavePath\\b", "LevelResource")
         line = line.replaceAll("\\bMatrixStack\\b", "PoseStack")
@@ -596,6 +1094,14 @@ abstract class PreprocessTask extends DefaultTask {
         line = line.replaceAll("\\bClick\\b", "MouseButtonEvent")
         line = line.replaceAll("\\bInputUtil\\b", "InputConstants")
         line = line.replaceAll("\\bHoveredTooltipPositioner\\b", "DefaultTooltipPositioner")
+        // 26.x: blaze3d rendering class renames
+        line = line.replaceAll("\\bTessellator\\b", "Tesselator")
+        line = line.replaceAll("\\bVertexFormats\\b", "DefaultVertexFormat")
+        line = line.replaceAll("\\bGlUniform\\b", "Uniform")
+        line = line.replaceAll("\\bBufferRenderer\\b", "Tesselator")
+        line = line.replaceAll("\\bShaderProgram\\b", "ShaderManager")
+        // 26.x: VertexFormat.DrawMode → VertexFormat.Mode
+        line = line.replaceAll("\\bDrawMode\\b", "Mode")
         // Standalone Text must come last (after all *Text and Text* names)
         line = line.replaceAll("\\bText\\b", "Component")
 
@@ -606,13 +1112,63 @@ abstract class PreprocessTask extends DefaultTask {
         line = line.replaceAll("CommonComponents\\.DONE\\b", "CommonComponents.GUI_DONE")
         line = line.replaceAll("CommonComponents\\.ON\\b", "CommonComponents.OPTION_ON")
         line = line.replaceAll("CommonComponents\\.OFF\\b", "CommonComponents.OPTION_OFF")
+        // 26.x: GuiGraphicsExtractor.drawBorder → outline (same params)
+        line = line.replaceAll("\\.drawBorder\\(", ".outline(")
+        // 26.x: Button.Builder.position → pos
+        line = line.replaceAll("\\.position\\(", ".pos(")
+        // 26.x: Screen.clearChildren → clearWidgets
+        line = line.replaceAll("(?<![\\w\$])clearChildren\\(\\)", "clearWidgets()")
+        // 26.x: KeyMapping.unpressAll → releaseAll (static)
+        line = line.replaceAll("KeyMapping\\.unpressAll\\(", "KeyMapping.releaseAll(")
+        // 26.x: SimpleSoundInstance.master → forUI
+        line = line.replaceAll("SimpleSoundInstance\\.master\\(", "SimpleSoundInstance.forUI(")
+        // 26.x: EditBox accessors (yarn setSelectionStart/End, getCursor, write)
+        line = line.replaceAll("\\.getCursor\\(\\)", ".getCursorPosition()")
+        line = line.replaceAll("\\.setSelectionStart\\(", ".setCursorPosition(")
+        line = line.replaceAll("\\.setSelectionEnd\\(", ".setHighlightPos(")
+        line = line.replaceAll("\\bfield\\.write\\(", "field.insertText(")
+        line = line.replaceAll("\\binputDragTarget\\.write\\(", "inputDragTarget.insertText(")
+        // 26.x: op-level permission checks go through the PermissionSet
+        line = line.replaceAll("(\\w+(?:\\.\\w+)*)\\.hasPermissionLevel\\(1\\)",
+            '$1.permissions().hasPermission(net.minecraft.server.permissions.Permissions.COMMANDS_MODERATOR)')
+        line = line.replaceAll("(\\w+(?:\\.\\w+)*)\\.hasPermissionLevel\\(2\\)",
+            '$1.permissions().hasPermission(net.minecraft.server.permissions.Permissions.COMMANDS_GAMEMASTER)')
+        line = line.replaceAll("(\\w+(?:\\.\\w+)*)\\.hasPermissionLevel\\(3\\)",
+            '$1.permissions().hasPermission(net.minecraft.server.permissions.Permissions.COMMANDS_ADMIN)')
+        line = line.replaceAll("(\\w+(?:\\.\\w+)*)\\.hasPermissionLevel\\(4\\)",
+            '$1.permissions().hasPermission(net.minecraft.server.permissions.Permissions.COMMANDS_OWNER)')
+        // 26.x: ServerPlayer lost getServer(); reach the server through the level
+        line = line.replaceAll("\\b(sender|player)\\.getServer\\(\\)", '$1.level().getServer()')
+        // 26.x: PlayerChatMessage.signedContent() is the plain String form
+        line = line.replaceAll("(\\w+)\\.getContents\\(\\)\\.getString\\(\\)", '$1.signedContent()')
+        // 26.x: SimpleSynchronousResourceReloadListener → ResourceManagerReloadListener
+        line = line.replaceAll("public void reload\\(ResourceManager ", "public void onResourceManagerReload(ResourceManager ")
+        // 26.x: Fabric ScreenEvents.afterRender → afterExtract
+        line = line.replaceAll("ScreenEvents\\.afterRender\\(", "ScreenEvents.afterExtract(")
+        // 26.x: RegistryWrapper.WrapperLookup 的工厂方法是 BuiltInRegistries.createWrapperLookup()，
+        // Mojang 侧对应 RegistryAccess.fromRegistryOfRegistries(BuiltInRegistries.REGISTRY)
+        line = line.replaceAll("[\\w.]*BuiltInRegistries\\.createAccess\\(\\)",
+            "net.minecraft.core.RegistryAccess.fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY)")
+        // 26.x: ChatComponent 的公开入口改名（4 参 addMessage 是私有的）
+        line = line.replaceAll("\\)\\.addMessage\\((\\w+), null, null\\)", ").addPlayerMessage(\$1, null, null)")
+        // 26.x: 只有继承 Screen 的屏幕重写 extractRenderState；面板类（自定义 render）由上面的
+        // undo 规则保持在 render 上。屏幕声明恰好是 (…, int, int, float) + "{" 收尾的整行形式。
+        line = line.replaceAll(
+            "public void render\\(GuiGraphicsExtractor (\\w+), int (\\w+), int (\\w+), float (\\w+)\\) \\{",
+            'public void extractRenderState(GuiGraphicsExtractor $1, int $2, int $3, float $4) {')
 
-        // Step 5c: 26.2 post-mapping fixes (must run after Formatting→ChatFormatting and getColorValue→getColor)
+        // Step 5c: Post-mapping fixes (must run after Formatting→ChatFormatting and getColorValue→getColor)
+        // Simplify ChatFormatting ternary: X.getColor() != null ? X.getColor() : null → X.getColor()
+        line = line.replaceAll("ChatFormatting\\.(\\w+)\\.getColor\\(\\) != null \\? ChatFormatting\\.\\1\\.getColor\\(\\) : null", "ChatFormatting.\$1.getColor()")
         if (is26_2) {
             // 26.2: Minecraft.getInstance().setScreen() → Minecraft.getInstance().gui.setScreen()
             line = line.replaceAll("Minecraft\\.getInstance\\(\\)\\.setScreen\\(", "Minecraft.getInstance().gui.setScreen(")
-            // 26.2: ChatFormatting.getColor() removed — replace ternary with ChatFormatting enum directly
-            line = line.replaceAll("ChatFormatting\\.([A-Z_]+)\\.getColor\\(\\) != null \\? ChatFormatting\\.\\1\\.getColor\\(\\) : null", 'ChatFormatting.$1')
+            // 26.2: ChatFormatting.getColor() removed — replace with ChatFormatting enum directly
+            line = line.replaceAll("ChatFormatting\\.([A-Z_]+)\\.getColor\\(\\)", 'ChatFormatting.$1')
+            // 26.2: PlayerTeam.getColor() 变成 Optional<TeamColor>（26.1 直接返回 ChatFormatting），
+            // 且 ChatFormatting 去掉了 getByName；TeamColor 的 serialized name 与枚举常量同名（仅大小写不同）
+            line = line.replaceAll("ChatFormatting col = team\\.getColor\\(\\);",
+                'ChatFormatting col = team.getColor().map(tc -> ChatFormatting.valueOf(tc.getSerializedName().toUpperCase(java.util.Locale.ROOT))).orElse(null);')
         }
 
         // Step 6: Registry static reference + inner class mappings
@@ -621,6 +1177,7 @@ abstract class PreprocessTask extends DefaultTask {
         line = line.replaceAll("\\bId<", "Type<")
         line = line.replaceAll("ChatType\\.Parameters\\b", "ChatType.Bound")
         line = line.replaceAll("ServerboundClientCommandPacket\\.Mode\\b", "ServerboundClientCommandPacket.Action")
+        line = line.replaceAll("ServerboundPlayerCommandPacket\\.Mode\\b", "ServerboundPlayerCommandPacket.Action")
 
         // Step 7: Fix JNI-style method descriptors (slash-separated paths in @Inject/@Invoker strings)
         line = line.replaceAll("net/minecraft/text/", "net/minecraft/network/chat/")

@@ -16,14 +16,19 @@ import java.util.List;
  * Screen) lives in ChatBubbleClientSetup so a dedicated server never loads the
  * client-only Screen class.
  */
+//#if MC >= 12005
 public record ServerConfigScreenPayload(boolean useTpa, boolean historyEnabled, boolean templateDebug,
-                                        List<String> chatTemplates, List<String> whisperTemplates,
-                                        boolean mediaEnabled, boolean mediaAutoClean)
-        //#if MC >= 12005
+                                        boolean mediaEnabled, boolean mediaAutoClean, boolean easyBotCompat,
+                                        boolean groupsEnabled,
+                                        List<String> chatTemplates, List<String> whisperTemplates)
         implements CustomPayload {
-        //#else
-        //$$ {
-        //#endif
+//#else
+//$$ public record ServerConfigScreenPayload(boolean useTpa, boolean historyEnabled, boolean templateDebug,
+//$$                                          boolean mediaEnabled, boolean mediaAutoClean, boolean easyBotCompat,
+//$$                                          boolean groupsEnabled,
+//$$                                          List<String> chatTemplates, List<String> whisperTemplates) {
+//#endif
+
     //#if MC >= 12005
     public static final CustomPayload.Id<ServerConfigScreenPayload> ID =
         new CustomPayload.Id<>(
@@ -33,35 +38,45 @@ public record ServerConfigScreenPayload(boolean useTpa, boolean historyEnabled, 
             //$$ new Identifier("e33chat", "server_config_screen")
             //#endif
         );
-
-    public static final PacketCodec<PacketByteBuf, ServerConfigScreenPayload> CODEC = PacketCodec.of(
-        //#if MC >= 26000
-        (buf, value) -> {
-        //#else
-        //$$ (value, buf) -> {
-        //#endif
-            buf.writeBoolean(value.useTpa);
-            buf.writeBoolean(value.historyEnabled);
-            buf.writeBoolean(value.templateDebug);
-            ConfigSyncV2Payload.writeList(buf, value.chatTemplates);
-            ConfigSyncV2Payload.writeList(buf, value.whisperTemplates);
-            buf.writeBoolean(value.mediaEnabled);
-            buf.writeBoolean(value.mediaAutoClean);
-        },
-        buf -> new ServerConfigScreenPayload(
-            buf.readBoolean(),
-            buf.readBoolean(),
-            buf.readBoolean(),
-            ConfigSyncV2Payload.readList(buf),
-            ConfigSyncV2Payload.readList(buf),
-            buf.readBoolean(),
-            buf.readBoolean()
-        )
-    );
-
-    @Override
-    public Id<ServerConfigScreenPayload> getId() { return ID; }
     //#else
     //$$ public static final Identifier ID = new Identifier("e33chat", "server_config_screen");
+    //#endif
+
+    //#if MC >= 12005
+    public static final PacketCodec<PacketByteBuf, ServerConfigScreenPayload> CODEC = PacketCodec.of(
+        //#if MC >= 26000
+        (buf, value) -> ServerConfigDto.encode(new ServerConfigDto(
+            value.useTpa, value.historyEnabled, value.templateDebug, value.mediaEnabled,
+            value.mediaAutoClean, value.easyBotCompat, value.groupsEnabled, value.chatTemplates, value.whisperTemplates), buf),
+        //#else
+        //$$ (value, buf) -> ServerConfigDto.encode(new ServerConfigDto(
+        //$$     value.useTpa, value.historyEnabled, value.templateDebug, value.mediaEnabled,
+        //$$     value.mediaAutoClean, value.easyBotCompat, value.groupsEnabled, value.chatTemplates, value.whisperTemplates), buf),
+        //#endif
+        buf -> {
+            ServerConfigDto d = ServerConfigDto.decode(buf);
+            return new ServerConfigScreenPayload(d.useTpa(), d.historyEnabled(), d.templateDebug(),
+                d.mediaEnabled(), d.mediaAutoClean(), d.easyBotCompat(), d.groupsEnabled(),
+                d.chatTemplates(), d.whisperTemplates());
+        }
+    );
+    //#else
+    //$$ public static ServerConfigScreenPayload read(PacketByteBuf buf) {
+    //$$     ServerConfigDto d = ServerConfigDto.decode(buf);
+    //$$     return new ServerConfigScreenPayload(d.useTpa(), d.historyEnabled(), d.templateDebug(),
+    //$$         d.mediaEnabled(), d.mediaAutoClean(), d.easyBotCompat(), d.groupsEnabled(),
+    //$$         d.chatTemplates(), d.whisperTemplates());
+    //$$ }
+    //$$ public PacketByteBuf write(PacketByteBuf buf) {
+    //$$     ServerConfigDto.encode(new ServerConfigDto(
+    //$$         useTpa, historyEnabled, templateDebug, mediaEnabled,
+    //$$         mediaAutoClean, easyBotCompat, groupsEnabled, chatTemplates, whisperTemplates), buf);
+    //$$     return buf;
+    //$$ }
+    //#endif
+
+    //#if MC >= 12005
+    @Override
+    public Id<ServerConfigScreenPayload> getId() { return ID; }
     //#endif
 }
