@@ -15,8 +15,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(CommandManager.class)
 public class CommandManagerMixin {
 
-    @Inject(method = "execute(Lcom/mojang/brigadier/ParseResults;Ljava/lang/String;)V",
+    //#if MC >= 26000
+    @Inject(method = "performCommand(Lcom/mojang/brigadier/ParseResults;Ljava/lang/String;)V",
         at = @At("HEAD"))
+    //#else
+    //$$ @Inject(method = "execute(Lcom/mojang/brigadier/ParseResults;Ljava/lang/String;)V",
+    //$$     at = @At("HEAD"))
+    //#endif
     private void onCommandExecuted(ParseResults<ServerCommandSource> parseResults, String command, CallbackInfo ci) {
         ChatBubbleMod.consumePrivateMessageQuote(parseResults, command);
     }

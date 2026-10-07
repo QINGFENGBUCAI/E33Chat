@@ -1,5 +1,21 @@
 # Changelog
 
+## v2.4.20
+
+**修复：26.x 三个版本的 mixin 全部对照实机 jar 逐字段核验并移植（26.3 实机启动崩溃修复）**
+
+- 实机报告（26.3 + Loader 0.19.5）：`MouseHandlerAccessor` 的 `@Accessor("activeButton")` 找不到字段导致 `Initializing game` 崩溃——该字段在 26.3 从 `int` 变成 `MouseButtonInfo` 记录。排查后发现**全部 26.x mixin 描述符都没随 26.x 的 API 改名更新**（2.4.11 已声明 26.x 仅编译验证，本版把这笔债清掉）
+- 逐项迁移（对 26.1/26.2/26.3 统一生效，均经 javap 对照三个版本的实机 jar 确认形状一致）：
+  - `MouseHandlerAccessor`：held 状态改注入 `MouseHandler.isLeftPressed` 布尔字段（GLFW 移除后 `activeButton:int` 变成了 `MouseButtonInfo`）；`NativeFileDialog` 调用点同步改为清左键
+  - `InGameHudMixin`：`Gui.render` 已不存在 → 注入 `Gui.extractRenderState(DeltaTracker,boolean,boolean)`
+  - `MinecraftClientMixin`：`setScreen` 从 Minecraft 迁到 Gui → 目标类改 `Gui`（Minecraft 只剩 setScreenAndShow，同样汇入 Gui.setScreen）
+  - `ChatComponentMixin`：`render` 与公开的 `addMessage(Text)` 均已移除 → 渲染钩子改注入 `extractRenderState(...)`（保留"我们的屏幕打开时隐藏原版聊天"）；消息捕获改注入私有的 4 参 `addMessage(Component,MessageSignature,GuiMessageSource,GuiMessageTag)` 漏斗（三个公开入口都汇入它，捕获语义不变）。26.x 上原版聊天的 -8px 上移暂无等价物（矩阵位移在延迟管线上不可用），为已知视觉降级
+  - `ChatInputSuggestorMixin`：`renderMessages` → `extractRenderState(GuiGraphicsExtractor,int,int)`；`show(Z)V` → `showSuggestions(Z)V`（补全窗口位置修正逻辑不变）
+  - `ChatInputSuggestorAccessor`/`SuggestionWindowAccessor`：`window`→`suggestions` 字段、`area`→`rect` 字段
+  - `CommandManagerMixin`（服务端）：`Commands.execute` → `performCommand`
+  - `MessageHandlerAccessor`：`tryParseAsPlayerMessage` 在 26.x 已不存在且全工程无调用点 → 26.x 分支置空
+- 26.1/26.2/26.3、1.21.1、1.16.5 五个代表性版本编译+打包验证；其余版本无此改动路径
+
 ## v2.4.19
 
 **新增 Minecraft 26.3 支持（22/22 个 Fabric 目标全部编译通过）**
