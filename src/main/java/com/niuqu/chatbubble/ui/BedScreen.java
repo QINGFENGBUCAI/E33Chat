@@ -52,7 +52,12 @@ public class BedScreen extends Screen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE) {
+        //#if MC >= 26030
+        // 26.3 移除了 GLFW，键位常量迁到 InputConstants（数值与 GLFW 兼容）
+        if (keyCode == com.mojang.blaze3d.platform.InputConstants.KEY_ESCAPE) {
+        //#else
+        //$$ if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE) {
+        //#endif
             sendWakeUp();
             return true;
         }

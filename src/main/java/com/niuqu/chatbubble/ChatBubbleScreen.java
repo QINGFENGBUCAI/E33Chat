@@ -856,7 +856,12 @@ public class ChatBubbleScreen extends ChatScreen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_C && (modifiers & 0x2) != 0
+        //#if MC >= 26030
+        // 26.3 移除了 GLFW，键位常量迁到 InputConstants（数值与 GLFW 兼容）
+        if (keyCode == com.mojang.blaze3d.platform.InputConstants.KEY_C && (modifiers & 0x2) != 0
+        //#else
+        //$$ if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_C && (modifiers & 0x2) != 0
+        //#endif
             && textSelection.hasSelection()) {
             String copied = textSelection.copyText(textSpans);
             if (!copied.isEmpty()) {
@@ -867,7 +872,11 @@ public class ChatBubbleScreen extends ChatScreen {
         }
         // Ctrl+V with an image in the clipboard uploads it and inserts the code;
         // on the custom-emote tab it adds the image to the emote pack instead.
-        if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_V && (modifiers & 0x2) != 0) {
+        //#if MC >= 26030
+        if (keyCode == com.mojang.blaze3d.platform.InputConstants.KEY_V && (modifiers & 0x2) != 0) {
+        //#else
+        //$$ if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_V && (modifiers & 0x2) != 0) {
+        //#endif
             // Text paste must stay on the text field path. Only try the AWT image
             // path when the GLFW clipboard has no text, so Ctrl+V text paste is
             // never delayed or disturbed by the background clipboard probe.

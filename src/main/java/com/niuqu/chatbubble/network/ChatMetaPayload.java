@@ -43,7 +43,7 @@ public record ChatMetaPayload(UUID senderUUID, String senderName, String message
             buf.writeString(value.messageHash);
             buf.writeString(value.quoteSender);
             buf.writeString(value.quoteContent);
-            buf.writeCollection(value.mentionTargets, PacketByteBuf::writeString);
+            writeMentions(buf, value.mentionTargets);
         },
         //#else
         //$$ (value, buf) -> {
@@ -52,7 +52,7 @@ public record ChatMetaPayload(UUID senderUUID, String senderName, String message
         //$$     buf.writeString(value.messageHash);
         //$$     buf.writeString(value.quoteSender);
         //$$     buf.writeString(value.quoteContent);
-        //$$     buf.writeCollection(value.mentionTargets, PacketByteBuf::writeString);
+        //$$     writeMentions(buf, value.mentionTargets);
         //$$ },
         //#endif
         buf -> new ChatMetaPayload(
@@ -89,8 +89,15 @@ public record ChatMetaPayload(UUID senderUUID, String senderName, String message
 
     /** Mention targets are a handful of names; the count comes off the wire, so
      *  an unclamped pre-allocation (vanilla readList/readCollection sizes the
-     *  list from the wire count) lets one packet OOM the receiver. */
+     *  list from the wire count) lets one packet OOM the receiver.
+     *  26.3 removed FriendlyByteBuf.writeCollection/readList — the helpers below
+     *  write the identical wire format (VarInt count + elements) by hand. */
     private static final int MAX_MENTION_TARGETS = 200;
+
+    private static void writeMentions(PacketByteBuf buf, List<String> list) {
+        buf.writeVarInt(list.size());
+        for (String s : list) buf.writeString(s);
+    }
 
     private static List<String> readMentions(PacketByteBuf buf) {
         int count = Math.min(Math.max(buf.readVarInt(), 0), MAX_MENTION_TARGETS);

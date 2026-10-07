@@ -274,8 +274,13 @@ public class ChatBubbleClientSetup implements ClientModInitializer {
             ChatMessageStore.maybeAutoSave();
 
             if (client.currentScreen == null) {
-                boolean leftDown = org.lwjgl.glfw.GLFW.glfwGetMouseButton(
-                    client.getWindow().getHandle(), org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_1) == org.lwjgl.glfw.GLFW.GLFW_PRESS;
+                //#if MC >= 26030
+                // 26.3 移除了 GLFW；MouseHandler.isLeftPressed 是同一状态的官方入口
+                boolean leftDown = client.mouseHandler.isLeftPressed();
+                //#else
+                //$$ boolean leftDown = org.lwjgl.glfw.GLFW.glfwGetMouseButton(
+                //$$     client.getWindow().getHandle(), org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_1) == org.lwjgl.glfw.GLFW.GLFW_PRESS;
+                //#endif
                 if (leftDown && !leftWasDown) {
                     double mx = client.mouse.getX() * (double)client.getWindow().getScaledWidth() / (double)client.getWindow().getWidth();
                     double my = client.mouse.getY() * (double)client.getWindow().getScaledHeight() / (double)client.getWindow().getHeight();
