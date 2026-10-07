@@ -158,11 +158,13 @@ abstract class PreprocessTask extends DefaultTask {
                             // the body re-extracts the original locals so every existing
                             // reference inside the method keeps working.
                             def ind = '(\\s*)'
+                            // 26.3 renamed KeyEvent.scancode() -> keycode()
+                            def scAccessor = targetMcVersion >= 260300 ? 'keycode' : 'scancode'
                             processed = processed.replaceAll(
                                 "(?m)^${ind}public boolean keyPressed\\(int keyCode, int scanCode, int modifiers\\) \\{",
                                 '$1public boolean keyPressed(net.minecraft.client.input.KeyEvent keyInput) {\n' +
                                 '$1    int keyCode = keyInput.key();\n' +
-                                '$1    int scanCode = keyInput.scancode();\n' +
+                                '$1    int scanCode = keyInput.' + scAccessor + '();\n' +
                                 '$1    int modifiers = keyInput.modifiers();')
                             // ChatScreen gained a `draft` flag; the source keeps the one-arg form
                             processed = processed.replaceAll("(?m)^(\\s*)super\\(\"\"\\);", '$1super("", false);')
@@ -685,6 +687,7 @@ abstract class PreprocessTask extends DefaultTask {
     // Yarn→Mojang 26.x 名称映射 (MC 26.x 取消混淆，使用 Mojang 官方名称)
     static String applyMojangMapping(String line, int targetMcVersion) {
         boolean is26_2 = targetMcVersion >= 260200
+        boolean is26_3 = targetMcVersion >= 260300
 
         // Step 1: FQN-specific mappings (must come before package replacements)
         line = line.replaceAll("net\\.minecraft\\.util\\.Identifier\\b", "net.minecraft.resources.Identifier")
@@ -921,6 +924,10 @@ abstract class PreprocessTask extends DefaultTask {
         line = line.replaceAll("getPlatform\\(\\)\\.open\\(", "getPlatform().openUri(")
         // 26.x: Util.OS.openUri 只接受 URI，不再接受 File
         line = line.replaceAll("getPlatform\\(\\)\\.openUri\\((\\w+)\\)", "getPlatform().openUri(\$1.toURI())")
+        if (is26_3) {
+            // 26.3: Util.OS.openUri 整个移除，链接打开迁到 Blaze3D
+            line = line.replaceAll("Util\\.getPlatform\\(\\)\\.openUri\\(", "com.mojang.blaze3d.Blaze3D.openUri(")
+        }
         line = line.replaceAll("chatField\\.write\\(", "chatField.insertText(")
         // 26.x: ChatScreen.chatField → ChatScreen.input (field rename)
         line = line.replaceAll("\\bchatField\\b", "input")

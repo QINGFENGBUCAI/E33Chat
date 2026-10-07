@@ -45,23 +45,23 @@ public record GroupListPayload(boolean enabled, List<String> names,
         //#if MC >= 26000
         (buf, value) -> {
             buf.writeBoolean(value.enabled);
-            buf.writeCollection(value.names, (b, s) -> b.writeString(s, 64));
-            buf.writeCollection(value.memberCounts, (b, c) -> b.writeVarInt(c));
-            buf.writeCollection(value.myGroups, (b, s) -> b.writeString(s, 64));
+            writeStringList(buf, value.names, 64);
+            writeVarIntList(buf, value.memberCounts);
+            writeStringList(buf, value.myGroups, 64);
         },
         //#else
         //$$ (value, buf) -> {
         //$$     buf.writeBoolean(value.enabled);
-        //$$     buf.writeCollection(value.names, (b, s) -> b.writeString(s, 64));
-        //$$     buf.writeCollection(value.memberCounts, (b, c) -> b.writeVarInt(c));
-        //$$     buf.writeCollection(value.myGroups, (b, s) -> b.writeString(s, 64));
+        //$$     writeStringList(buf, value.names, 64);
+        //$$     writeVarIntList(buf, value.memberCounts);
+        //$$     writeStringList(buf, value.myGroups, 64);
         //$$ },
         //#endif
         buf -> new GroupListPayload(
             buf.readBoolean(),
-            cap(buf.readList(b -> b.readString(64))),
-            cap(buf.readList(PacketByteBuf::readVarInt)),
-            cap(buf.readList(b -> b.readString(64)))
+            cap(readStringList(buf, 64)),
+            cap(readVarIntList(buf)),
+            cap(readStringList(buf, 64))
         )
     );
     //#else
@@ -89,6 +89,33 @@ public record GroupListPayload(boolean enabled, List<String> names,
     //$$     return buf;
     //$$ }
     //#endif
+
+    // 26.3 removed FriendlyByteBuf.writeCollection/readList — these helpers emit
+    // the identical wire format (VarInt count + elements) by hand, so the packet
+    // layout is unchanged on every version.
+    private static void writeStringList(PacketByteBuf buf, List<String> list, int maxLen) {
+        buf.writeVarInt(list.size());
+        for (String s : list) buf.writeString(s, maxLen);
+    }
+
+    private static List<String> readStringList(PacketByteBuf buf, int maxLen) {
+        int n = buf.readVarInt();
+        List<String> out = new java.util.ArrayList<>(Math.min(n, 1024));
+        for (int i = 0; i < n; i++) out.add(buf.readString(maxLen));
+        return out;
+    }
+
+    private static void writeVarIntList(PacketByteBuf buf, List<Integer> list) {
+        buf.writeVarInt(list.size());
+        for (int v : list) buf.writeVarInt(v);
+    }
+
+    private static List<Integer> readVarIntList(PacketByteBuf buf) {
+        int n = buf.readVarInt();
+        List<Integer> out = new java.util.ArrayList<>(Math.min(n, 1024));
+        for (int i = 0; i < n; i++) out.add(buf.readVarInt());
+        return out;
+    }
 
     private static <T> List<T> cap(List<T> list) {
         return list.size() > MAX_GROUPS ? list.subList(0, MAX_GROUPS) : list;

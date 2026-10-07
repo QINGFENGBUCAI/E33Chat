@@ -1,5 +1,19 @@
 # Changelog
 
+## v2.4.19
+
+**新增 Minecraft 26.3 支持（22/22 个 Fabric 目标全部编译通过）**
+
+- **接入 26.3**（Wilderness Bound，Loader 0.19.5 / Fabric API 0.161.0+26.3）：注册预处理器节点与版本目录，产出独立 jar
+- **26.3 API 迁移**（该版本移除了 GLFW 输入体系）：
+  - `KeyEvent.scancode()` → `keycode()`（预处理注入改为按 26.3 条件化）
+  - GLFW 键位常量（KEY_C / KEY_V / KEY_ESCAPE）→ `InputConstants.KEY_*`（数值与 GLFW 兼容）
+  - `glfwGetMouseButton` 轮询 → `MouseHandler.isLeftPressed()`
+  - `Util.OS.openUri` 移除 → `com.mojang.blaze3d.Blaze3D.openUri`（映射规则按 26.3 条件重写）
+  - `FriendlyByteBuf.writeCollection/readList` 移除 → `ChatMetaPayload`/`GroupListPayload` 手写等价读写（VarInt 计数 + 元素，线格式不变、全版本通用）
+- **26.1/26.2 的 jar 加载范围加上限**（`>=26.1 <26.2` / `>=26.2 <26.3`）：这两个版本的 jar 仍依赖 GLFW，加载到 26.3 会直接崩溃，收窄后加载器会拒绝而不是崩游戏
+- 注意：26.x 三个目标（26.1/26.2/26.3）仍为**编译+打包验证**，mixin 描述符与运行时行为未实机验证（与 2.4.11 的 26.x 声明一致）
+
 ## v2.4.18
 
 **同步上游 v2.4.12~v2.4.17 全部修复/功能（NoWordz/Chat-Mod-E），并完成一轮渲染性能优化（多版本 Fabric 全部 21 个目标编译通过）**
