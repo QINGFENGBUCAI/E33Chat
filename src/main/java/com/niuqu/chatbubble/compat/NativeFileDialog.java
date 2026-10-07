@@ -32,7 +32,11 @@ public final class NativeFileDialog {
         MinecraftClient mc = MinecraftClient.getInstance();
         // MC keeps thinking the button is held while the dialog grabs input;
         // clear it so release state restores cleanly after the dialog closes
-        if (mc.mouse != null) ((com.niuqu.chatbubble.mixin.MouseHandlerAccessor) mc.mouse).e33chat$setActiveButton(0);
+        //#if MC >= 26000
+        if (mc.mouseHandler != null) ((com.niuqu.chatbubble.mixin.MouseHandlerAccessor) mc.mouseHandler).e33chat$setActiveButton(false);
+        //#else
+        //$$ if (mc.mouse != null) ((com.niuqu.chatbubble.mixin.MouseHandlerAccessor) mc.mouse).e33chat$setActiveButton(0);
+        //#endif
 
         Thread t = new Thread(() -> {
             AtomicReference<File> picked = new AtomicReference<>();

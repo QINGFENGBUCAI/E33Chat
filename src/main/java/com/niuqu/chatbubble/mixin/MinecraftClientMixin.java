@@ -14,7 +14,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.lang.reflect.Field;
 
-@Mixin(MinecraftClient.class)
+//#if MC >= 26000
+// 26.x: setScreen moved from Minecraft to Gui (Minecraft only keeps
+// setScreenAndShow, which funnels through Gui.setScreen)
+@Mixin(net.minecraft.client.gui.Gui.class)
+//#else
+//$$ @Mixin(MinecraftClient.class)
+//#endif
 public class MinecraftClientMixin {
 
     @Inject(method = "setScreen", at = @At("HEAD"), cancellable = true)

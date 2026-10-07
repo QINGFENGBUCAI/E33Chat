@@ -37,6 +37,20 @@ public class ChatComponentMixin {
     private String lastRepostText;
     private long lastRepostTime;
 
+    //#if MC >= 26000
+    // 26.x: ChatComponent no longer renders directly — it feeds the deferred
+    // pipeline via extractRenderState, so the old -8px matrix shift has no
+    // equivalent. Only the "hide vanilla chat while our screen is open" cancel
+    // survives here.
+    @Inject(method = "extractRenderState(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Lnet/minecraft/client/gui/Font;IIILnet/minecraft/client/gui/components/ChatComponent$DisplayMode;Z)V",
+            at = @At("HEAD"), cancellable = true)
+    private void onRender(CallbackInfo ci) {
+        if (ChatBubbleClientSetup.config().enabled()
+                && MinecraftClient.getInstance().currentScreen instanceof ChatBubbleScreen) {
+            ci.cancel();
+        }
+    }
+    //#else
     @Inject(method = "render", at = @At("HEAD"), cancellable = true)
     private void onRender(DrawContext context, int tickDelta, int mouseX, int mouseY,
                           boolean focused, CallbackInfo ci) {
@@ -59,12 +73,26 @@ public class ChatComponentMixin {
             context.getMatrices().pop();
         }
     }
+    //#endif
 
+    //#if MC >= 26000
+    // 26.x: the public addMessage(Text) entry is gone; every public entry
+    // (addPlayerMessage / addClientSystemMessage / addServerSystemMessage)
+    // funnels into this private overload, so one hook captures everything.
+    @Inject(method = "addMessage(Lnet/minecraft/network/chat/Component;Lnet/minecraft/network/chat/MessageSignature;Lnet/minecraft/client/multiplayer/chat/GuiMessageSource;Lnet/minecraft/client/multiplayer/chat/GuiMessageTag;)V",
+            at = @At("HEAD"), cancellable = true)
+    private void onAddMessage(Text message, net.minecraft.network.chat.MessageSignature signature,
+                              net.minecraft.client.multiplayer.chat.GuiMessageSource source,
+                              net.minecraft.client.multiplayer.chat.GuiMessageTag tag, CallbackInfo ci) {
+        captureMessage(message, ci);
+    }
+    //#else
     @Inject(method = "addMessage(Lnet/minecraft/text/Text;)V",
             at = @At("HEAD"), cancellable = true)
     private void onAddMessage(Text message, CallbackInfo ci) {
         captureMessage(message, ci);
     }
+    //#endif
 
     //#if MC >= 11900
     //#if MC < 26000

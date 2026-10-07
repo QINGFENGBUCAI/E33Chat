@@ -32,13 +32,18 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 //#endif
 public class InGameHudMixin {
 
-    @Inject(method = "render", at = @At("HEAD"), cancellable = true)
     //#if MC >= 26000
-    private void e33chat$hideHudForTranslucentScreens(DrawContext context, net.minecraft.client.DeltaTracker tickCounter,
-    //#else
-    //$$ private void e33chat$hideHudForTranslucentScreens(DrawContext context, RenderTickCounter tickCounter,
-    //#endif
-                                                      CallbackInfo ci) {
+    // 26.x: the HUD renders via the deferred pipeline — Gui.extractRenderState
+    @Inject(method = "extractRenderState(Lnet/minecraft/client/DeltaTracker;ZZ)V",
+        at = @At("HEAD"), cancellable = true)
+    private void e33chat$hideHudForTranslucentScreens(CallbackInfo ci) {
         if (HudVisibility.shouldHideHud()) ci.cancel();
     }
+    //#else
+    //$$ @Inject(method = "render", at = @At("HEAD"), cancellable = true)
+    //$$ private void e33chat$hideHudForTranslucentScreens(DrawContext context, RenderTickCounter tickCounter,
+    //$$                                                   CallbackInfo ci) {
+    //$$     if (HudVisibility.shouldHideHud()) ci.cancel();
+    //$$ }
+    //#endif
 }
