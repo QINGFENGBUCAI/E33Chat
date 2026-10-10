@@ -7,11 +7,11 @@
 </p>
 
 <p align="center">
-  <img alt="MC" src="https://img.shields.io/badge/MC-1.20.1--1.21.1-green">
-  <img alt="Loader" src="https://img.shields.io/badge/Loader-Forge%20%7C%20NeoForge%20%7C%20Fabric-orange">
+  <img alt="MC" src="https://img.shields.io/badge/MC-1.16.5--26.3-green">
+  <img alt="Loader" src="https://img.shields.io/badge/Loader-Fabric-orange">
   <img alt="Side" src="https://img.shields.io/badge/Side-Client%20required,%20server%20optional-blue">
-  <img alt="Java" src="https://img.shields.io/badge/Java-17%2B%20%7C%2021%2B-yellow">
-  <img alt="Version" src="https://img.shields.io/badge/Version-2.3.6-informational">
+  <img alt="Java" src="https://img.shields.io/badge/Java-17%2B%20%7C%2021%2B%20%7C%2025-yellow">
+  <img alt="Version" src="https://img.shields.io/badge/Version-2.4.20-informational">
   <img alt="License" src="https://img.shields.io/badge/License-MIT-brightgreen">
 </p>
 
@@ -49,19 +49,19 @@ E33Chat is a chat-enhancement mod that rebuilds the vanilla chat HUD in a chat-a
 
 | Dependency | Type | Notes |
 |---|---|---|
-| Minecraft | Required | 1.20.1 (Forge) / 1.21.1 (NeoForge / Fabric) |
-| Java | Required | 17+ (Forge 1.20.1) / 21+ (1.21.1) |
+| Minecraft | Required | 1.16.5 ~ 26.3 (22 Fabric targets, download the JAR matching your version) |
+| Java | Required | 17+ (1.16.5~1.20.1) / 21+ (1.21.x) / 25 (26.x) |
 | Forge | Per platform | 47.0.0+ (1.20.1) |
 | NeoForge | Per platform | 21.x (1.21.1) |
-| Fabric Loader | Per platform | 0.16.0+ (1.21.1) |
-| Fabric API | Per platform | Any compatible version (1.21.1) |
+| Fabric Loader | Required | 0.16.0+ (0.19.0+ for 26.x) |
+| Fabric API | Required | Any compatible version |
 | CustomSkinLoader | Optional | Shows offline players' heads |
 
 ---
 
 ## Installation
 
-1. Download the JAR for your platform from [Releases](https://github.com/E33EPUS/E33Chat/releases)
+1. Download the JAR for your platform from [Releases](https://github.com/QINGFENGBUCAI/E33Chat/releases)
 2. Drop it into `.minecraft/mods/` (match your loader — do not mix platform JARs)
 3. Launch the game
 
@@ -259,7 +259,7 @@ An empty template list disables templates and falls back to the guards — every
 
 ## Known limitations
 
-1. Only Forge 1.20.1, NeoForge 1.21.1 and Fabric 1.21.1 are supported
+1. Fabric only (22 targets from 1.16.5 to 26.3; each JAR matches one Minecraft version)
 2. When a nickname shares nothing with the real name and the plugin attaches neither a "click to whisper" event nor a tab-list rename, the message shows as a grey system line (templates cannot help either — the name gate shares the same resolution source as the guards)
 3. When the server rewrites player messages into a broadcast format isomorphic to chat (e.g. `Server>>Steve: xxx`), the client cannot reliably detect it
 4. Chat formats with only whitespace (no separator) between name and content cannot be parsed
@@ -361,31 +361,24 @@ Yes, no extra permission needed.
 
 ## Building from source
 
+This repo uses a preprocessor so 22 Fabric targets (1.16.5 ~ 26.3) share one source tree (`versions/` holds one subproject per target; 26.x uses Mojang's official mappings).
+
 ```bash
-git clone https://github.com/E33EPUS/E33Chat.git
-cd E33Chat
-
-# Forge 1.20.1 (default branch)
+# Build all 22 targets
 ./gradlew build
 
-# NeoForge 1.21.1
-git checkout Neoforge-1.21.1
-./gradlew build
-
-# Fabric 1.21.1
-git checkout Fabric-1.21.1
-./gradlew build
+# Build a single target (jars land in that target's build/libs/)
+./gradlew :1.21.1-fabric:build
+./gradlew :26.3-fabric:build
 ```
 
-- Forge 1.20.1: Java 17+, supports `--offline`
-- NeoForge 1.21.1 / Fabric 1.21.1: Java 21+
-- Run tests: `./gradlew cleanTest test --offline -PrunTests`
-
----
+- Java: run Gradle on JDK 25 (older targets produce their own bytecode via `options.release`)
+- Unit tests run on the main project (1.21.1) only: `./gradlew :1.21.1-fabric:test`
+- See [docs/VERSIONING.md](docs/VERSIONING.md) for the version-porting playbook
 
 ## Reporting issues
 
-Open an [Issue](https://github.com/E33EPUS/E33Chat/issues) and, where possible, include:
+Open an [Issue](https://github.com/QINGFENGBUCAI/E33Chat/issues) and, where possible, include:
 
 - E33Chat version + Minecraft version + mod-loader version
 - List of other chat-related mods
