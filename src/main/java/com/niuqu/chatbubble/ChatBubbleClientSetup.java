@@ -52,9 +52,7 @@ public class ChatBubbleClientSetup implements ClientModInitializer {
     public void onInitializeClient() {
         Path configDir = MinecraftClient.getInstance().runDirectory.toPath().resolve("config/e33chat");
         configPath = configDir.resolve("e33chat-client.json");
-        // Migration chain for the client config path (most recent first):
-        // config/e33chat/client.json -> config/e33chat/e33chat-client.json
-        // config/e33chat-client.json (2.3.1+) and config/e33chat.json (legacy) also move here.
+
         Path recentDirPath = configDir.resolve("client.json");
         Path legacyPath = MinecraftClient.getInstance().runDirectory.toPath().resolve("config/e33chat-client.json");
         Path oldFlatPath = MinecraftClient.getInstance().runDirectory.toPath().resolve("config/e33chat.json");
@@ -85,13 +83,11 @@ public class ChatBubbleClientSetup implements ClientModInitializer {
                 E33Log.info("[e33chat] Migrated config from config/e33chat.json to config/e33chat/e33chat-client.json");
             }
         }
-        // Load is unconditional once the new path exists — the static field
-        // starts as defaults() (non-null), so a null check can never trigger.
+
         if (Files.exists(configPath)) {
             config = ConfigManager.load(configPath);
         } else if (Files.exists(recentDirPath)) {
-            // Migration move failed earlier (locked/IO) — read in place so
-            // settings are never silently replaced by defaults.
+
             config = ConfigManager.load(recentDirPath);
         } else if (Files.exists(legacyPath)) {
             config = ConfigManager.load(legacyPath);
@@ -160,7 +156,6 @@ public class ChatBubbleClientSetup implements ClientModInitializer {
         //$$ });
         //#endif
 
-        // Server-config GUI: opened on the client only (server never loads the Screen)
         //#if MC >= 12005
         ClientPlayNetworking.registerGlobalReceiver(ServerConfigScreenPayload.ID, (payload, context) -> {
             context.client().execute(() -> MinecraftClient.getInstance().setScreen(new ServerConfigScreen(
@@ -184,8 +179,6 @@ public class ChatBubbleClientSetup implements ClientModInitializer {
 
         com.niuqu.chatbubble.image.MediaClient.registerReceivers();
 
-        // 2.4.10 group chat: announce the mod on join (server routes group chat
-        // as payloads + pushes the group directory); reset state on disconnect.
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
             com.niuqu.chatbubble.chat.GroupChannelState.reset();
             com.niuqu.chatbubble.render.BlurRenderer.setDisconnecting(false);
@@ -193,8 +186,7 @@ public class ChatBubbleClientSetup implements ClientModInitializer {
         });
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
             com.niuqu.chatbubble.chat.GroupChannelState.reset();
-            // Stop the panel blur (its temp framebuffers belong to the dying GL
-            // context) and release them.
+
             com.niuqu.chatbubble.render.BlurRenderer.setDisconnecting(true);
             com.niuqu.chatbubble.render.BlurRenderer.cleanup();
         });
@@ -236,8 +228,7 @@ public class ChatBubbleClientSetup implements ClientModInitializer {
             new com.niuqu.chatbubble.chat.notification.ChatMessageEffects());
 
         //#if MC >= 26000
-        // 26.x: Fabric 移除了 HudRenderCallback，改用 HudElementRegistry 注册 HUD 元素
-        // （HudElement.extractRenderState(GuiGraphicsExtractor, DeltaTracker)）
+
         HudElementRegistry.addLast(Identifier.of("e33chat", "bubble_overlay"), (drawContext, tickDelta) -> {
             if (!config.enabled()) return;
             ChatBubbleHudOverlay.render(drawContext);
@@ -248,7 +239,7 @@ public class ChatBubbleClientSetup implements ClientModInitializer {
             //#if MC >= 12000
             ChatBubbleHudOverlay.render(drawContext);
             //#else
-            // Fabric HudRenderCallback passes a MatrixStack in pre-1.20 → wrap in the compat DrawContext
+
             //$$ ChatBubbleHudOverlay.render(new com.niuqu.chatbubble.DrawContext((net.minecraft.client.util.math.MatrixStack) drawContext));
             //#endif
         });
@@ -257,7 +248,7 @@ public class ChatBubbleClientSetup implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             ImageLoader.tick();
             com.niuqu.chatbubble.image.AnimatedImageLoader.tick();
-            // 纹理全部走 drawTexture(Identifier) 懒加载（getTexture 自动 new ResourceTexture），F3+T 重载后自动重读资源包新 PNG
+
             if (!config.enabled()) return;
 
             String key;
@@ -274,8 +265,8 @@ public class ChatBubbleClientSetup implements ClientModInitializer {
             ChatMessageStore.maybeAutoSave();
 
             if (client.currentScreen == null) {
-                //#if MC >= 26030
-                // 26.3 移除了 GLFW；MouseHandler.isLeftPressed 是同一状态的官方入口
+                //#if MC >= 26000
+
                 boolean leftDown = client.mouseHandler.isLeftPressed();
                 //#else
                 //$$ boolean leftDown = org.lwjgl.glfw.GLFW.glfwGetMouseButton(
@@ -300,7 +291,7 @@ public class ChatBubbleClientSetup implements ClientModInitializer {
                     //#if MC >= 12000
                     ChatBubbleHudOverlay.renderBannerForScreen(g);
                     //#else
-                    // ScreenEvents.afterRender passes a MatrixStack in pre-1.20 → wrap in the compat DrawContext
+
                     //$$ ChatBubbleHudOverlay.renderBannerForScreen(new com.niuqu.chatbubble.DrawContext((net.minecraft.client.util.math.MatrixStack) g));
                     //#endif
                 }

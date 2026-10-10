@@ -4,17 +4,9 @@ import net.minecraft.text.ClickEvent;
 import net.minecraft.text.HoverEvent;
 import net.minecraft.text.Text;
 
-/**
- * ClickEvent/HoverEvent bridge.
- *
- * 1.21.5 turned both into sealed interfaces whose payloads live in per-action
- * records, dropping the {@code getValue(...)} accessors the older class-based
- * API exposed. Centralising the dispatch here keeps the call sites readable.
- */
 public final class StyleCompat {
     private StyleCompat() {}
 
-    /** Payload of a click event as a string (URL, command, file path, page). */
     public static String clickValue(ClickEvent click) {
         if (click == null) return null;
         //#if MC >= 12105
@@ -51,7 +43,6 @@ public final class StyleCompat {
         //#endif
     }
 
-    /** Text payload of a SHOW_TEXT hover event; null for every other action. */
     public static Text hoverShowText(HoverEvent hover) {
         if (hover == null || hover.getAction() != HoverEvent.Action.SHOW_TEXT) return null;
         //#if MC >= 12105
@@ -62,11 +53,6 @@ public final class StyleCompat {
         //#endif
     }
 
-    /**
-     * Best-effort payload of an arbitrary hover action. ChatImage and similar
-     * mods ship their own HoverEvent implementation; on 1.21.5+ the payload is
-     * exposed through a {@code value()} accessor, reached reflectively.
-     */
     public static Object hoverValue(HoverEvent hover) {
         if (hover == null) return null;
         //#if MC >= 12105
@@ -87,7 +73,6 @@ public final class StyleCompat {
         //#endif
     }
 
-    /** Class name of a custom hover payload, used to recognise foreign mod actions. */
     public static String hoverPayloadClassName(HoverEvent hover) {
         Object value = hoverValue(hover);
         return value != null ? value.getClass().getName() : "";

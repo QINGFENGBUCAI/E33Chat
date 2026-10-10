@@ -9,9 +9,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-// Fabric API has no command-execution event (Forge has CommandEvent), so private
-// message quotes (/msg /tell /w /whisper) would never be consumed server-side.
-// Inject vanilla CommandManager.execute before dispatch — same semantics as Forge.
 @Mixin(CommandManager.class)
 public class CommandManagerMixin {
 

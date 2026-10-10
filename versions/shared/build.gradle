@@ -667,21 +667,54 @@ abstract class PreprocessTask extends DefaultTask {
         return matcher.matches() ? matcher.group(1) + matcher.group(2) : line
     }
 
+    // 条件表达式求值。原子形如 MC <op> <int>，支持 ! 取反、&&（优先于 ||）组合；
+    // 不支持括号与 elseif 指令（多路分支用嵌套 if/else）。
+    // 无法识别的表达式不再静默按 true 处理——那会掩盖阈值笔误（曾把 260300 写成
+    // 26030 导致 26.1/26.2 错选 26.3 分支），改为构建期告警并按 false 处理。
     static boolean evaluate(String expr, int ver) {
-        def m = (expr =~ /^\s*MC\s*(>=|<=|==|!=|<|>)\s*(\d+)\s*$/)
-        if (m.matches()) {
-            def op = m.group(1)
-            def val = Integer.parseInt(m.group(2))
-            switch (op) {
-                case '>=': return ver >= val
-                case '<=': return ver <= val
-                case '==': return ver == val
-                case '!=': return ver != val
-                case '<':  return ver < val
-                case '>':  return ver > val
+        def exprStr = expr?.trim()
+        if (!exprStr) return true
+        boolean result = false
+        boolean first = true
+        for (String orPart : exprStr.split(/\|\|/)) {
+            boolean andResult = true
+            for (String atom : orPart.split(/&&/)) {
+                andResult = evalAtom(atom.trim(), ver, exprStr) && andResult
             }
+            result = first ? andResult : (result || andResult)
+            first = false
         }
-        return true
+        return result
+    }
+
+    static boolean evalAtom(String atom, int ver, String fullExpr) {
+        boolean negate = false
+        def a = atom
+        if (a.startsWith('!')) { negate = true; a = a.substring(1).trim() }
+        def m = (a =~ /^MC\s*(>=|<=|==|!=|<|>)\s*(\d+)\s*$/)
+        if (!m.matches()) {
+            println "[e33chat-preprocess] WARNING: unrecognized //#if atom '${a}' in '${fullExpr}' -- treated as false"
+            return false
+        }
+        int val = Integer.parseInt(m.group(2))
+        // 26.x 版本节点是六位数（26.1=260100…）。`MC >= 26000` 是合法的"26.x 起"
+        // 写法，但 26001~29999 这类值几乎总是少打一位的六位数阈值（曾把 260300
+        // 写成 26030 的同族笔误，编译器不报错）——构建期直接告警。
+        if (val > 26000 && val <= 29999 && ver >= 260000) {
+            println "[e33chat-preprocess] WARNING: suspicious 5-digit threshold ${m.group(2)} in '${fullExpr}' -- 26.x patch nodes are 6-digit (26.1=260100, 26.2=260200, 26.3=260300); plain 26000 is the only valid 5-digit 26.x threshold"
+        }
+        def op = m.group(1)
+        boolean r
+        switch (op) {
+            case '>=': r = ver >= val; break
+            case '<=': r = ver <= val; break
+            case '==': r = ver == val; break
+            case '!=': r = ver != val; break
+            case '<':  r = ver < val; break
+            case '>':  r = ver > val; break
+            default:   r = false
+        }
+        return negate ? !r : r
     }
 
     // Yarn→Mojang 26.x 名称映射 (MC 26.x 取消混淆，使用 Mojang 官方名称)

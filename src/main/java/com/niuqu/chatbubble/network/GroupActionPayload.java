@@ -7,11 +7,6 @@ import net.minecraft.network.packet.CustomPayload;
 //#endif
 import net.minecraft.util.Identifier;
 
-/**
- * C2S group management action from the client's [+] popup.
- * 0=create, 1=join, 2=leave, 3=delete. The server answers with a fresh
- * GroupListPayload; errors go back as plain system messages.
- */
 //#if MC >= 12005
 public record GroupActionPayload(int action, String groupName) implements CustomPayload {
 //#else
@@ -71,7 +66,6 @@ public record GroupActionPayload(int action, String groupName) implements Custom
     }
     //#endif
 
-    /** Client-side dispatch (callers guarantee a live connection). */
     public static void send(int action, String groupName) {
         //#if MC >= 12005
         net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(

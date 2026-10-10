@@ -25,7 +25,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Server-side management of message-format templates (/e33chat template ...). */
 public class E33ChatCommands {
 
     public static void register() {
@@ -88,16 +87,6 @@ public class E33ChatCommands {
         });
     }
 
-    /** Player-facing group management + the client's silent say entry (2.4.10).
-     *
-     * <p>All name/text arguments are {@code greedyString}: Brigadier's
-     * {@code string()} (QUOTABLE_PHRASE) only accepts {@code [0-9A-Za-z_.-]}
-     * unquoted, so a CJK group name like 妈妈 parsed as an empty word plus
-     * trailing data and the command was rejected with "Expected whitespace to
-     * end one argument". Greedy reads the whole remainder instead; group names
-     * can never contain whitespace (server validation), so {@code msg} takes a
-     * single rest argument and splits it at the first space.
-     */
     private static com.mojang.brigadier.builder.LiteralArgumentBuilder<ServerCommandSource> groupCommands() {
         var cm = net.minecraft.server.command.CommandManager.literal("group");
         cm.then(net.minecraft.server.command.CommandManager.literal("list")
@@ -124,7 +113,6 @@ public class E33ChatCommands {
         return cm;
     }
 
-    /** Trim the greedy name argument; names with inner whitespace fail validation. */
     private static String greedyName(com.mojang.brigadier.context.CommandContext<ServerCommandSource> ctx, String key) {
         return StringArgumentType.getString(ctx, key).trim();
     }
@@ -194,7 +182,6 @@ public class E33ChatCommands {
         return 1;
     }
 
-    // Opens the server-config GUI on the executing player's client (S2C snapshot)
     private static int openServerGui(ServerCommandSource src) {
         var player = playerOrNull(src);
         if (player == null) {
@@ -323,7 +310,7 @@ public class E33ChatCommands {
     private static void updateTemplates(ServerCommandSource src, boolean chat, List<String> next) {
         if (chat) ChatBubbleMod.setTemplates(new ArrayList<>(next), ChatBubbleMod.whisperTemplates(), ChatBubbleMod.templateDebug());
         else ChatBubbleMod.setTemplates(ChatBubbleMod.chatTemplates(), new ArrayList<>(next), ChatBubbleMod.templateDebug());
-        // Persist to the per-world JSON and rebroadcast
+
         var server = src.getServer();
         var path = server.getSavePath(net.minecraft.util.WorldSavePath.ROOT)
             .resolve("serverconfig").resolve("e33chat-server.json");
@@ -337,8 +324,6 @@ public class E33ChatCommands {
         ChatBubbleMod.broadcastServerConfig(server);
     }
 
-    // Server-side stand-in for the client's name-resolution gate: the executing
-    // player is the client's self, and all online players are candidate names
     private static boolean isKnownOnServer(ServerCommandSource src, String name) {
         if (name == null || name.isEmpty()) return false;
         var server = src.getServer();

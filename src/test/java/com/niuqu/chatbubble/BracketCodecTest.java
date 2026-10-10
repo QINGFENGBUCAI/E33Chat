@@ -55,7 +55,7 @@ class BracketCodecTest {
         ParseResult r = BracketCodec.parse(input);
         assertEquals(1, r.images().size());
         assertEquals("plain code  tail", r.textWithoutImages().getString());
-        // the red run keeps its formatting on the surviving text
+
         boolean[] redSeen = {false};
         r.textWithoutImages().visit((style, part) -> {
             if (part.contains("code") && style.getColor() != null
@@ -109,8 +109,7 @@ class BracketCodecTest {
         Text input = Text.literal("hi [[CICode,url=https://a.com/x.png]] there");
         Text out = BracketCodec.toPlaceholderText(input);
         String s = out.getString();
-        // headless: the translatable placeholder renders as its key; in-game it
-        // is "[图片]"/"[Image]". Either way the code itself must be gone.
+
         assertFalse(s.contains("CICode"), s);
         assertFalse(s.contains("https://"), s);
         assertTrue(s.contains("hi"), s);

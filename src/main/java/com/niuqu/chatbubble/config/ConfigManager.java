@@ -24,7 +24,7 @@ public final class ConfigManager {
                 }
             } catch (Exception e) {
                 E33Log.warn("[e33chat] Failed to load config, using defaults", e);
-                // Keep the corrupt file for manual recovery instead of overwriting it.
+
                 try {
                     Files.move(path, path.resolveSibling(path.getFileName() + ".bak"),
                         java.nio.file.StandardCopyOption.REPLACE_EXISTING);
@@ -76,8 +76,7 @@ public final class ConfigManager {
             c.popupAnimStyle() != null ? c.popupAnimStyle() : d.popupAnimStyle(),
             c.messageAnimStyle() != null ? c.messageAnimStyle() : d.messageAnimStyle(),
             c.imageRenderEnabled() != null ? c.imageRenderEnabled() : d.imageRenderEnabled(),
-            // receiveImages is the user-facing switch; legacy imageRenderEnabled
-            // (2.3.10 early builds) migrates into it when the new key is absent.
+
             c.receiveImages() != null ? c.receiveImages()
                 : (c.imageRenderEnabled() != null ? c.imageRenderEnabled() : d.receiveImages()),
             c.uploadUrl() != null ? c.uploadUrl() : d.uploadUrl(),
@@ -98,8 +97,7 @@ public final class ConfigManager {
     public static void save(Path path, ChatBubbleConfig config) {
         try {
             Files.createDirectories(path.getParent());
-            // Write-then-move: a crash mid-write leaves the old file intact
-            // instead of a truncated JSON that resets the config on next load.
+
             Path tmp = path.resolveSibling(path.getFileName() + ".tmp");
             try (Writer w = new OutputStreamWriter(Files.newOutputStream(tmp), StandardCharsets.UTF_8)) {
                 GSON.toJson(config, w);

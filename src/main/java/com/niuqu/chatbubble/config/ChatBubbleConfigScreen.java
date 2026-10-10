@@ -32,7 +32,7 @@ import net.minecraft.util.math.MathHelper;
 
 public class ChatBubbleConfigScreen extends Screen {
     private final Screen lastScreen;
-    /** True while this screen has pushed its HUD-hide request (see init/removed). */
+
     private boolean hudHidden;
 
     private ChatBubbleTheme.Colors c() {
@@ -62,7 +62,6 @@ public class ChatBubbleConfigScreen extends Screen {
     private final List<ClickableWidget> scrollWidgets = new ArrayList<>();
     private final boolean[] expanded = {true, true, true, true, true};
 
-    // ---- mutable copies (loadFromConfig → widget edits → saveToConfig) ----
     private ChatBubbleTheme theme;
     private boolean enabled, redDotEnabled, hideChatIcon, animationEnabled;
     private int hudIconX, hudIconY;
@@ -89,10 +88,8 @@ public class ChatBubbleConfigScreen extends Screen {
     private List<String> sidebarHidePatterns;
     private List<String> blockedPlayers;
 
-    // 打开时的快照——用于 changeCount / revertAll
     private ChatBubbleConfig snapshot;
 
-    // ---- track（Fabric 没有 ModConfigSpec，用 snapshot/revert 自闭环） ----
     private interface Tracked {
         boolean changed();
         void revert();
@@ -105,7 +102,6 @@ public class ChatBubbleConfigScreen extends Screen {
         ClickableWidget create(int y);
     }
 
-    // 一个选项行可生成多个控件（如 [编辑框][删除]），配合 rows 占多行
     private interface WidgetsFactory {
         List<ClickableWidget> create(int y);
     }
@@ -163,7 +159,7 @@ public class ChatBubbleConfigScreen extends Screen {
                     Ref r = d.ref();
                     tracked.add(track(r.getter(), r.setter()));
                 }
-        // 屏蔽列表在注册表外（动态行）
+
         tracked.add(track(() -> new ArrayList<>(blockedPlayers), v -> blockedPlayers = new ArrayList<>(v)));
     }
 
@@ -250,7 +246,6 @@ public class ChatBubbleConfigScreen extends Screen {
         hideRepeatedAvatars = cfg.hideRepeatedAvatars() != null && cfg.hideRepeatedAvatars();
     }
 
-    // ---- ChatScrollbar geometry inline ----
     private static int sbThumbH(int trackH, int totalH) {
         return Math.max(8, (int) ((long) trackH * trackH / totalH));
     }
@@ -262,7 +257,6 @@ public class ChatBubbleConfigScreen extends Screen {
         return mx >= tx && mx < tx + SCROLLBAR_W && my >= ty && my < ty + th;
     }
 
-    // Chatsheet geometry helpers (scrollbar width constant from render/ChatScrollbar)
     private int rTrackX() { return width - SCROLLBAR_W; }
     private int rTrackH() { return viewBottom() - viewTop(); }
     private int rTotalH() { return calcMaxScroll() + rTrackH(); }
@@ -307,7 +301,7 @@ public class ChatBubbleConfigScreen extends Screen {
         for (Opt opt : visibleOpts()) {
             if (opt.isHeader()) { y += HEADER_H; continue; }
             int count = opt.multiFactory() != null ? opt.multiFactory().create(0).size() : 1;
-            // multi 行的控件共享同一 y（水平并排），逐行推进
+
             if (opt.multiFactory() != null) {
                 for (int k = 0; k < count; k++) {
                     if (wi < scrollWidgets.size()) {
@@ -346,14 +340,6 @@ public class ChatBubbleConfigScreen extends Screen {
         return Math.max(0, START_Y + total - viewBottom());
     }
 
-    // ---- UI construction ----
-
-    // ===== OptionDef 注册表（2.3.15，D4）=====
-    // 单一事实来源：注册表描述"哪个配置键放哪个 GUI 行"。配置键名/默认值/范围
-    // 仍在 ChatBubbleConfig 原样保留（红线不动）。buildCats() / trackConfigFields()
-    // / 色板点击全部由注册表派生，杜绝手写清单漂移。
-    // Fabric 无 ModConfigSpec：Ref 是字段的 getter/setter 对（Screen 的 mutable copies）。
-    // 注册表引实例字段，故非 static；lambda 惰性求值，loadFromConfig 前只建引用。
     private enum Kind { BOOL, INT, SLIDER, HEX, TEXT, PATTERN, ENUM_CYCLE, THEME_CYCLE, TIME_SEP, BG_IMAGE }
 
     private record Ref<T>(java.util.function.Supplier<T> getter, java.util.function.Consumer<T> setter) {
@@ -400,7 +386,7 @@ public class ChatBubbleConfigScreen extends Screen {
         static OptionDef timeSep(String key, Ref<Integer> r) {
             return new OptionDef(key, Kind.TIME_SEP, r, 0, 0, 0, null);
         }
-        /** Single-button row: "Browse…" when empty, "Clear" once a path is set. */
+
         static OptionDef bgImage(String key, Ref<String> r) {
             return new OptionDef(key, Kind.BG_IMAGE, r, 0, 0, 0, null);
         }
@@ -466,7 +452,7 @@ public class ChatBubbleConfigScreen extends Screen {
             OptionDef.intBox("e33chat.config.banner_max_stack", Ref.i(() -> bannerMaxStack, v -> bannerMaxStack = v), 1, 5, 2),
             OptionDef.intBox("e33chat.config.banner_corner_radius", Ref.i(() -> bannerCornerRadius, v -> bannerCornerRadius = v), 0, 10, 2),
             OptionDef.intBox("e33chat.config.banner_opacity", Ref.i(() -> bannerOpacity, v -> bannerOpacity = v), 0, 100, 3),
-            // Fabric 输入范围 -500~500 与 Forge/Neo -1000~1000 不同——既有差异，红线不动
+
             OptionDef.intBox("e33chat.config.banner_offset_x", Ref.i(() -> bannerOffsetX, v -> bannerOffsetX = v), -500, 500, 2),
             OptionDef.intBox("e33chat.config.banner_offset_y", Ref.i(() -> bannerOffsetY, v -> bannerOffsetY = v), -500, 500, 2),
             OptionDef.enumCycle("e33chat.config.banner_anim_style", Ref.s(() -> bannerAnimStyle, v -> bannerAnimStyle = v))),
@@ -504,8 +490,7 @@ public class ChatBubbleConfigScreen extends Screen {
     };
 
     private void buildCats() {
-        // 不缓存：屏蔽列表分区按当前名单动态生成行（删除/添加后 rebuild 重排），
-        // 缓存会把行数定死在首次构建
+
         cats = new ArrayList<>();
         for (int i = 0; i < CAT_KEYS.length; i++) {
             List<Opt> opts = new ArrayList<>();
@@ -518,7 +503,6 @@ public class ChatBubbleConfigScreen extends Screen {
         }
     }
 
-    // 屏蔽列表：动态行数，注册表外（每行 [编辑框][✕]，下方 [添加玩家]）
     private void buildBlockedRows(List<Opt> chat) {
         chat.add(Opt.header("e33chat.config.section.blocked"));
         for (int i = 0; i < blockedPlayers.size(); i++) {
@@ -604,16 +588,12 @@ public class ChatBubbleConfigScreen extends Screen {
 
     @Override
     protected void init() {
-        // 取景编辑器会直接写已保存配置里的背景图三件套：回到本屏时同步快照，
-        // 否则「完成」时 saveAll 会用旧值把它覆盖回去。
+
         var cfgNow = ChatBubbleClientSetup.config();
         panelBgImage = cfgNow.panelBgImage() != null ? cfgNow.panelBgImage() : "";
         panelBgOpacity = cfgNow.panelBgOpacity() != null ? cfgNow.panelBgOpacity() : 100;
         panelBgCrop = cfgNow.panelBgCrop() != null ? cfgNow.panelBgCrop() : "";
-        // Translucent background: vanilla still renders the HUD behind an open
-        // screen, so hide it while this config screen is open; restore later.
-        // Hide the HUD via HudVisibility (InGameHudMixin cancels the HUD render);
-        // options.hudHidden is the F1 flag and would also hide the hand.
+
         if (!hudHidden) {
             com.niuqu.chatbubble.render.HudVisibility.push();
             hudHidden = true;
@@ -695,8 +675,6 @@ public class ChatBubbleConfigScreen extends Screen {
         return out;
     }
 
-    // ---- widget factories ----
-
     private ButtonWidget mkThemeButton(int y) {
         return ButtonWidget.builder(
             Text.translatable("e33chat.theme." + theme.name().toLowerCase()),
@@ -708,7 +686,6 @@ public class ChatBubbleConfigScreen extends Screen {
         ).position(inputX, y).size(INPUT_W, 20).build();
     }
 
-    // Animation style cycle buttons (SLIDE → FADE → ZOOM → NONE → ...)
     private ButtonWidget mkStyleButton(int y, java.util.function.Supplier<String> getter, java.util.function.Consumer<String> setter) {
         return ButtonWidget.builder(
             Text.translatable("e33chat.config.anim_style." + getter.get()),
@@ -721,7 +698,6 @@ public class ChatBubbleConfigScreen extends Screen {
         ).position(inputX, y).size(INPUT_W, 20).build();
     }
 
-    // 色板点击写入 hex 字段（注册表行的 Ref 均为字符串）
     @SuppressWarnings("unchecked")
     private static void setHexValue(Ref<?> ref, String hex) {
         ((Ref<String>) ref).setter().accept(hex);
@@ -787,11 +763,6 @@ public class ChatBubbleConfigScreen extends Screen {
         }).position(inputX, y).size(INPUT_W, 20).build();
     }
 
-    /** Background-image row: no image = single "Browse…" button; an image set =
-     *  「调整取景」+「清除」two half-width buttons. Picking an image saves it to
-     *  the live config right away and drops straight into the crop editor —
-     *  the editor reads the saved path, and framing is what the user came for.
-     *  Rebuilds the row so the labels flip immediately after each action. */
     private List<ClickableWidget> mkBgImageWidgets(int y, Ref<String> ref) {
         String cur = ref.getter().get();
         boolean hasImage = cur != null && !cur.isBlank();
@@ -801,8 +772,7 @@ public class ChatBubbleConfigScreen extends Screen {
                 com.niuqu.chatbubble.compat.NativeFileDialog.pickImage(f -> {
                     if (f == null || !f.isFile()) return;
                     ref.setter().accept(f.getAbsolutePath());
-                    // The crop editor reads the saved config: persist the path
-                    // (and reset the stale crop) before it opens.
+
                     var cfg = ChatBubbleClientSetup.config();
                     ChatBubbleClientSetup.saveConfig(cfg.withPanelBg(f.getAbsolutePath(), cfg.panelBgOpacity(), null));
                     client.setScreen(new com.niuqu.chatbubble.ui.PanelCropScreen(this));
@@ -815,7 +785,7 @@ public class ChatBubbleConfigScreen extends Screen {
             .dimensions(inputX, y, half, 20).build());
         out.add(ButtonWidget.builder(Text.translatable("e33chat.config.panel_bg_clear"), b -> {
             ref.setter().accept("");
-            // Framing belongs to the picture; dropping the picture drops it too.
+
             panelBgCrop = "";
             var cfg = ChatBubbleClientSetup.config();
             ChatBubbleClientSetup.saveConfig(cfg.withPanelBg("", cfg.panelBgOpacity(), null));
@@ -869,12 +839,9 @@ public class ChatBubbleConfigScreen extends Screen {
         return box;
     }
 
-    // ---- rendering ----
-
     @Override
     public void render(DrawContext g, int mouseX, int mouseY, float partialTick) {
-        // CONFIG_BG 烘焙为 75% 不透明（0xC0 alpha），drawTexture 无 alpha 顶点会丢 alpha 画成
-        // 不透明灰块——走带 alpha 顶点的绘制恢复半透明，世界能透出来
+
         com.niuqu.chatbubble.texture.ColoredTextureRenderer.drawWithAlpha(g,
             com.niuqu.chatbubble.texture.UiTextureManager.rl(com.niuqu.chatbubble.texture.UiElement.CONFIG_BG, ChatBubbleTheme.DARK),
             0, 0, width, height, 0xC0 / 255f);
@@ -883,7 +850,6 @@ public class ChatBubbleConfigScreen extends Screen {
 
         String tooltipKey = null;
 
-        // 左侧标签树
         g.enableScissor(CAT_X, START_Y, dividerX, viewBottom());
         int ly = START_Y - treePane.offset();
         for (int i = 0; i < cats.size(); i++) {
@@ -969,8 +935,7 @@ public class ChatBubbleConfigScreen extends Screen {
                 width / 2 + 112, height - 26, c().configLabel(), false);
 
         if (tooltipKey != null)
-            // wrap to 190px like Forge/Neo's font.split — the single-Text overload
-            // renders one unwrapped line and long descriptions overflow the screen
+
             //#if MC >= 12106
             g.drawOrderedTooltip(textRenderer,
                 textRenderer.wrapLines(Text.translatable(tooltipKey), 190),
@@ -1030,7 +995,7 @@ public class ChatBubbleConfigScreen extends Screen {
     //#if MC >= 12002
     @Override
     public void renderBackground(DrawContext g, int mouseX, int mouseY, float partialTick) {
-        // no-op：背景已在 render() 开头画，避免 1.21.1 batch 缓冲叠暗文字
+
     }
     //#else
     //$$ @Override
@@ -1039,10 +1004,11 @@ public class ChatBubbleConfigScreen extends Screen {
     //$$ }
     //#endif
 
-    // ---- input ----
-
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        //#if MC >= 260300
+        button = com.niuqu.chatbubble.compat.InputCompat.glfwButton(button);
+        //#endif
         int w = SCROLLBAR_W;
         int rMax = calcMaxScroll();
         if (rMax > 0 && mouseX >= rTrackX() && mouseX < rTrackX() + w
@@ -1159,7 +1125,7 @@ public class ChatBubbleConfigScreen extends Screen {
 
     private void doClose() {
         saveAll();
-        // 纹理走 drawTexture(Identifier) 懒加载，配置改动无需重新烘焙
+
         client.setScreen(lastScreen);
     }
 

@@ -4,6 +4,8 @@
 
 **修复：26.x 三个版本的 mixin 全部对照实机 jar 逐字段核验并移植（26.3 实机启动崩溃修复）**
 
+> 注：本版本发布前对全仓库做过一轮注释精简（剥离类级 javadoc 与行尾说明性注释，预处理器指令 `//#if`/`//#else`/`//#endif` 与备用分支 `//$$` 代码完整保留，经指令计数与 22 版本编译双重核验）。以下条目中引用的类名/行为不受影响。
+
 - 实机报告（26.3 + Loader 0.19.5）：`MouseHandlerAccessor` 的 `@Accessor("activeButton")` 找不到字段导致 `Initializing game` 崩溃——该字段在 26.3 从 `int` 变成 `MouseButtonInfo` 记录。排查后发现**全部 26.x mixin 描述符都没随 26.x 的 API 改名更新**（2.4.11 已声明 26.x 仅编译验证，本版把这笔债清掉）
 - 逐项迁移（对 26.1/26.2/26.3 统一生效，均经 javap 对照三个版本的实机 jar 确认形状一致）：
   - `MouseHandlerAccessor`：held 状态改注入 `MouseHandler.isLeftPressed` 布尔字段（GLFW 移除后 `activeButton:int` 变成了 `MouseButtonInfo`）；`NativeFileDialog` 调用点同步改为清左键
@@ -16,6 +18,29 @@
   - `MessageHandlerAccessor`：`tryParseAsPlayerMessage` 在 26.x 已不存在且全工程无调用点 → 26.x 分支置空
 - 26.1/26.2/26.3、1.21.1、1.16.5 五个代表性版本编译+打包验证；其余版本无此改动路径
 
+**修复（26.x 实机第二轮）：打开聊天面板后整个 GUI 不渲染、看似卡死**
+
+- 根因：26.x 的 `Gui.extractRenderState(DeltaTracker,boolean,boolean)` 是**整棵 GUI 提取树的总编排**（依次驱动 HUD 提取、Overlay、当前屏幕的 `extractRenderStateWithTooltipAndSubtitles`）——上一版把 HUD 隐藏注入挂在它的 HEAD 全量取消，等于把当前屏幕的提取也一起杀掉：打开的面板永远不被绘制、输入却被它捕获，表现为「卡在世界画面上」
+- 修复：HUD 隐藏注入改挂 **HUD 专属提取**——26.2/26.3 为 `Hud.extractRenderState(GuiGraphicsExtractor,DeltaTracker)`（26.2 起 HUD 拆到独立的 `Hud` 类），26.1 没有 Hud 类、其 `Gui.extractRenderState(GuiGraphicsExtractor,DeltaTracker)` 本身就是 HUD 专属（内部全是各类 overlay），按 26020 分界分别注入
+- 连带修正：`MinecraftClientMixin` 的 setScreen 目标分界同样改为 26020——26.1 的 `Minecraft.setScreen` 还在（26.2 才迁到 `Gui.setScreen`），26.1 若挂 Gui 会因找不到方法在运行时崩溃
+- 教训记录：预处理器的版本比较是**扁平整数**——26.x 的版本节点是六位数（26.2 = 260200），分叉阈值写错位数（26020）会让 26.1 错选 26.2+ 分支
+- 26.3/26.2/26.1/1.21.1/1.16.5 编译+打包验证，22 个版本全量重新打包
+
+**修复（26.x 实机第三轮）：26.3 输入失效（能打字不能发送/关闭）与 26.1/26.2 取景界面崩溃**
+
+- **26.1/26.2 崩溃（Rendering screen: `Can only blur once per frame`）**：`PanelCropScreen`/`PlayerProfileScreen` 在渲染开头调用 `renderBackground`——26.x 上该调用被映射为 `Screen.extractBackground`，会触发每帧仅允许一次的模糊，而原版屏幕提取流程已经消耗过这一次，第二次直接抛异常。26.x 上跳过该调用（两屏自带背景绘制；`PlayerProfileScreen` 的打开路径同理）
+- **26.3 输入失效（能打字、回车/ESC/方向键全死）**：26.x 换用了**全新的键位编号体系**——`KeyEvent.key()` 返回 USB HID usage（Enter=40、ESC=41、Tab=43、方向键 79-82），不再是 GLFW 数值（Enter=257、ESC=256…）；Ctrl 修饰位掩码也从 0x2 变成 **0xC0**。原版自身全走语义方法（`KeyEvent.isEscape()` / `isConfirmation()`），我们硬编码的 GLFW 数值判断全部失效。修复：`InputCompat` 新增 `glfwKey(KeyEvent)`（语义方法 + `InputConstants.KEY_*` 常量换算回 GLFW 风格键值，字母键透传——`InputConstants` 常量本身就是 HID 值，自洽）与 `hasControl(modifiers)`（0xC0 掩码）；`ChatBubbleScreen.keyPressed` 入口处统一换算，全部既有判断原样工作
+- 预处理器教训补充：`evaluate()` 当时只支持单一比较式且未匹配表达式一律按 true——复合条件静默恒真。该缺陷已在同版的工程化改动中修复（支持 `&&`/`||`、未知表达式告警并按 false）
+- 附带发现并确认：26.1 的 `Gui.extractRenderState(GuiGraphicsExtractor,DeltaTracker)` 就是 HUD 专属提取（内部全为 overlay），26.1 无独立 `Hud` 类、`Minecraft.setScreen` 尚未迁移——26.1 与 26.2/26.3 的结构分界在 26.2
+- 26.3/26.2/26.1/1.21.1/1.16.5 编译+打包验证，22 个版本全量重新打包
+
+**工程化（为后续版本拓展）：把实机排错的经验固化成基础设施**
+
+- **预处理器条件表达式升级**：`//#if` 支持 `!` / `&&` / `||` 组合（`&&` 优先于 `||`）；无法识别的表达式从静默按 true 改为**构建期告警 + 按 false**（旧行为会掩盖笔误）；**五位数 26.x 阈值告警**（`MC >= 26030` 这类少打一位的笔误曾让 26.1 静默错选 26.3 分支；`26000` 作为"26.x 起"的合法写法不告警）。已用临时自测文件验证 26.3/1.16.5 两端求值正确
+- **`scripts/mixin-audit.sh`（26.x 专用）**：从预处理产物提取全部 @Mixin 目标/@Accessor/@Invoker/@Inject 描述符，用 `javap -p -s` 对照官方 jar 自动验证，失配即非零退出——"每版必做的人工 javap 逐条对照"自动化（26.3 实机启动崩溃那类问题今后构建期即可发现）。当前 26.1/26.2/26.3 各 17/17 通过；支持多 jar（26.1/26.2 需 client + common 两个 jar，服务端 mixin 的类在 common 里）
+- **`docs/VERSIONING.md` 版本接入手册**：新版本接入七步清单、预处理器规则与坑（不支持 elseif、六位数阈值）、输入兼容模式（入口归一约定）、26.1 vs 26.2/26.3 结构分界表、实机测试七项清单、历史教训速查
+- 全量 22 版本重建无回归（纯工程化改动，不影响运行时行为）
+
 ## v2.4.19
 
 **新增 Minecraft 26.3 支持（22/22 个 Fabric 目标全部编译通过）**
@@ -23,7 +48,7 @@
 - **接入 26.3**（Wilderness Bound，Loader 0.19.5 / Fabric API 0.161.0+26.3）：注册预处理器节点与版本目录，产出独立 jar
 - **26.3 API 迁移**（该版本移除了 GLFW 输入体系）：
   - `KeyEvent.scancode()` → `keycode()`（预处理注入改为按 26.3 条件化）
-  - GLFW 键位常量（KEY_C / KEY_V / KEY_ESCAPE）→ `InputConstants.KEY_*`（数值与 GLFW 兼容）
+  - GLFW 键位常量（KEY_C / KEY_V / KEY_ESCAPE）→ `InputConstants.KEY_*`（同为新键位体系的 HID 值，与 `KeyEvent.key()` 自洽）
   - `glfwGetMouseButton` 轮询 → `MouseHandler.isLeftPressed()`
   - `Util.OS.openUri` 移除 → `com.mojang.blaze3d.Blaze3D.openUri`（映射规则按 26.3 条件重写）
   - `FriendlyByteBuf.writeCollection/readList` 移除 → `ChatMetaPayload`/`GroupListPayload` 手写等价读写（VarInt 计数 + 元素，线格式不变、全版本通用）

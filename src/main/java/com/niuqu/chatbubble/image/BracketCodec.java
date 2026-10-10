@@ -10,21 +10,8 @@ import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
-/**
- * Parses image bracket codes out of chat content.
- *
- * Two wire tags are accepted so the mod interoperates with both ecosystems:
- *   [[CICode,url=...,name=...]]        (ChatImage)
- *   [[ChatUpgrade,url=...,name=...,type=...]]  (third-party rich-message mod; type=image assumed)
- *
- * {@link #strip(Text)} removes the bracket blocks from the styled component
- * tree (keeping the surrounding styles) and returns the extracted image refs.
- * {@link #extractFromHover(Text)} recovers image URLs from legacy history
- * lines that were stored as ChatImage-converted components (green "[Image]"
- * text carrying a show_chatimage hover event) before 2.3.10.
- */
 public final class BracketCodec {
-    /** [tag,attrs] — attribute values may be URL-encoded, commas are not quoted. */
+
     private static final Pattern BRACKET = Pattern.compile(
         "\\[\\[(ChatUpgrade|CICode|E33Emote),([^\\]]+)\\]\\]", Pattern.CASE_INSENSITIVE);
 
@@ -36,11 +23,6 @@ public final class BracketCodec {
 
     private BracketCodec() {}
 
-    /**
-     * Splits {@code text} into plain segments and image refs. Each image ref
-     * remembers the segment index it appeared in; segments render in order,
-     * images render after the text as card rows.
-     */
     public static ParseResult parse(Text text) {
         if (text == null) return new ParseResult(text, List.of());
         String plain = text.getString();
@@ -51,8 +33,7 @@ public final class BracketCodec {
         MutableText out = Text.empty();
         boolean[] hasText = {false};
         int[] segIndex = {0};
-        // Walk the styled tree once, copying every character range that is not
-        // part of a bracket block (bracket blocks are stripped, styles kept).
+
         text.visit((style, part) -> {
             int partStart = 0;
             Matcher local = BRACKET.matcher(part);
@@ -74,8 +55,6 @@ public final class BracketCodec {
             return Optional.empty();
         }, Style.EMPTY);
 
-        // No bracket survived the visit pass (e.g. styles split the code) —
-        // fall back to a plain-text strip so the code never shows raw in the bubble.
         if (images.isEmpty() && !hasText[0]) {
             String stripped = m.replaceAll("");
             return new ParseResult(Text.literal(stripped).setStyle(text.getStyle()), List.of());
@@ -83,10 +62,6 @@ public final class BracketCodec {
         return new ParseResult(out, images);
     }
 
-    /**
-     * Bubble-side entry: strips bracket codes (new format) or ChatImage hover
-     * components (legacy history) and returns the image refs to render.
-     */
     public static ParseResult parseOrExtract(Text text) {
         ParseResult r = parse(text);
         if (!r.images().isEmpty() || text == null) return r;
@@ -97,7 +72,7 @@ public final class BracketCodec {
         text.visit((style, part) -> {
             net.minecraft.text.HoverEvent hover = style.getHoverEvent();
             if (hover != null && (isChatImageHover(hover) || isEasyBotCICodeHover(hover))) {
-                return Optional.empty(); // drop the [Image]/summary placeholder text
+                return Optional.empty();
             }
             out.append(Text.literal(part).fillStyle(style));
             return Optional.empty();
@@ -105,11 +80,6 @@ public final class BracketCodec {
         return new ParseResult(out, refs);
     }
 
-    /**
-     * Replaces every bracket image code with a plain-text placeholder
-     * ("[图片]"/"[Image]") while keeping the surrounding styles. Used when
-     * image receiving is disabled — no download is ever triggered.
-     */
     public static Text toPlaceholderText(Text text) {
         if (text == null) return null;
         Matcher m = BRACKET.matcher(text.getString());
@@ -153,19 +123,12 @@ public final class BracketCodec {
             }
         }
         if (url == null || url.isBlank()) return null;
-        // Only images are rendered as cards; audio/video refs stay stripped
-        // (their text is dropped so the raw bracket never shows).
+
         if (type != null && !type.equalsIgnoreCase("image")) return null;
-        // E33Emote is e33chat's own bubble-less emote code; older e33chat
-        // builds / other mods see the raw text, ChatImage ignores it.
+
         return new ImageRef(url, name, tag.equalsIgnoreCase("E33Emote"));
     }
 
-    /**
-     * Recovers image URLs from ChatImage-converted components: green
-     * "[Image]" text whose style carries a show_chatimage hover event whose
-     * custom value is a JSON object like {"url":...,"name":...}.
-     */
     public static List<ImageRef> extractFromHover(Text text) {
         if (text == null) return List.of();
         List<ImageRef> out = new ArrayList<>();
@@ -182,12 +145,6 @@ public final class BracketCodec {
         return out;
     }
 
-    /**
-     * Recovers image URLs from EasyBot's relay format: the visible summary run
-     * (e.g. "[图片]") carries a normal SHOW_TEXT hover whose tooltip text is the
-     * {@code [[CICode,url=...,name=...]]} bracket. ChatImage understands this
-     * format; E33Chat now does too.
-     */
     public static List<ImageRef> extractFromShowTextHover(Text text) {
         if (text == null) return List.of();
         List<ImageRef> out = new ArrayList<>();
@@ -234,8 +191,7 @@ public final class BracketCodec {
     private static boolean isChatImageHover(net.minecraft.text.HoverEvent hover) {
         try {
             if (String.valueOf(hover.getAction()).toLowerCase(java.util.Locale.ROOT).contains("chatimage")) return true;
-            // Some ChatImage builds ship an Action whose toString() is not the
-            // action id — fall back to the payload's class name.
+
             Object value = com.niuqu.chatbubble.compat.StyleCompat.hoverValue(hover);
             return value != null
                 && value.getClass().getName().toLowerCase(java.util.Locale.ROOT).contains("chatimage");
@@ -247,10 +203,7 @@ public final class BracketCodec {
     private static String readUrlFromHover(net.minecraft.text.HoverEvent hover) {
         try {
             Object value = com.niuqu.chatbubble.compat.StyleCompat.hoverValue(hover);
-            // Custom actions carry whatever their codec decoded. ChatImage's
-            // show_chatimage payload has been, across versions, a JSON object
-            // {"url":...}, a plain code string, or (0.13+) a ChatImageCode
-            // object whose toString() is the original "[[CICode,url=...]]".
+
             if (value instanceof com.google.gson.JsonElement je) {
                 if (je.isJsonObject() && je.getAsJsonObject().has("url")
                         && je.getAsJsonObject().get("url").isJsonPrimitive()) {
@@ -270,7 +223,6 @@ public final class BracketCodec {
         return null;
     }
 
-    /** Accepts a bare http(s) URL, a "[[CICode,...]]" code, or a wrapper around either. */
     static String normalizeUrl(String s) {
         if (s == null || s.isBlank()) return null;
         String fromCode = urlFromCodeText(s);
@@ -280,7 +232,6 @@ public final class BracketCodec {
         return (lower.startsWith("http://") || lower.startsWith("https://")) ? trimmed : null;
     }
 
-    /** Pulls the first image URL back out of a "[[CICode,...]]" code string. */
     static String urlFromCodeText(String s) {
         if (s == null || s.isEmpty()) return null;
         Matcher m = BRACKET.matcher(s);

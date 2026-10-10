@@ -10,24 +10,11 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
-/**
- * Server-side media store for the 2.3.13 server media hosting feature.
- *
- * Files land in <dir>/<mediaId> where mediaId is a random 32-hex UUID (no
- * dashes) — unguessable, so chat images are only reachable by players who saw
- * the URL, without adding an auth layer. Uploads stream through a per-session
- * temp file and are renamed into place on the final chunk.
- *
- * Limits (grilled with the user): max 8 MB per file, 512 MB total quota.
- * TTL is 7 days; cleanup only runs when the server opts in (media_auto_clean).
- * All methods are safe to call from any thread; session state is synchronized
- * on the store instance.
- */
 public final class DiskMediaStore {
     public static final long MAX_SINGLE_BYTES = 8L * 1024 * 1024;
     public static final long QUOTA_BYTES = 512L * 1024 * 1024;
     public static final int CHUNK_BYTES = 512 * 1024;
-    public static final long TTL_MILLIS = 7L * 24 * 60 * 60 * 1000; // 7 days
+    public static final long TTL_MILLIS = 7L * 24 * 60 * 60 * 1000;
 
     private static final Pattern MEDIA_ID = Pattern.compile("[0-9a-f]{32}");
 
@@ -44,7 +31,6 @@ public final class DiskMediaStore {
         this(dir, MAX_SINGLE_BYTES, QUOTA_BYTES, TTL_MILLIS);
     }
 
-    /** Test hook: injectable limits. */
     DiskMediaStore(Path dir, long maxSingle, long quota, long ttlMillis) {
         this.dir = dir;
         this.maxSingle = maxSingle;
@@ -64,20 +50,14 @@ public final class DiskMediaStore {
         return (int) ((size + CHUNK_BYTES - 1) / CHUNK_BYTES);
     }
 
-    /** Upper bound on a legitimately advertised chunk count, derived from the
-     *  per-file limit. The client uses this to bound its reassembly array: the
-     *  count arrives off the wire, so an unclamped value lets one hostile
-     *  response allocate an arbitrarily large array. */
     public static int maxTotalChunks() {
         return totalChunksFor(MAX_SINGLE_BYTES);
     }
 
-    /** Whether a wire-advertised chunk count is plausible for one file. */
     public static boolean isValidChunkCount(int totalChunks) {
         return totalChunks >= 1 && totalChunks <= maxTotalChunks();
     }
 
-    /** First chunk: validate size/quota and create the session. Null on success, else error reason. */
     public synchronized String beginUpload(long uploadId, String playerName, int totalChunks,
                                            long totalBytes, String contentType) {
         if (totalBytes <= 0 || totalBytes > maxSingle) return "too large";
@@ -94,11 +74,6 @@ public final class DiskMediaStore {
         }
     }
 
-    /**
-     * Subsequent chunk: append to the session temp file. Returns null while
-     * the upload is incomplete; on the final chunk returns the new mediaId
-     * (success) or an error reason (failure, session discarded).
-     */
     public synchronized String acceptChunk(long uploadId, int index, byte[] chunk) {
         Session s = sessions.get(uploadId);
         if (s == null) return null;
@@ -142,7 +117,6 @@ public final class DiskMediaStore {
         }
     }
 
-    /** Discard every in-flight upload (server stop). Removes temp files. */
     public synchronized void discardAllUploads() {
         for (Session s : sessions.values()) {
             try { Files.deleteIfExists(s.tmpFile()); } catch (IOException ignored) {}
@@ -150,7 +124,6 @@ public final class DiskMediaStore {
         sessions.clear();
     }
 
-    /** Discard in-flight uploads started by a player who left (disconnect). */
     public synchronized void discardUploadsFor(String playerName) {
         for (Session s : sessions.values()) {
             if (playerName != null && playerName.equals(s.playerName())) {
@@ -160,17 +133,10 @@ public final class DiskMediaStore {
         }
     }
 
-    // 16 still blocks abuse but no longer punishes sending a few images in a
-    // row (upload + the sender's own fetch each cost a slot).
     private static final int RATE_LIMIT_PER_WINDOW = 16;
     private static final long RATE_WINDOW_MS = 10_000;
     private final Map<String, java.util.ArrayDeque<Long>> rateWindows = new ConcurrentHashMap<>();
 
-    /**
-     * Per-player sliding-window throttle for media transfers (one upload session
-     * or one download request = one call). Call once per upload session (index 0),
-     * not per chunk.
-     */
     public boolean allowTransfer(String playerName) {
         long now = System.currentTimeMillis();
         java.util.ArrayDeque<Long> q = rateWindows.computeIfAbsent(playerName, k -> new java.util.ArrayDeque<>());
@@ -182,7 +148,6 @@ public final class DiskMediaStore {
         }
     }
 
-    /** Size in bytes of a stored file, or -1 when absent. */
     public long sizeOf(String mediaId) {
         Path f = dir.resolve(mediaId);
         if (!isValidMediaId(mediaId) || !Files.isRegularFile(f)) return -1;
@@ -193,7 +158,6 @@ public final class DiskMediaStore {
         }
     }
 
-    /** One chunk of a stored file, or null when absent/unreadable. */
     public byte[] readChunk(String mediaId, int index, int totalChunks) {
         long size = sizeOf(mediaId);
         if (size < 0 || index < 0 || index >= totalChunks) return null;
@@ -215,7 +179,6 @@ public final class DiskMediaStore {
         }
     }
 
-    /** Remove files older than the TTL (no-op when TTL is 0). Returns files removed. */
     public int cleanupExpired() {
         return cleanupExpired(System.currentTimeMillis());
     }
@@ -244,7 +207,6 @@ public final class DiskMediaStore {
     private static final long CLEAN_INTERVAL_MILLIS = 6L * 60 * 60 * 1000;
     private volatile long lastCleanupAt;
 
-    /** cleanupExpired with a 6h throttle — safe to call on every finished upload. */
     public void cleanupExpiredThrottled() {
         long now = System.currentTimeMillis();
         if (now - lastCleanupAt < CLEAN_INTERVAL_MILLIS) return;

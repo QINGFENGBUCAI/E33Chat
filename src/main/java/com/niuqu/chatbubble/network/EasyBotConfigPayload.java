@@ -8,13 +8,6 @@ import net.minecraft.network.packet.CustomPayload;
 //#endif
 import net.minecraft.util.Identifier;
 
-/**
- * Server -> client: EasyBot compatibility toggle (2.4.3-beta).
- *
- * A separate payload type on purpose: old clients drop unknown payloads
- * harmlessly, so a mixed-version client/server never desyncs. Absent payload =
- * disabled, matching the server config default.
- */
 //#if MC >= 12005
 public record EasyBotConfigPayload(boolean easyBotCompat) implements CustomPayload {
 //#else

@@ -8,24 +8,13 @@ import net.minecraft.util.Identifier;
 import java.util.HashSet;
 import java.util.Set;
 
-/**
- * 参考 chat_heads 的玩家头部纹理混合方案。
- *
- * <p>从完整皮肤纹理中提取 8×8 头部区域,将 face 层 (8,8) 和 hat 层 (40,8)
- * 逐像素 alpha 混合为单张纹理,渲染时只需一次 draw call,解决了透明度排序问题。</p>
- */
 public final class HeadTextureHelper {
     private HeadTextureHelper() {}
 
-    /** 已注册混合头部纹理的皮肤标识符集合 */
     public static final Set<Identifier> BLENDED_HEAD_TEXTURES = new HashSet<>();
 
-    /**
-     * 从完整皮肤图像中提取 8×8 头部,混合 face + hat 层。
-     * 兼容 64×64 标准皮肤和 HD 皮肤 (128×128 等)。
-     */
     public static NativeImage extractBlendedHead(NativeImage skin) {
-        // 兼容旧式皮肤 (宽高比 2:1,即 64×32)
+
         boolean isLegacy = skin.getWidth() / 2 == skin.getHeight();
         int xScale = skin.getWidth() / 64;
         int yScale = skin.getHeight() / (isLegacy ? 32 : 64);
@@ -54,10 +43,6 @@ public final class HeadTextureHelper {
         return head;
     }
 
-    /**
-     * 将 color2 alpha 混合到 color1 上。
-     * 通道按位置提取,因此同时兼容 ARGB 和 ABGR 格式。
-     */
     public static int blendColors(int color1, int color2) {
         float a1 = ((color1 >> 24) & 0xFF) / 255f;
         float r1 = ((color1 >> 16) & 0xFF) / 255f;
@@ -80,9 +65,6 @@ public final class HeadTextureHelper {
              | Math.min((int)(b3 * 255f), 255);
     }
 
-    /**
-     * 为给定皮肤纹理生成混合头部纹理的唯一标识符。
-     */
     public static Identifier getBlendedHeadLocation(Identifier skinLocation) {
         //#if MC >= 12100
         return Identifier.of("e33chat", skinLocation.getPath());
@@ -91,10 +73,6 @@ public final class HeadTextureHelper {
         //#endif
     }
 
-    /**
-     * 注册混合头部纹理到纹理管理器。
-     * 在 SkinTextureDownloader 拦截皮肤加载时调用。
-     */
     public static void registerBlendedHead(Identifier skinLocation, NativeImage skinImage) {
         if (skinLocation == null || skinImage == null) return;
         if ("e33chat".equals(skinLocation.getNamespace())) return;
@@ -114,7 +92,7 @@ public final class HeadTextureHelper {
             //#endif
             BLENDED_HEAD_TEXTURES.add(skinLocation);
         } catch (Exception ignored) {
-            // 纹理加载失败时静默跳过,不影响正常渲染
+
         }
     }
 }

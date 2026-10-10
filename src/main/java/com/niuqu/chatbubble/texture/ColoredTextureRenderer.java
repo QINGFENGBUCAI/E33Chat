@@ -20,13 +20,6 @@ import org.joml.Matrix4f;
 //#endif
 import net.minecraft.util.Identifier;
 
-/**
- * 带整体透明度的纹理渲染：纹理色 × 白 (1,1,1,alpha)。
- * 用于动态 alpha 的元素（面板开屏淡入、滚动条淡入淡出）——普通 drawTexture 无法携带运行时透明度。
- *
- * 1.21.5 移除了 RenderSystem 的 shader/blend 入口（渲染状态并入 RenderPipeline），
- * 改用 DrawContext.drawTexture 的颜色参数承载 tint/alpha——语义等价且无需自建 quad。
- */
 public final class ColoredTextureRenderer {
 
     private ColoredTextureRenderer() {}
@@ -35,7 +28,7 @@ public final class ColoredTextureRenderer {
                                      int x, int y, int w, int h, float alpha) {
         if (w <= 0 || h <= 0 || alpha <= 0.003f) return;
         //#if MC >= 12105
-        // 采样整张纹理：regionW/texW = 1/1 使 UV 落在 0..1，无需知道纹理实际尺寸
+
         DrawHelper.drawTexture(g, tex, x, y, w, h, 0f, 0f, 1, 1, 1, 1, pack(1f, 1f, 1f, alpha));
         //#else
         //$$ g.draw();
@@ -55,7 +48,6 @@ public final class ColoredTextureRenderer {
         //#endif
     }
 
-    /** 带整体 tint 色的纹理渲染：纹理色 × tint(r,g,b,a)。用于白色默认纹理 × 主题色动态着色。 */
     public static void drawTinted(DrawContext g, Identifier tex,
                                   int x, int y, int w, int h, int argb) {
         if (w <= 0 || h <= 0) return;
@@ -83,11 +75,6 @@ public final class ColoredTextureRenderer {
         //#endif
     }
 
-    /**
-     * 带整体透明度 + UV 采样的纹理渲染：等价 drawTexture 的
-     * (u,v,regionWidth,regionHeight,textureWidth,textureHeight) 语义，但带动态 alpha。
-     * 图标/带采样区域的元素淡入用（drawTexture 走 POSITION_TEXTURE 不吃 setShaderColor）。
-     */
     public static void drawWithAlpha(DrawContext g, Identifier tex,
                                      int x, int y, int w, int h,
                                      float u, float v, int regionW, int regionH,
@@ -95,10 +82,6 @@ public final class ColoredTextureRenderer {
         drawWithAlphaTinted(g, tex, x, y, w, h, u, v, regionW, regionH, texW, texH, alpha, 1f, 1f, 1f);
     }
 
-    /**
-     * 带灰度 + 透明度 + UV 采样的纹理渲染：用于离线玩家头像灰显。
-     * grayLevel < 1 时将 RGB 通道乘以 grayLevel 实现灰度效果。
-     */
     public static void drawWithAlphaGrayscale(DrawContext g, Identifier tex,
                                               int x, int y, int w, int h,
                                               float u, float v, int regionW, int regionH,

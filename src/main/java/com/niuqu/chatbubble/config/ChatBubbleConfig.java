@@ -54,8 +54,7 @@ public record ChatBubbleConfig(
     String messageAnimStyle,
     Boolean imageRenderEnabled,
     Boolean receiveImages,
-    // Image upload host (2.3.11). null/blank = uguu.se default (~3h expiry);
-    // response: "text" (body is the URL) or "json:<field>" (default json:files[0].url).
+
     String uploadUrl,
     String uploadField,
     String uploadExtra,
@@ -66,11 +65,10 @@ public record ChatBubbleConfig(
     boolean closeChatOnSend,
     Integer bannerOpacity,
     Integer bubbleSize,
-    // 2.4.10 custom panel background (client-only). null/blank = default texture.
+
     @SerializedName("panel_bg_image") String panelBgImage,
     @SerializedName("panel_bg_opacity") Integer panelBgOpacity,
-    // 2.4.12 crop framing for the background image: "centerX,centerY,zoom"
-    // (normalized). null/blank = centered cover-crop.
+
     @SerializedName("panel_bg_crop") String panelBgCrop
 ) {
     public static ChatBubbleConfig defaults() {

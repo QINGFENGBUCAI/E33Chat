@@ -11,7 +11,6 @@ import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/** Headless tests for the server media store (pure Java, no MC classes). */
 class DiskMediaStoreTest {
 
     private static byte[] payload(int size) {
@@ -40,7 +39,6 @@ class DiskMediaStoreTest {
         assertTrue(DiskMediaStore.isValidMediaId(mediaId));
         assertEquals(data.length, store.sizeOf(mediaId));
 
-        // read back in chunks and reassemble
         int total = DiskMediaStore.totalChunksFor(data.length);
         byte[] out = new byte[data.length];
         int off = 0;
@@ -67,7 +65,7 @@ class DiskMediaStoreTest {
         DiskMediaStore store = new DiskMediaStore(dir, 1024 * 1024, 10_000, 0);
         String r = store.beginUpload(1, "alice", 1, 20_000, "image/png");
         assertEquals("quota exceeded", r);
-        // within quota passes
+
         assertNull(store.beginUpload(2, "alice", 1, 1_000, "image/png"));
     }
 
@@ -76,10 +74,10 @@ class DiskMediaStoreTest {
         Path dir = Files.createTempDirectory("e33media");
         DiskMediaStore store = new DiskMediaStore(dir);
         assertNull(store.beginUpload(1, "alice", 2, 100, "image/png"));
-        String r = store.acceptChunk(1, 1, new byte[50]); // skip index 0
+        String r = store.acceptChunk(1, 1, new byte[50]);
         assertEquals("chunk out of order", r);
         assertEquals(-1, store.sizeOf("whatever"));
-        // session discarded: a valid 0-chunk no longer accepted
+
         assertNull(store.acceptChunk(1, 0, new byte[50]));
     }
 
@@ -90,7 +88,7 @@ class DiskMediaStoreTest {
         assertNull(store.beginUpload(1, "alice", 2, 100, "image/png"));
         String r = store.acceptChunk(1, 0, new byte[50]);
         assertNull(r);
-        r = store.acceptChunk(1, 1, new byte[60]); // 110 != 100
+        r = store.acceptChunk(1, 1, new byte[60]);
         assertNotNull(r);
         assertNotEquals("", r);
         assertEquals("size mismatch", r);
@@ -125,7 +123,7 @@ class DiskMediaStoreTest {
         assertNotNull(mediaId);
         long old = System.currentTimeMillis() - 5_000;
         Files.setLastModifiedTime(dir.resolve(mediaId), FileTime.fromMillis(old));
-        // fresh upload stays
+
         assertNull(store.beginUpload(id + 1, "alice", 1, 10, "image/png"));
         String fresh = store.acceptChunk(id + 1, 0, new byte[10]);
         assertNotNull(fresh);
@@ -138,8 +136,7 @@ class DiskMediaStoreTest {
 
     @Test
     void urlValidationMatchesStore() {
-        // isUsableUrl-style check for the e33chat protocol (logic lives in ImageLoader;
-        // here we only pin the mediaId contract used by both sides)
+
         assertTrue(DiskMediaStore.isValidMediaId("abcdef0123456789abcdef0123456789"));
         assertTrue(DiskMediaStore.isValidMediaId(DiskMediaStore.newMediaId()));
     }

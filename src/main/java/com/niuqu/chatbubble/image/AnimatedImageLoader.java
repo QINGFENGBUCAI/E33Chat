@@ -26,47 +26,21 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-/**
- * Animated GIF/WebP/APNG loader for chat images and emotes (2.4.10).
- *
- * Ported from the CoreChat fork's AnimatedEmoteLoader (shared understanding of
- * ImageIO pitfalls: seek-forward readers, GIF frame deltas composed on the
- * logical canvas, disposal methods) with E33Chat transports: plain HTTP via the
- * shared client and server-hosted e33chat://media via MediaClient — no
- * external plugin involved.
- *
- * One GPU texture per decoded frame: Forge/Mohist texture caches reliably
- * switch between ResourceLocations, while re-uploading pixels into one
- * DynamicTexture can stick on frame zero. Frame advance is wall-clock driven
- * (tick + render-side fallback) so GIFs keep moving when screens change.
- */
 public final class AnimatedImageLoader {
     private static final Map<String, Entry> CACHE = new ConcurrentHashMap<>();
     private static final int MAX_FRAMES = 120;
     private static final int MAX_DIMENSION = 512;
     private static final long MAX_BYTES = 8L * 1024 * 1024;
-    /**
-     * 解码像素预算（单图，约 8M px ≈ 32MB 显存 @4B/px）。超预算的动图保留前若干帧
-     * 而不是拒绝：裁短的 GIF 仍然会动、仍然能看清内容，而「拒绝」是用户无法处理的
-     * 死路。这也是 120 帧上限能负担的原因——512px 方图 120 帧否则要 ~125MB。
-     * 数字与 AtomChat 一致。
-     */
+
     private static final long MAX_PIXELS_PER_IMAGE = 8L * 1024L * 1024L;
     private static final long FAILED_RETRY_MS = 60_000;
 
-    // ==== LRU eviction (mirrors ImageLoader) ====
-    // CACHE used to grow without bound: every Entry pins up to 48 GL textures
-    // (48 * 512x512x4 ≈ 50 MB), so a session with GIF traffic could OOM the
-    // client. Entries the chat screen hasn't touched recently are evicted and
-    // their textures destroyed; in-flight loads are never evicted (their upload
-    // callback would leak).
     private static final java.util.Deque<String> LRU = new java.util.ArrayDeque<>();
-    /** Max cached entries (failed/static entries occupy a slot too). */
+
     private static final int CACHE_CAP = 24;
-    /** Max total retained frames across the cache; must stay >= MAX_FRAMES so a
-     *  single full-length animation always fits. */
+
     private static final int FRAME_BUDGET = 192;
-    /** Entries untouched for this long are evicted even under budget. */
+
     private static final long IDLE_EVICT_MS = 5 * 60_000;
 
     private static void touchLru(String url) {
@@ -93,10 +67,7 @@ public final class AnimatedImageLoader {
                     it.remove();
                     continue;
                 }
-                // Never evict in-flight entries (their upload callback would leak)
-                // or staticImage markers (tiny, and evicting them would re-download
-                // the file on next access); keep recently-touched entries alive
-                // even over budget.
+
                 boolean loading = !e.ready && !e.failed && !e.staticImage;
                 if (loading || e.staticImage || now - e.lastAccessMs < IDLE_EVICT_MS) continue;
                 it.remove();
@@ -112,7 +83,6 @@ public final class AnimatedImageLoader {
         return frames == null ? 0 : frames.length;
     }
 
-    /** Main thread task: unregister + free the GL textures of an evicted entry. */
     private static void destroyEntryTextures(Entry e) {
         Identifier[] frames = e.frames;
         e.frames = null;
@@ -129,8 +99,6 @@ public final class AnimatedImageLoader {
         });
     }
 
-    // Separate small pool: a GIF must never occupy ImageLoader's static-image
-    // workers, or one animated download can starve regular images (fork lesson).
     private static final ExecutorService EXEC =
         Executors.newFixedThreadPool(2, r -> {
             Thread t = new Thread(r, "e33chat-animated");
@@ -140,7 +108,6 @@ public final class AnimatedImageLoader {
 
     private AnimatedImageLoader() {}
 
-    /** URL looks animated by extension / query hint — the cheap path. */
     public static boolean looksAnimated(String url, String nameHint) {
         String lower = (url + " " + (nameHint == null ? "" : nameHint))
             .toLowerCase(java.util.Locale.ROOT);
@@ -151,30 +118,25 @@ public final class AnimatedImageLoader {
             || lower.endsWith(".apng") || formatHint;
     }
 
-    /** Extension-gated entry; null when the URL gives no animation hint. */
     public static Entry getOrLoad(String url, String nameHint) {
         if (url == null || url.isBlank() || !looksAnimated(url, nameHint)) return null;
         return cachedOrStart(url);
     }
 
-    /** Content-probe path for extension-less transports (e33chat://media). */
     public static Entry getOrLoadAny(String url, String nameHint) {
         if (url == null || url.isBlank()) return null;
         return cachedOrStart(url);
     }
 
-    /** Local file (custom emotes); the filename extension gates the probe. */
     public static Entry getOrLoadFile(java.io.File file) {
         if (file == null || !file.isFile()) return null;
         return getOrLoad(file.toURI().toString(), file.getName());
     }
 
-    /** Client tick: advance all live entries (idle ones skip frame math). */
     public static void tick() {
         long now = System.currentTimeMillis();
         for (Entry entry : CACHE.values()) {
-            // Off-screen GIFs stop advancing: the chat screen touches entries it
-            // renders every frame, so anything idle for this long is invisible.
+
             if (now - entry.lastAccessMs > 30_000) continue;
             entry.advance(now);
         }
@@ -217,8 +179,7 @@ public final class AnimatedImageLoader {
                     return;
                 }
             } else {
-                // Raw non-ASCII (Chinese filenames) must go through the ASCII
-                // URI form or HttpClient can fail before any network I/O.
+
                 URI requestUri = URI.create(URI.create(entry.url).toASCIIString());
                 HttpResponse<byte[]> response = ImageLoader.client().send(
                     HttpRequest.newBuilder(requestUri)
@@ -242,8 +203,7 @@ public final class AnimatedImageLoader {
             entry.sizeBytes = bytes.length;
             Decoded decoded = decode(bytes);
             if (decoded == null || decoded.frames().size() < 2) {
-                // Real single-frame file: stop retrying, let the static
-                // ImageLoader take over permanently.
+
                 entry.staticImage = true;
                 return;
             }
@@ -276,18 +236,10 @@ public final class AnimatedImageLoader {
         }
     }
 
-    /** Structural facts about an animated file, read without decoding pixels. */
     public record Probe(int frames, int width, int height, String format) {}
 
-    /** Why an animated source cannot be rendered by the receiver as-is. */
     public enum OverBudget { TOO_MANY_FRAMES, TOO_LARGE_DIMENSION, TOO_LARGE_BYTES }
 
-    /**
-     * Sniffs the file's reader (no pixel decode): null when the file is a still
-     * image or unreadable — "still image, re-encode"; decoding with
-     * {@code ImageIO.read} returns only the first frame, which is how every
-     * outgoing GIF used to lose its animation before it ever left the client.
-     */
     public static Probe probe(byte[] bytes) {
         if (bytes == null || bytes.length == 0) return null;
         try (ImageInputStream input = ImageIO.createImageInputStream(new ByteArrayInputStream(bytes))) {
@@ -301,8 +253,7 @@ public final class AnimatedImageLoader {
                 if (count < 2) return null;
                 int w = reader.getWidth(0);
                 int h = reader.getHeight(0);
-                // A GIF's logical screen can be larger than the first frame's
-                // own bounds; the canvas is what actually gets rendered.
+
                 if ("gif".equalsIgnoreCase(reader.getFormatName())) {
                     IIOMetadata stream = reader.getStreamMetadata();
                     if (stream != null) {
@@ -327,13 +278,6 @@ public final class AnimatedImageLoader {
         }
     }
 
-    /**
-     * Null when the receiver can render this source; otherwise the first limit it
-     * breaks. The budget is deliberately the receiver's, not a new one: sending
-     * something bigger would be accepted by the upload and then silently fall
-     * back to a still frame on arrival — the failure this whole path exists to
-     * prevent.
-     */
     public static OverBudget checkBudget(Probe probe, long byteCount) {
         if (probe == null) return null;
         if (probe.frames() > MAX_FRAMES) return OverBudget.TOO_MANY_FRAMES;
@@ -344,19 +288,17 @@ public final class AnimatedImageLoader {
         return null;
     }
 
-    /** MIME type for a probed format name, so passthrough uploads keep theirs. */
     public static String mimeType(String format) {
         if (format == null) return "application/octet-stream";
         return switch (format.toLowerCase(java.util.Locale.ROOT)) {
             case "gif" -> "image/gif";
-            case "png" -> "image/png";   // APNG reports as png
+            case "png" -> "image/png";
             case "jpeg", "jpg" -> "image/jpeg";
             case "webp" -> "image/webp";
             default -> "application/octet-stream";
         };
     }
 
-    /** Frames a w×h animation may keep under the decoded-pixel budget. */
     private static int framesWithinBudget(int width, int height) {
         long px = (long) Math.max(1, width) * Math.max(1, height);
         if (px <= 0) return MAX_FRAMES;
@@ -372,15 +314,14 @@ public final class AnimatedImageLoader {
             if (!readers.hasNext()) return null;
             ImageReader reader = readers.next();
             try {
-                // seek-forward-only readers leave the stream at the end after
-                // getNumImages(true), breaking later metadata reads — reseat.
+
                 reader.setInput(input, false, false);
                 int count = Math.min(MAX_FRAMES, reader.getNumImages(true));
                 if (count < 2) return null;
                 if ("gif".equalsIgnoreCase(reader.getFormatName())) {
                     return decodeGif(reader, count);
                 }
-                // 解码前先按像素预算裁帧：超预算的动图不花 CPU 也不花显存
+
                 int budget = framesWithinBudget(reader.getWidth(0), reader.getHeight(0));
                 if (budget < count) {
                     E33Log.info("[e33chat] animated image trimmed to {} of {} frames (pixel budget)",
@@ -401,7 +342,7 @@ public final class AnimatedImageLoader {
                         delays[i] = frameDelay(reader.getImageMetadata(i));
                     }
                 } catch (Throwable t) {
-                    // 与 GIF 路径一致：中途失败不能泄漏已解码的帧
+
                     closeFrames(frames);
                     throw t;
                 }
@@ -429,7 +370,6 @@ public final class AnimatedImageLoader {
         return "animated-image";
     }
 
-    /** GIF frames are commonly cropped deltas; compose them on the logical canvas. */
     private static Decoded decodeGif(ImageReader reader, int count) throws Exception {
         int canvasW = Math.max(1, reader.getWidth(0));
         int canvasH = Math.max(1, reader.getHeight(0));
@@ -447,7 +387,7 @@ public final class AnimatedImageLoader {
             } catch (Throwable ignored) {}
         }
         if (canvasW > MAX_DIMENSION || canvasH > MAX_DIMENSION) return null;
-        // GIF 帧数同样受像素预算约束（在组装循环前裁掉，省 CPU 与显存）
+
         int budget = framesWithinBudget(canvasW, canvasH);
         if (budget < count) {
             E33Log.info("[e33chat] animated GIF trimmed to {} of {} frames (pixel budget)", budget, count);
@@ -475,8 +415,7 @@ public final class AnimatedImageLoader {
                 Graphics2D graphics = canvas.createGraphics();
                 try {
                     graphics.setComposite(AlphaComposite.SrcOver);
-                    // Some encoders emit full-canvas frames with a crop-sized
-                    // descriptor — trust the raster size over the descriptor.
+
                     boolean logical = frame.getWidth() == canvasW && frame.getHeight() == canvasH
                         && (info.width() != canvasW || info.height() != canvasH);
                     graphics.drawImage(frame, logical ? 0 : info.left(), logical ? 0 : info.top(), null);
@@ -594,7 +533,7 @@ public final class AnimatedImageLoader {
         private volatile long sizeBytes;
         private volatile long frameStart;
         private volatile int frameIndex;
-        /** Last render-side touch (getOrLoad/texture()); drives tick + eviction. */
+
         private volatile long lastAccessMs = System.currentTimeMillis();
 
         private Entry(String url) {
@@ -625,7 +564,6 @@ public final class AnimatedImageLoader {
             return height;
         }
 
-        /** Current frame texture; wall-clock fallback keeps GIFs alive without ticks. */
         public Identifier texture() {
             lastAccessMs = System.currentTimeMillis();
             Identifier[] current = frames;
@@ -655,7 +593,6 @@ public final class AnimatedImageLoader {
 
     private record Decoded(ArrayList<NativeImage> frames, int[] delays, int width, int height) {}
 
-    /** Draw snapshot: current frame texture + logical canvas size. */
     public record FrameTex(Identifier texture, int width, int height) {}
 
     private record FrameInfo(int left, int top, int width, int height, int delay, int disposal) {}

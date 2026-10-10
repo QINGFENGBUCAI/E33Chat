@@ -9,9 +9,6 @@ import net.minecraft.util.Formatting;
 //$$ import net.minecraft.text.TranslatableText;
 //#endif
 
-/**
- * Text factory compatibility for pre-1.19 and modern Text APIs.
- */
 public final class Txt {
     private Txt() {}
 

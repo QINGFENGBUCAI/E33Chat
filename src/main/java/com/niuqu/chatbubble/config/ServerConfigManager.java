@@ -17,16 +17,13 @@ public final class ServerConfigManager {
             try (Reader r = new InputStreamReader(Files.newInputStream(path), StandardCharsets.UTF_8)) {
                 ServerConfig loaded = GSON.fromJson(r, ServerConfig.class);
                 if (loaded != null) {
-                    // Fields added after 2.3.15 are nullable in the DTO so that a
-                    // missing key is distinguishable from an explicit false; old
-                    // config files must keep the documented "absent = enabled"
-                    // default instead of leaking null into the consumers.
+
                     if (loaded.easy_bot_compat == null) loaded.easy_bot_compat = Boolean.TRUE;
                     if (loaded.media_auto_clean == null) loaded.media_auto_clean = Boolean.TRUE;
                     return loaded;
                 }
             } catch (Exception e) {
-                // log and fall through to defaults
+
             }
         }
         ServerConfig def = ServerConfig.defaults();

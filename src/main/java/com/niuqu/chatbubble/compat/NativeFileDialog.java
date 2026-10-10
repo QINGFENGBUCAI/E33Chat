@@ -14,24 +14,17 @@ import java.awt.Frame;
 import java.io.File;
 import java.util.concurrent.atomic.AtomicReference;
 
-/**
- * AWT FileDialog-based image picker, mirroring the modal picker pattern:
- * runs on a worker thread + EDT so the render thread never blocks; MC key/mouse
- * state is released while the dialog owns input and the render thread resumes normally.
- */
 public final class NativeFileDialog {
     private static boolean open;
 
     private NativeFileDialog() {}
 
-    /** Opens a modal image picker; the result (or null on cancel) is delivered on the render thread. */
     public static void pickImage(java.util.function.Consumer<File> callback) {
         if (open) return;
         open = true;
         KeyBinding.unpressAll();
         MinecraftClient mc = MinecraftClient.getInstance();
-        // MC keeps thinking the button is held while the dialog grabs input;
-        // clear it so release state restores cleanly after the dialog closes
+
         //#if MC >= 26000
         if (mc.mouseHandler != null) ((com.niuqu.chatbubble.mixin.MouseHandlerAccessor) mc.mouseHandler).e33chat$setActiveButton(false);
         //#else

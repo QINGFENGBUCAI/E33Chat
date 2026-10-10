@@ -11,7 +11,6 @@ import net.minecraft.util.Identifier;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Server -> client sync of server-side settings (v2: adds message-format templates). */
 //#if MC >= 12005
 public record ConfigSyncV2Payload(boolean useTpa, List<String> chatTemplates,
                                   List<String> whisperTemplates, boolean templateDebug)
@@ -76,9 +75,6 @@ public record ConfigSyncV2Payload(boolean useTpa, List<String> chatTemplates,
     //$$ }
     //#endif
 
-    /** Template lists are a handful of entries; anything beyond the cap is a
-     *  hostile or corrupt payload — the count comes off the wire, so an
-     *  unclamped new ArrayList<>(count) lets one packet OOM the receiver. */
     static final int MAX_LIST_ENTRIES = 256;
 
     static List<String> readList(PacketByteBuf buf) {

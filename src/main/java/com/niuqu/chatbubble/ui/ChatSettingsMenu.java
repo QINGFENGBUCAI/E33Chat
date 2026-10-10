@@ -19,26 +19,21 @@ public class ChatSettingsMenu {
     private static final int W = 100;
     private static final int ROW_H = 18;
     private static final int COUNT = 5;
-    /** Row index of the clear-history item. */
     private static final int CLEAR_ROW = 4;
-    /** handleClick return: clear-history confirmed (second click). */
+
     public static final int ACTION_CLEAR = 4;
-    /** handleClick return: clear-history first click on an empty history. */
+
     public static final int ACTION_CLEAR_EMPTY = -2;
     private static final int CLEAR_RED = 0xFFFF5555;
-    /** Window in ms between the first click (arm) and the confirming second click. */
+
     private static final long ARM_MS = 1000;
 
     public boolean visible;
 
-    /** Screen 注入的关闭请求钩子（播放关闭动画）；null 时直接隐藏（D07-6）。 */
     public Runnable closeRequest;
 
-    /** Screen 注入：判断当前是否有可清空的历史；null 时视为有（跳过空态分支）。 */
     public java.util.function.BooleanSupplier hasHistory;
 
-    // Two-click confirm state: first click on the clear row arms it and the label
-    // turns red; a second click within ARM_MS executes, anything else cancels.
     private boolean clearArmed;
     private long clearArmedAt;
 
@@ -51,7 +46,6 @@ public class ChatSettingsMenu {
         clearArmed = false;
     }
 
-    /** Expires the armed state after ARM_MS without a confirming click. */
     public void maybeExpire(long now) {
         if (clearArmed && now - clearArmedAt >= ARM_MS) clearArmed = false;
     }
@@ -126,23 +120,23 @@ public class ChatSettingsMenu {
         if (row >= 0 && row < COUNT) {
             if (row == CLEAR_ROW) {
                 if (clearArmed) {
-                    // Confirming second click — close the menu and execute.
+
                     resetClearArmed();
                     requestClose();
                     return ACTION_CLEAR;
                 }
                 if (hasHistory != null && !hasHistory.getAsBoolean()) {
-                    // Nothing to clear: keep the menu open, tell the screen to toast.
+
                     return ACTION_CLEAR_EMPTY;
                 }
-                // Arm the two-click confirm; the menu stays open.
+
                 clearArmed = true;
                 clearArmedAt = System.currentTimeMillis();
                 return -1;
             }
             resetClearArmed();
             requestClose();
-            return row; // 0=search, 1=quick_chat, 2=theme, 3=settings
+            return row;
         }
         return -1;
     }

@@ -19,90 +19,57 @@ import java.util.UUID;
 
 @Mixin(value = net.minecraft.client.network.message.MessageHandler.class, priority = 500)
 public class ChatListenerMixin {
-    // Whisper keywords live in chat.WhisperSignal (single constant source); the
-    // echo check below matches them against the whole line.
 
-
-    // Pulls styled server prefixes out of the decorated line: "[Group]<Steve> hi" -> "[Group]Steve"
     private static Text extractDecoratedName(Text fullLine, String contentStr,
                                                   String rawName, Text fallback) {
         return com.niuqu.chatbubble.chat.capture.ChatPipeline.extractDecoratedName(fullLine, contentStr, rawName, fallback);
     }
-
 
     private static Text cleanNameArea(Text fullLine, int a, int b,
                                            String rawName, Text fallback) {
         return com.niuqu.chatbubble.chat.capture.ChatPipeline.cleanNameArea(fullLine, a, b, rawName, fallback);
     }
 
-
-    // Nick plugins put the tab-list display name in chat instead of the profile name;
-    // legacy plugins may embed section-sign color codes in names, so offer stripped variants too
     private static String[] nameCandidates(net.minecraft.client.network.PlayerListEntry info) {
         return com.niuqu.chatbubble.chat.capture.ChatClassifier.nameCandidates(info);
     }
-
 
     private static void addNameVariants(java.util.Set<String> out, String name) {
         com.niuqu.chatbubble.chat.capture.ChatClassifier.addNameVariants(out, name);
     }
 
-
-    // Vanilla broadcasts (advancements/deaths/joins) lead with a clickable player name,
-    // which tell-click would wrongly claim as chat — keep them as system messages.
-    // chat.type.admin is the op echo "[Steve: Teleported ...]",
-    // announcement/emote are /say and /me — same trap
     private static boolean isVanillaBroadcast(Text message) {
         return com.niuqu.chatbubble.chat.capture.ChatClassifier.isVanillaBroadcast(message);
     }
-
-
-    // ===== Layer 0: deterministic routing by vanilla translation key.=====
-    // NCR/FreedomChat stuff the decorated component tree into system packets unchanged,
-    // so the key survives conversion. Unknown keys fall through to the heuristics below.
 
     private static Text argAsComponent(Object arg) {
         return com.niuqu.chatbubble.chat.capture.ChatClassifier.argAsComponent(arg);
     }
 
-
     private static net.minecraft.client.network.PlayerListEntry resolveOnlinePlayer(String displayName) {
         return com.niuqu.chatbubble.chat.capture.ChatClassifier.resolveOnlinePlayer(displayName);
     }
-
 
     private static boolean classifyByKey(Text message) {
         return com.niuqu.chatbubble.chat.capture.ChatClassifier.classifyByKey(message);
     }
 
-
-    // Plugins attach "click to whisper" events to sender names — the command holds the
-    // real profile name, giving deterministic attribution even on nickname servers
     private static SenderMeta detectByTellClick(Text message, String text) {
         return com.niuqu.chatbubble.chat.capture.TellClickDetector.detectByTellClick(message, text);
     }
-
 
     private static SenderMeta detectWhisperInSystemMessage(String text, String logTag) {
         return com.niuqu.chatbubble.chat.capture.WhisperDetector.detectWhisperInSystemMessage(text, logTag);
     }
 
-
-    // ===== Template layer (server-declared message formats) =====
-
     private static void logTemplateMiss(String text) {
         com.niuqu.chatbubble.chat.capture.TemplateLayer.logTemplateMiss(text);
     }
-
 
     private static boolean isTemplateNameKnown(String name) {
         return com.niuqu.chatbubble.chat.capture.TemplateLayer.isTemplateNameKnown(name);
     }
 
-
-    // Server template parse: exact field split with style-preserving offsets.
-    // Returns null on no match (fall back to the guards) or when the line is our
-    // own echo (already bubbled via the authoritative player channel / suppressed).
     private static SenderMeta matchByTemplate(Text message, String text) {
         return com.niuqu.chatbubble.chat.capture.TemplateLayer.matchByTemplate(message, text);
     }
@@ -111,11 +78,6 @@ public class ChatListenerMixin {
         return com.niuqu.chatbubble.chat.capture.TemplateLayer.matchByTemplate(message, text, logTag);
     }
 
-
-    // Template-path field slicing: if the captured region contains literal §-codes
-    // (some plugins embed raw "§6" text instead of real styles), rebuild it with
-    // parseStyledText to render actual colors; otherwise keep the original
-    // component slice (preserves real per-run styles like the guards do).
     private static Text templateSlice(Text message, String text, int from, int to) {
         return com.niuqu.chatbubble.chat.capture.TemplateLayer.templateSlice(message, text, from, to);
     }
@@ -125,7 +87,7 @@ public class ChatListenerMixin {
                                MessageType.Parameters params, CallbackInfo ci) {
         UUID senderId = gameProfile.getId();
         //#if MC >= 26000
-        // 26.x: SignedMessage.getContent() 在 PlayerChatMessage 上叫 decoratedContent()
+
         Text raw = message.decoratedContent();
         //#else
         //$$ Text raw = message.getContent();
@@ -189,7 +151,7 @@ public class ChatListenerMixin {
             Text fullLine = params.applyChatDecoration(raw);
             senderName = extractDecoratedName(fullLine, rawStr, name, senderName);
         }
-        // 进服窗口守卫：包可能在本地玩家实体就绪前到达——跳过缓存无害，解引用致命
+
         var self = MinecraftClient.getInstance().player;
         if (senderId != null && self != null && senderId.equals(self.getUuid())) {
             ChatMessageStore.cacheOwnDecoratedName(senderName);
@@ -250,8 +212,6 @@ public class ChatListenerMixin {
             return;
         }
 
-        // P1: a server-declared template is exact evidence, so it may claim a
-        // senderless disguised line (the hasSender branch above is authoritative).
         if (!isOutgoing
             && (!ChatMessageStore.serverChatTemplates().isEmpty()
                 || !ChatMessageStore.serverWhisperTemplates().isEmpty())) {
@@ -298,9 +258,6 @@ public class ChatListenerMixin {
             if (tpl != null) { ChatMessageStore.setPendingMeta(tpl); return; }
         }
 
-        // EasyBot compatibility (on by default; the server toggle overrides it):
-        // parse QQ group relays as player messages before the generic
-        // whisper/name heuristics can steal them.
         if (ChatMessageStore.isEasyBotCompat()) {
             SenderMeta eb = com.niuqu.chatbubble.chat.capture.EasyBotParser.tryParse(message, text);
             if (eb != null) {
@@ -309,9 +266,7 @@ public class ChatListenerMixin {
                 ChatMessageStore.setPendingMeta(eb);
                 return;
             }
-            // Relay-shaped line the parser declined (blank content, a generic
-            // broadcast label, or a name owned by a real player) — one debug
-            // line so a template mismatch is diagnosable from the log alone.
+
             int open = text.indexOf('<');
             if (open >= 0 && text.indexOf('>', open) > open) {
                 ChatMessageStore.debugLog(() -> "[e33chat] System(EasyBot miss) | text='" + text + "'");

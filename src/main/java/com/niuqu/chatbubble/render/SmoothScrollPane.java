@@ -3,15 +3,6 @@ package com.niuqu.chatbubble.render;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
 
-/**
- * One scroll region's animation + drag state, shared by the two config screens
- * (which previously carried ~250 lines of duplicated right/tree scroll state).
- *
- * Behaviour contract (kept identical to the original):
- * - wheel animates 120ms ease-out, drag animates 80ms (durations passed in)
- * - drag maps mouse travel to scroll offset via thumb travel ratio
- * - tick() clamps the offset to [0, max] every frame
- */
 public class SmoothScrollPane {
     private int offset;
     private float animFrom, animTo;
@@ -35,7 +26,6 @@ public class SmoothScrollPane {
         animOn = true;
     }
 
-    /** Advance the ease-out animation one frame; call once per render tick. */
     public void tick(int max) {
         if (animOn) {
             float t = Animation.progress(animStart, animDur, false);
@@ -64,7 +54,6 @@ public class SmoothScrollPane {
 
     public void dragEnd() { barDrag = false; }
 
-    /** Wheel scroll: sets a target and starts the 120ms animation, no hard jump. */
     public void wheel(double delta, int max, int dur) {
         animateTo(offset - (int) (delta * 20), max, dur);
     }

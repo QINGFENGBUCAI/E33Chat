@@ -30,20 +30,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-/**
- * In-mod group chat backend (2.4.10). Groups live inside the E33Chat server
- * mod itself — no external Bukkit plugin, unlike the CoreChat fork whose
- * channel routing requires its closed-source bridge.
- *
- * Routing: a member's message is delivered as a {@link GroupChatPayload} to
- * members running the mod and as a plain "[group] <name> text" line to vanilla
- * members. The sender receives the payload too, which replaces the local echo
- * bubble (the client rewrites sends to /e33chat group msg, so nothing echoes).
- */
 public final class GroupManager {
 
     public static final int MAX_NAME_LEN = 12;
-    /** Commands bypass vanilla chat spam kicks — keep a cheap per-player floor. */
+
     static final long SAY_COOLDOWN_MS = 500;
     private static final int MAX_CONTENT = 1024;
     private static final String FILE_NAME = "e33chat-groups.json";
@@ -66,10 +56,6 @@ public final class GroupManager {
 
     private GroupManager() {}
 
-    // ==== Pure validation (unit-tested) ====
-
-    /** Names must survive the vanilla "[name] <player> text" line unambiguous,
-     *  and must not start with '#' (reserved for the client's pseudo tabs). */
     public static boolean isValidGroupName(String name) {
         if (name == null || name.isEmpty() || name.length() > MAX_NAME_LEN) return false;
         if (name.charAt(0) == '#') return false;
@@ -81,10 +67,6 @@ public final class GroupManager {
         return true;
     }
 
-    /** Split the {@code /e33chat group msg <name> <text>} rest argument.
-     *  Group names never contain whitespace, so the first space separates them
-     *  from the text. Returns {@code {name, text}}; a missing space yields an
-     *  empty text so the caller reports the usual "message must not be empty". */
     public static String[] splitSay(String rest) {
         String s = rest == null ? "" : rest.trim();
         for (int i = 0; i < s.length(); i++) {
@@ -104,12 +86,9 @@ public final class GroupManager {
         return g != null && g.members.contains(id);
     }
 
-    /** Read-only snapshot for tests/tools; caller must not mutate. */
     public static Map<String, Group> snapshot() {
         return Collections.unmodifiableMap(groups);
     }
-
-    // ==== Mutation (server thread) — each sends its own feedback and re-syncs ====
 
     public static void create(ServerPlayerEntity player, String name) {
         if (!guard(player)) return;
@@ -232,8 +211,6 @@ public final class GroupManager {
             name));
     }
 
-    // ==== Client tracking + directory sync ====
-
     public static void onClientHello(ServerPlayerEntity player) {
         modClients.add(player.getUuid());
         MinecraftServer server = player.getServer();
@@ -276,11 +253,9 @@ public final class GroupManager {
             case com.niuqu.chatbubble.network.GroupActionPayload.JOIN -> join(player, name);
             case com.niuqu.chatbubble.network.GroupActionPayload.LEAVE -> leave(player, name);
             case com.niuqu.chatbubble.network.GroupActionPayload.DELETE -> delete(player, name);
-            default -> { /* unknown action from a newer client — ignore */ }
+            default -> {   }
         }
     }
-
-    // ==== Persistence ====
 
     private static void ensureLoaded(MinecraftServer server) {
         if (boundServer == server) return;
@@ -345,8 +320,6 @@ public final class GroupManager {
         boundServer = null;
     }
 
-    // ==== feedback helpers ====
-
     private static boolean guard(ServerPlayerEntity p) {
         if (ChatBubbleMod.groupsEnabled()) return true;
         fail(p, "e33chat.group.disabled");
@@ -360,8 +333,6 @@ public final class GroupManager {
     private static void fail(ServerPlayerEntity p, String key, Object... args) {
         p.sendMessage(Text.translatable(key, args), false);
     }
-
-    // ==== persistence shapes ====
 
     public static class Root {
         public Map<String, StoredGroup> groups;

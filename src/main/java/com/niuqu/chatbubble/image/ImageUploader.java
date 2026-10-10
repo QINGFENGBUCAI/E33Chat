@@ -9,29 +9,11 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.UUID;
 
-/**
- * Uploads image bytes to a file host and returns the resulting URL.
- *
- * Default host: uguu.se — measured reachable from the user's network on BOTH
- * legs (upload https://uguu.se/upload 200, download https://d.uguu.se/ 200).
- * Files expire after 3 hours (fine for live chat; history images will show
- * "failed to load" after expiry).
- *
- * Litterbox (litterbox.catbox.moe) was the previous default: its upload API
- * is reachable but the download CDN (litter.catbox.moe) is blocked in the
- * user's network (HTTP 000) — uploads "succeed" but the image can never load.
- *
- * Custom host config: POST url with multipart/form-data (file field), plus
- * optional extra key=value fields (comma-separated) and a response mode:
- * "text" (response body IS the URL) or "json:<path>" where <path> is a
- * dotted path with array indices, e.g. "json:files[0].url" for
- * {"files":[{"url":"https://..."}]} or plain "json:url" for a top-level field.
- */
 public final class ImageUploader {
 
     public static final String DEFAULT_URL = "https://uguu.se/upload";
     public static final String DEFAULT_FIELD = "files[]";
-    // uguu needs no extra fields; kept empty so nothing is injected.
+
     public static final String DEFAULT_EXTRA = "";
     public static final String DEFAULT_RESPONSE = "json:files[0].url";
 
@@ -40,7 +22,6 @@ public final class ImageUploader {
 
     private ImageUploader() {}
 
-    /** Synchronous upload (call on a worker thread). Returns the URL or null on failure. */
     public static String upload(byte[] bytes, String fileName,
                                 String url, String field, String extra, String responseMode) {
         if (bytes == null || bytes.length == 0 || bytes.length > MAX_UPLOAD_BYTES) {
@@ -50,9 +31,7 @@ public final class ImageUploader {
         String endpoint = (url == null || url.isBlank()) ? DEFAULT_URL : url.trim();
         String fld = (field == null || field.isBlank()) ? DEFAULT_FIELD : field.trim();
         String extraFields = (extra == null || extra.isBlank()) ? DEFAULT_EXTRA : extra;
-        // Litterbox requires reqtype=fileupload (412 otherwise). Old configs
-        // saved without it; inject only for the Litterbox endpoint — other
-        // hosts (uguu) must not receive the field.
+
         if (endpoint.contains("litterbox.catbox.moe") && !extraFields.contains("reqtype")) {
             extraFields = "reqtype=fileupload," + extraFields;
         }
@@ -84,7 +63,6 @@ public final class ImageUploader {
         }
     }
 
-    /** multipart/form-data body: extra key=value parts first, then the file part. */
     static byte[] buildMultipart(byte[] fileBytes, String fileName, String field,
                                  String extra, String boundary) {
         StringBuilder head = new StringBuilder();
@@ -113,15 +91,11 @@ public final class ImageUploader {
         return out;
     }
 
-    /** Response → URL. text: the body is the URL. json:<path>: walk a dotted
-     * path with array indices ("files[0].url"); plain "json:field" reads a
-     * top-level field (legacy form). */
     public static String extractUrl(String responseBody, String responseMode) {
         if (responseBody == null) return null;
         String body = responseBody.trim();
         if (body.isEmpty()) return null;
-        // null mode means text (legacy callers); upload() resolves the
-        // configured default before delegating here.
+
         String mode = (responseMode == null || responseMode.isBlank()) ? "text" : responseMode.trim();
         if (mode.startsWith("json:")) {
             String path = mode.substring(5).trim();
@@ -133,18 +107,17 @@ public final class ImageUploader {
                 return null;
             }
         }
-        // text mode: the bare URL
+
         return isHttpUrl(body) ? body : null;
     }
 
-    /** Walks "a.b[0].c" through a JsonElement. Null when any step is missing. */
     private static Object walkJson(com.google.gson.JsonElement el, String path) {
         if (path == null || path.isEmpty()) return null;
         String[] segments = path.split("\\.");
         com.google.gson.JsonElement cur = el;
         for (String seg : segments) {
             if (seg.isEmpty()) return null;
-            // "name[0]" → name + index
+
             int bi = seg.indexOf('[');
             String name = bi >= 0 ? seg.substring(0, bi) : seg;
             Integer idx = null;

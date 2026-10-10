@@ -16,12 +16,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Local emote pack: static images in &lt;runDir&gt;/e33chat/emotes/ (png/jpg).
- * Clicking one sends it through the normal image upload path.
- */
 public final class EmoteStore {
-    // 10 → 32: the emote panel scrolls, the old cap was an arbitrary number.
+
     public static final int EMOTE_MAX = 32;
     private static final List<File> emotes = new ArrayList<>();
     private static final Map<File, Identifier> textures = new HashMap<>();
@@ -43,15 +39,13 @@ public final class EmoteStore {
 
     private static boolean isImage(File f) { return isImageFile(f); }
 
-    /** Re-scans the emote dir. Called when the panel opens and after edits. */
     public static void refresh() {
         scanned = true;
         emotes.clear();
         File d = dir();
         File[] files = d.listFiles();
         if (files != null) {
-            // Sort FIRST, then truncate — listFiles() order is unspecified,
-            // truncating unsorted would pick a random subset when over the cap.
+
             for (File f : files) {
                 if (isImage(f)) emotes.add(f);
             }
@@ -66,7 +60,6 @@ public final class EmoteStore {
         return emotes;
     }
 
-    /** Copies the file into the emote dir. False when full or invalid. */
     public static boolean add(File f) {
         if (!isImage(f)) return false;
         if (emotes.size() >= EMOTE_MAX) return false;
@@ -90,7 +83,6 @@ public final class EmoteStore {
         return false;
     }
 
-    /** Saves clipboard/pasted image bytes into the emote dir. False when full or IO fails. */
     public static boolean addBytes(byte[] png, String name) {
         if (png == null || png.length == 0) return false;
         if (emotes.size() >= EMOTE_MAX) return false;
@@ -112,9 +104,6 @@ public final class EmoteStore {
         return emotes.size() >= EMOTE_MAX;
     }
 
-    /** Lazily loads the file into a registered texture; null when it fails.
-     * Decoding goes through RasterImageDecoder (PNG fast path + ImageIO
-     * fallback for jpg/gif). */
     public static Identifier texture(File f) {
         Identifier id = textures.get(f);
         if (id != null) return id;
@@ -125,9 +114,7 @@ public final class EmoteStore {
                 E33Log.warn("[e33chat] emote decode failed: {}", f.getName());
                 return null;
             }
-            // NativeImage ownership transfers to the texture; never close it here.
-            // Monotonic id: textures.size() reuses ids after removals, which
-            // makes the registered texture go stale for the new file.
+
             //#if MC >= 12104
             Identifier tex = Identifier.of("e33chat", "emote_" + (textureSeq++));
             MinecraftClient.getInstance().getTextureManager()

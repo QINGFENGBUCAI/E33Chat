@@ -9,12 +9,6 @@ import net.minecraft.util.Identifier;
 
 import java.util.List;
 
-/**
- * S2C group directory sync: pushed on hello, login and after every group
- * mutation. The client only shows the tab strip once a payload with
- * enabled=true arrived — on vanilla servers / singleplayer the feature stays
- * hidden entirely.
- */
 //#if MC >= 12005
 public record GroupListPayload(boolean enabled, List<String> names,
                                List<Integer> memberCounts, List<String> myGroups)
@@ -24,7 +18,6 @@ public record GroupListPayload(boolean enabled, List<String> names,
 //$$                                List<Integer> memberCounts, List<String> myGroups) {
 //#endif
 
-    // Decode-side caps: a hostile server must not balloon client memory
     private static final int MAX_GROUPS = 200;
 
     //#if MC >= 12005
@@ -90,9 +83,6 @@ public record GroupListPayload(boolean enabled, List<String> names,
     //$$ }
     //#endif
 
-    // 26.3 removed FriendlyByteBuf.writeCollection/readList — these helpers emit
-    // the identical wire format (VarInt count + elements) by hand, so the packet
-    // layout is unchanged on every version.
     private static void writeStringList(PacketByteBuf buf, List<String> list, int maxLen) {
         buf.writeVarInt(list.size());
         for (String s : list) buf.writeString(s, maxLen);
@@ -128,7 +118,6 @@ public record GroupListPayload(boolean enabled, List<String> names,
     }
     //#endif
 
-    /** Client-side hook, invoked from ChatBubbleClientSetup's receiver. */
     public static void handleClient(GroupListPayload payload) {
         com.niuqu.chatbubble.chat.GroupChannelState.enabled = payload.enabled();
         com.niuqu.chatbubble.chat.GroupChannelState.applyDirectory(

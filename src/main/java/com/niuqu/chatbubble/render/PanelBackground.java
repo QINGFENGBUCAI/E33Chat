@@ -13,16 +13,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.nio.file.Path;
 
-/**
- * Custom chat-panel background image (2.4.10, client-only).
- *
- * The user picks a picture (config `panel_bg_image`); it is decoded off-thread,
- * uploaded once as a DynamicTexture and drawn stretched over the panel area
- * ("cover": aspect preserved, center-cropped). Missing/broken files fall back
- * to the default PANEL_BG texture (logged once per path). An empty path or a
- * failed load always renders the stock panel, so a bad config can never break
- * the chat screen.
- */
 public final class PanelBackground {
 
     private static final Identifier ID = Identifier.of("e33chat", "panel_bg_custom");
@@ -36,33 +26,28 @@ public final class PanelBackground {
 
     private PanelBackground() {}
 
-    /** True when a custom image is loaded and ready to draw. */
     public static boolean available() {
         return registered && !failed && texW > 0 && texH > 0;
     }
 
-    /** True while a decode/upload is in flight (the crop editor waits on this). */
     public static boolean loading() {
         synchronized (LOCK) {
             return loadedKey != null && !loadedKey.isEmpty() && !registered && !failed;
         }
     }
 
-    /** True when the most recent load attempt failed (bad path / unreadable). */
     public static boolean failed() {
         synchronized (LOCK) {
             return failed;
         }
     }
 
-    /** Main-thread: (re)load when the configured path changed; no-op otherwise. */
     public static void ensureLoaded() {
         String raw = ChatBubbleClientSetup.config().panelBgImage();
         String key = raw == null ? "" : raw.trim();
         synchronized (LOCK) {
             if (key.equals(loadedKey)) return;
-            // Path changed: drop the old texture synchronously so the very next
-            // frame draws the fallback instead of a stale picture.
+
             unloadLocked();
             loadedKey = key;
             failed = false;
@@ -102,7 +87,6 @@ public final class PanelBackground {
         });
     }
 
-    /** Render thread: upload + register; skipped if the path changed meanwhile. */
     private static void apply(String forKey, NativeImage decoded) {
         synchronized (LOCK) {
             if (!forKey.equals(loadedKey)) {
@@ -135,7 +119,6 @@ public final class PanelBackground {
         texH = 0;
     }
 
-    /** Relative paths resolve against the game directory, absolute pass through. */
     private static File resolve(String path) {
         try {
             Path p = Path.of(path);
@@ -148,22 +131,11 @@ public final class PanelBackground {
         }
     }
 
-    /**
-     * 面板背景的取景，归一化图片坐标：中心点 + 视野松紧。宽图放到窄面板上，
-     * 普通 cover 裁剪会切掉两侧——用户需要选择保留哪一部分，这个选择存在这里。
-     *
-     * <p>用「中心 + 缩放」而不是绝对矩形表达，面板宽高比变化后同一组值仍然有效。
-     */
     public record Crop(float centerX, float centerY, float zoom) {
-        /** 居中最广视野：与旧的 cover 裁剪行为完全一致。 */
+
         public static final Crop DEFAULT = new Crop(0.5f, 0.5f, 1f);
     }
 
-    /**
-     * Parses the {@code panel_bg_crop} value ("centerX,centerY,zoom"). Blank or
-     * malformed input falls back to {@link Crop#DEFAULT}, so a hand-edited config
-     * can never wedge the panel.
-     */
     public static Crop parseCrop(String raw) {
         if (raw == null || raw.isBlank()) return Crop.DEFAULT;
         String[] parts = raw.trim().split(",");
@@ -179,7 +151,6 @@ public final class PanelBackground {
         }
     }
 
-    /** Serializes a crop for the config; the inverse of {@link #parseCrop}. */
     public static String formatCrop(Crop crop) {
         return String.format(java.util.Locale.ROOT, "%.4f,%.4f,%.4f",
             crop.centerX(), crop.centerY(), crop.zoom());
@@ -189,26 +160,17 @@ public final class PanelBackground {
         return v < 0f ? 0f : (v > 1f ? 1f : v);
     }
 
-    /**
-     * Source rectangle (u, v, width, height) of the picture to draw into a
-     * {@code targetW x targetH} area, for the given crop. Pure function so the
-     * framing maths can be tested without a GL context.
-     *
-     * <p>Zoom 1 is the widest rectangle with the target's aspect ratio that still
-     * covers the area (the classic cover crop); larger zoom tightens it. The
-     * result is always inside the picture.
-     */
     public static int[] sourceRect(int texW, int texH, int targetW, int targetH, Crop crop) {
         if (texW <= 0 || texH <= 0 || targetW <= 0 || targetH <= 0) return new int[]{0, 0, 1, 1};
         float targetAspect = (float) targetW / targetH;
         float srcW = texW, srcH = texH;
-        // Widest cover rectangle for this aspect ratio.
+
         if ((float) texW / texH > targetAspect) {
             srcW = texH * targetAspect;
         } else {
             srcH = texW / targetAspect;
         }
-        // Tighten by zoom, never past the picture's own bounds.
+
         float zoom = Math.max(1f, crop.zoom());
         srcW /= zoom;
         srcH /= zoom;
@@ -219,7 +181,7 @@ public final class PanelBackground {
         }
         int w = Math.max(1, Math.round(srcW));
         int h = Math.max(1, Math.round(srcH));
-        // Center on the chosen point, then keep the rect inside the picture.
+
         int u = Math.round(crop.centerX() * texW - w / 2f);
         int v = Math.round(crop.centerY() * texH - h / 2f);
         u = Math.max(0, Math.min(u, texW - w));
@@ -227,27 +189,14 @@ public final class PanelBackground {
         return new int[]{u, v, w, h};
     }
 
-    /** Decoded picture size, or 0 when nothing is loaded (used by the crop editor). */
     public static int imageWidth() { return texW; }
     public static int imageHeight() { return texH; }
 
-    /** Texture of the loaded picture, or null when nothing is loaded. */
     public static Identifier textureId() { return available() ? ID : null; }
 
-    /**
-     * Aspect ratio (w/h) the panel was last drawn at. The crop editor frames the
-     * selection box with it, so the picture the user picks is exactly what the
-     * panel will show. The chat panel draws every frame, so this is current by
-     * the time any settings screen opens; the fallback only matters in the
-     * window between mod start and the first frame.
-     */
     private static volatile float lastAspect = 0.4f;
     public static float lastTargetAspect() { return lastAspect; }
 
-    /**
-     * Draw the custom image over the given rect using the configured framing.
-     * Never upsets blend state (the shared colored-texture path restores it).
-     */
     public static void draw(net.minecraft.client.gui.DrawContext g,
                             int x, int y, int w, int h, float alpha) {
         if (w > 0 && h > 0) lastAspect = (float) w / h;

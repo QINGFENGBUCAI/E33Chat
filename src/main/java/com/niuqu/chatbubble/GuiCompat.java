@@ -16,9 +16,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.UUID;
 
-/**
- * GUI/API compatibility helpers for pre-1.20 client classes.
- */
 public final class GuiCompat {
     private GuiCompat() {}
 
@@ -247,9 +244,7 @@ public final class GuiCompat {
             //#endif
             //#endif
         } catch (RuntimeException e) {
-            // ModernUI wraps OrderedText in FormattedTextWrapper which breaks
-            // DrawContext.drawTooltip's internal Lists.transform() cast to Text.
-            // Fall back to single-Text overload with extracted plain text.
+
             try {
                 var tr = MinecraftClient.getInstance().textRenderer;
                 StringBuilder sb = new StringBuilder();
@@ -271,8 +266,6 @@ public final class GuiCompat {
         }
     }
 
-    // ---- GameProfile helpers (26.x authlib renamed getName/getId to name/id) ----
-
     public static String profileName(GameProfile profile) {
         if (profile == null) return null;
         //#if MC >= 12109
@@ -290,8 +283,6 @@ public final class GuiCompat {
         //$$ return profile.getId();
         //#endif
     }
-
-    // ---- reflection helpers (MC < 1.19) ----
 
     private static boolean invokeNoArg(Object target, String methodName) {
         try {

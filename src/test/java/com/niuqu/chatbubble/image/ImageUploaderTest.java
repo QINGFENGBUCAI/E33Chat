@@ -13,14 +13,13 @@ class ImageUploaderTest {
             new byte[]{1, 2, 3}, "a b.png", "fileToUpload", "time=72h", "BOUND");
         String s = new String(body, StandardCharsets.UTF_8);
         assertTrue(s.contains("--BOUND\r\n"));
-        // extra part first
+
         int timeIdx = s.indexOf("name=\"time\"");
         int fileIdx = s.indexOf("name=\"fileToUpload\"");
         assertTrue(timeIdx > 0 && fileIdx > timeIdx, "extra fields must precede the file part");
-        // filename sanitized (space -> underscore)
+
         assertTrue(s.contains("filename=\"a_b.png\""), s);
-        // binary payload preserved verbatim between head and tail (the file
-        // part's own \r\n\r\n after the Content-Disposition header)
+
         int fileHeadEnd = s.indexOf("\r\n\r\n", fileIdx) + 4;
         assertArrayEquals(new byte[]{1, 2, 3},
             java.util.Arrays.copyOfRange(body, fileHeadEnd, fileHeadEnd + 3));
@@ -82,7 +81,7 @@ class ImageUploaderTest {
         assertNotNull(p);
         assertTrue(p.fileName().endsWith(".png"), p.fileName());
         assertTrue(p.bytes().length > 0);
-        // decode the uploaded bytes and check the long edge <= MAX_EDGE
+
         try {
             java.awt.image.BufferedImage decoded = javax.imageio.ImageIO.read(new java.io.ByteArrayInputStream(p.bytes()));
             assertNotNull(decoded);

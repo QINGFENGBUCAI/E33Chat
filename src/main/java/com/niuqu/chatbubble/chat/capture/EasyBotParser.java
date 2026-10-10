@@ -7,60 +7,23 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.minecraft.text.Text;
 
-/**
- * Built-in parser for EasyBot QQ group messages relayed into the game as
- * system broadcasts.
- *
- * EasyBot's Minecraft-side mod is only a renderer: the "[群名]" / "<昵称>" part
- * of a line is assembled bot-side, so the exact shape depends on the server's
- * template. Shapes seen in the wild:
- *   [群名] <昵称(QQ号)> 内容      (EasyBot's default template)
- *   [群名] <昵称> 内容
- *   <昵称> 内容                   (group label removed from the template)
- *   <昵称（群名片）> 内容
- *   [群名] 昵称：内容             (template without angle brackets)
- * The leading [label] is optional for the angle-bracket shapes — there the
- * bracket pair itself is the structural signal. The colon shape needs the
- * label, because "name: content" on its own is indistinguishable from ordinary
- * chat and belongs to the player-path parser. Server templates ({@code
- * {external}}) remain available as an explicit override when a server owner
- * customizes the EasyBot template beyond these shapes.
- */
 public final class EasyBotParser {
     private EasyBotParser() {}
 
-    // (?:[label])? <name> content  — (?s) lets content span newlines,
-    // matching TemplateMatcher behaviour.
     private static final Pattern RELAY_FORMAT = Pattern.compile(
         "^(?:\\[([^\\]]*)\\]\\s*)?<([^>]*)>\\s*(?s:(.*))$");
 
-    // [label] name: content — what a template like "[{prefix}] {external}：{content}"
-    // produces (no angle brackets). The label is required: a bare "name: content"
-    // line is ordinary chat and stays with the player-path parser. Note this
-    // inherits the architecture's known dead corner ("带分隔符的广播仿冒"): a
-    // separator-shaped broadcast line whose label is not in BROADCAST_LABELS is
-    // indistinguishable from a relay.
     private static final Pattern RELAY_COLON_FORMAT = Pattern.compile(
         "^\\[([^\\]]*)\\]\\s*([^<>\\[\\]]{1,32}?)\\s*[:：]\\s*(?s:(.*))$");
 
-    // QQ numbers are 5-12 digits, optionally wrapped in parentheses (half- or
-    // full-width) at the end of the angle-bracket name area: "昵称(123456)".
     private static final Pattern QQ_AT_END = Pattern.compile("[（(]?(\\d{5,12})[)）]?$");
 
-    // Longest plausible sender name — beyond this the line is not a relay.
     private static final int MAX_NAME = 32;
 
     private static final Set<String> BROADCAST_LABELS = Set.of(
         "系统", "公告", "服务器", "广播", "提示", "通知",
         "system", "server", "notice", "broadcast", "announcement", "alert");
 
-    /**
-     * Labels that mark a colon-shaped line as a system/plugin prompt rather
-     * than a QQ relay: "[玩家系统]", "[音乐系统]", "[任务系统]" are all
-     * "<domain>系统" plugin prefixes, while EasyBot's "[QQ群消息]" is a group
-     * name. Blank labels are not trustworthy either. Only the colon shape uses
-     * this gate — the angle-bracket shape carries a stronger structural signal.
-     */
     private static boolean isSystemLikeLabel(String label) {
         if (label == null || label.isBlank()) return true;
         String s = label.trim().toLowerCase(java.util.Locale.ROOT);
@@ -74,19 +37,10 @@ public final class EasyBotParser {
         if (text == null || text.isEmpty()) return null;
         Matcher angle = RELAY_FORMAT.matcher(text);
         if (angle.matches()) return build(message, angle, true);
-        // No angle brackets: try the labeled colon shape. This path never steps
-        // aside for a known player, and that is deliberate. The player-path
-        // parser rebuilds a display name as "everything before the name + name",
-        // so a relay line whose nickname collides with an online player got
-        // remembered as "[QQ群消息] dangdang0721" — and since name matching runs
-        // longest-first, that composite then won every later match. Claiming the
-        // line here keeps the name clean and stops the cache from ratcheting.
+
         Matcher colon = RELAY_COLON_FORMAT.matcher(text);
         if (colon.matches()) {
-            // The colon shape has no <> / QQ-number structure, so gate it hard:
-            // "[玩家系统] 请使用以下命令登录: /log <密码>" is a plugin system
-            // prompt, not a chat relay. Prefer gray over misattribution:
-            // system-domain labels and command text are not relays.
+
             if (isSystemLikeLabel(colon.group(1))) return null;
             String colonContent = colon.group(3);
             if (colonContent != null && colonContent.stripLeading().startsWith("/")) return null;
@@ -108,7 +62,7 @@ public final class EasyBotParser {
         if (qm.find()) {
             qq = qm.group(1);
             String before = nameArea.substring(0, qm.start()).trim();
-            // Keep only the part before the opening parenthesis, if any.
+
             int paren = before.lastIndexOf('(');
             if (paren < 0) paren = before.lastIndexOf('（');
             if (paren >= 0) before = before.substring(0, paren).trim();
@@ -122,27 +76,15 @@ public final class EasyBotParser {
         String displayName = (nick != null && !nick.isEmpty()) ? nick : qq;
         if (displayName == null || displayName.isEmpty()) return null;
 
-        // Without a QQ number the line carries no strong EasyBot signal, so
-        // generic broadcast labels ("[公告] <Server> ...", "<系统> ...") stay
-        // system messages.
         if (qq == null && (isBroadcastLabel(groupName) || isBroadcastLabel(displayName))) return null;
 
-        // A locally known player relayed through a system packet keeps its
-        // profile UUID (and therefore its skin) only on the player path —
-        // step aside so ChatPipeline can claim the line instead. Only the
-        // angle-bracket shapes do this; see tryParse for why the colon shape
-        // must not.
         if (allowStepAside && isKnownPlayer(displayName)) return null;
 
-        // Colon shape resolves the UUID itself, so a relay from an online player
-        // keeps their skin even though it never reaches the player path.
         UUID uuid = allowStepAside ? new UUID(0, 0) : resolveUuid(displayName);
         String rawPlayerName = qq != null ? qq : displayName;
 
         Text contentComp = ChatMessageStore.sliceStyled(message, m.start(3), m.end(3));
-        // Colon shape resolves a real online player: rebuild the styled
-        // label (channel/title prefix included) from the original line, so
-        // claiming the line no longer costs the sender's decoration.
+
         Text nameComp = (uuid != null && !uuid.equals(new UUID(0, 0)))
             ? ChatPipeline.extractDecoratedName(message, content, displayName, Text.literal(displayName))
             : Text.literal(displayName);
@@ -151,7 +93,6 @@ public final class EasyBotParser {
             rawPlayerName, false, null);
     }
 
-    /** Online profile UUID for a name, else a previously seen one, else zero. */
     private static UUID resolveUuid(String name) {
         try {
             net.minecraft.client.MinecraftClient mc = net.minecraft.client.MinecraftClient.getInstance();
@@ -163,17 +104,12 @@ public final class EasyBotParser {
                 }
             }
         } catch (Throwable t) {
-            // Headless (unit tests) or a broken world — fall through to seen names.
+
         }
         UUID seen = ChatMessageStore.findSeenUuid(name);
         return seen != null ? seen : new UUID(0, 0);
     }
 
-    /**
-     * Exact-match only: {@link ChatClassifier#resolveOnlinePlayer} also does a
-     * substring fallback, which would hand every QQ nickname containing a
-     * player name back to the player path (and then drop it entirely).
-     */
     private static boolean isKnownPlayer(String displayName) {
         try {
             if (ChatMessageStore.knownNameVariants().contains(displayName)) return true;
@@ -185,7 +121,7 @@ public final class EasyBotParser {
                 }
             }
         } catch (Throwable t) {
-            // Headless (unit tests) or a broken world — treat as "not a player".
+
             return false;
         }
         return false;

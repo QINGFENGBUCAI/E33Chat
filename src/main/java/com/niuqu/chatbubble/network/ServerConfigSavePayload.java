@@ -16,10 +16,6 @@ import net.minecraft.util.Identifier;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Client -> server: save the server-config GUI edits. The server re-validates
- * every template, persists to the JSON file, and rebroadcasts to all players.
- */
 //#if MC >= 12005
 public record ServerConfigSavePayload(boolean useTpa, boolean historyEnabled, boolean templateDebug,
                                       boolean mediaEnabled, boolean mediaAutoClean, boolean easyBotCompat,
@@ -84,7 +80,6 @@ public record ServerConfigSavePayload(boolean useTpa, boolean historyEnabled, bo
     public Id<ServerConfigSavePayload> getId() { return ID; }
     //#endif
 
-    /** Server-side handler: validate, persist, rebroadcast (called from ChatBubbleMod). */
     public static void handleServer(ServerConfigSavePayload payload, ServerPlayerEntity player,
                                     java.util.function.Consumer<ServerConfig> applyAndSave) {
         Text error = validateTemplates(true, payload.chatTemplates());

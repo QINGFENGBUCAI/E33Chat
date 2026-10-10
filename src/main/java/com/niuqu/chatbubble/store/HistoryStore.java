@@ -28,8 +28,6 @@ public final class HistoryStore {
 
     private static final Gson GSON = new Gson();
 
-    /** Test seam: headless unit tests stub this to a temp dir so path helpers
-     *  never touch MinecraftClient.getInstance() (which is null in the test JVM). */
     public static java.util.function.Supplier<java.io.File> gameDirSupplier = null;
 
     private static java.io.File gameDir() {
@@ -38,16 +36,12 @@ public final class HistoryStore {
     }
 
     public static File getHistoryFile(String worldKey) {
-        // Keep Unicode (Chinese world names stay readable); only strip characters
-        // that break file systems / path parsing. The SHA-256 short hash disambiguates
-        // worlds whose sanitized names collide.
+
         String safe = worldKey.replaceAll("[\\\\/:*?\"<>|\\p{Cntrl}]", "_");
         return new File(gameDir(),
             "e33chat/history/" + safe + "_" + sha256Short(worldKey) + ".json");
     }
 
-    // Pre-2.2.3 files used an ASCII-only sanitizer + String.hashCode; load them for
-    // migration when the new path does not exist yet
     public static File getLegacyHistoryFile(String worldKey) {
         String safe = worldKey.replaceAll("[^a-zA-Z0-9_.\\-]", "_");
         String hash = Integer.toHexString(worldKey.hashCode());
@@ -67,14 +61,6 @@ public final class HistoryStore {
         }
     }
 
-    // ---- History line format: JSONL since 2.3.9 ----
-    // One JSON object per line: senderJson/contentJson carry full styled
-    // components (colors, click/hover events survive reload), uuid keeps
-    // avatars resolvable for offline players. The TSV branch in fromLine is
-    // only a legacy reader for pre-2.3.9 plain-text lines (no leading '{').
-
-    // Commands that carry credentials must never land in the history file —
-    // mirrors the AuthMe-family login/register aliases
     public static boolean isSensitiveCommand(String text) {
         if (text == null) return false;
         String s = Formatting.strip(text);
@@ -96,9 +82,7 @@ public final class HistoryStore {
 
     public static String toLine(ChatMessageStore.ChatMessage msg) {
         if (isSensitiveCommand(msg.content().getString())) return null;
-        // JSONL, one message per line. senderJson/contentJson are full styled
-        // components (colors, click/hover events survive the reload) and uuid
-        // lets avatars resolve for offline players after re-joining.
+
         java.util.Map<String, Object> obj = new java.util.LinkedHashMap<>();
         obj.put("time", msg.time());
         obj.put("uuid", msg.senderUUID() != null ? msg.senderUUID().toString() : "");
@@ -111,8 +95,7 @@ public final class HistoryStore {
             //$$ // Pre-1.21: Text codecs not available; fall back to plain text
             //#endif
         } catch (Throwable ignored) {
-            // Component codecs unavailable (headless test env / broken registries):
-            // fall back to plain-text fields; styled fields are omitted.
+
         }
         if (senderJson != null) obj.put("senderJson", senderJson);
         else obj.put("sender", msg.senderName().getString());
@@ -162,7 +145,6 @@ public final class HistoryStore {
         );
     }
 
-    // Legacy JSONL branch: one message per line as {"sender":...,"content":...}
     static ChatMessageStore.ChatMessage fromJsonLine(String line) {
         Map<String, Object> obj;
         try {
@@ -223,8 +205,7 @@ static net.minecraft.registry.RegistryWrapper.WrapperLookup registries() {
         try {
             return net.minecraft.registry.BuiltinRegistries.createWrapperLookup();
         } catch (Throwable ignored) {
-            // Headless test fallback: an empty lookup serializes plain-text
-            // components fine; registry-dependent hovers degrade instead of crashing
+
             return new net.minecraft.registry.RegistryWrapper.WrapperLookup() {
                 @Override
                 public java.util.stream.Stream<net.minecraft.registry.RegistryKey<? extends net.minecraft.registry.Registry<?>>> streamAllRegistryKeys() {
@@ -271,8 +252,6 @@ static net.minecraft.registry.RegistryWrapper.WrapperLookup registries() {
         return out.toString();
     }
 
-    // Section-sign codes ("§6...§r") back into a styled component; unknown codes
-    // (e.g. a stray §x from a plugin) fall through as literal text
     public static Text parseStyledText(String s) {
         MutableText out = Text.empty();
         Style style = Style.EMPTY;
@@ -286,7 +265,7 @@ static net.minecraft.registry.RegistryWrapper.WrapperLookup registries() {
                 }
                 Style next = applySectionCode(style, s.charAt(i + 1));
                 if (next == null) {
-                    // Unknown code: keep it as literal text instead of swallowing it
+
                     buf.append(ch).append(s.charAt(i + 1));
                 } else {
                     style = next;
@@ -328,9 +307,6 @@ static net.minecraft.registry.RegistryWrapper.WrapperLookup registries() {
         }
     }
 
-    // Legacy file stores LocalTime (HH:mm:ss) with no date; anchor the file's
-    // last-saved day on the file mtime and walk backwards: an earlier message
-    // whose clock time is LATER than its successor crossed midnight
     public static List<ChatMessageStore.ChatMessage> loadLegacyFile(File f) {
         List<ChatMessage> out = new ArrayList<>();
         try (Reader r = new InputStreamReader(new FileInputStream(f), StandardCharsets.UTF_8)) {
@@ -382,8 +358,6 @@ static net.minecraft.registry.RegistryWrapper.WrapperLookup registries() {
         return out;
     }
 
-    // Retention cleanup helper: files older than the configured days are dropped on
-    // world join (0 = keep forever, the default)
     public static boolean isExpired(long fileMtime, long now, int retentionDays) {
         return retentionDays > 0 && now - fileMtime > retentionDays * 24L * 3600_000L;
     }

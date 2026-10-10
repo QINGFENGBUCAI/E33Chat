@@ -7,24 +7,16 @@ import java.util.UUID;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.Text;
 
-/**
- * Whisper detection on the text layer (NCR-converted servers where the chat
- * type is stripped): online-player scan first, seen-cache fallback for
- * offline senders. Keyword gate via MessagePresentation.
- *
- * Extracted from ChatListenerMixin during the 2.3.14 restructure; behaviour
- * unchanged.
- */
 public final class WhisperDetector {
     private WhisperDetector() {}
 
     public static ChatMessageStore.SenderMeta detectWhisperInSystemMessage(String text, String logTag) {
-        // 进服窗口守卫：包可能在本地玩家实体就绪前到达，解引用会 NPE
+
         var self = MinecraftClient.getInstance().player;
         if (self == null) return null;
         var connection = self.networkHandler;
         if (connection == null) return null;
-        // G3: 消息嵌 legacy 色码（S§6t§beve）时整条剥 § 再做名字锚点匹配
+
         String clean = text.replaceAll("§.", "");
         for (var info : connection.getPlayerList()) {
             String profile = GuiCompat.profileName(info.getProfile());
@@ -47,7 +39,7 @@ public final class WhisperDetector {
                 }
             }
         }
-        // cache fallback: try seen (offline) players
+
         for (var sp : ChatMessageStore.knownNameVariants()) {
             int idx = clean.indexOf(sp);
             if (idx >= 0 && idx < 30) {

@@ -8,22 +8,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 
-/**
- * Bridge to BloCamLimb's ModernUI emoji shortcodes.
- *
- * ModernUI normally transforms shortcodes like {@code :pig2:} in the vanilla
- * {@code ChatScreen.onEdited} responder. E33Chat replaces the chat field's
- * change listener with its own onInputEdited, so that injection never fires.
- * This class mirrors the same hook by reflection: when ModernUI is installed
- * and its emoji shortcode option is enabled, E33Chat asks ModernUI's font
- * manager for the replacement text. Nothing here compiles against ModernUI
- * classes — when the mod is absent the lookup fails and this becomes a no-op.
- */
 public final class ModernUIEmojiCompat {
 
-    /**
-     * Same shape as ModernUI's shortcode pattern: {@code :word-or-+-:}.
-     */
     private static final Pattern SHORTCODE_PATTERN = Pattern.compile(":[A-Za-z0-9_+\\-]+:");
 
     private static boolean resolved;
@@ -43,7 +29,7 @@ public final class ModernUIEmojiCompat {
                 Field enabledField = clientClass.getField("sEmojiShortcodes");
                 enabledFlag = enabledField.getBoolean(null);
             } catch (NoSuchFieldException e) {
-                // Field renamed/removed in a future ModernUI version: assume enabled.
+
                 enabledFlag = true;
             }
             Class<?> managerClass = Class.forName("icyllis.modernui.mc.FontResourceManager");
@@ -56,19 +42,11 @@ public final class ModernUIEmojiCompat {
         }
     }
 
-    /**
-     * True when ModernUI is installed and its emoji shortcode option is on.
-     */
     public static boolean isEnabled() {
         resolve();
         return available && enabledFlag;
     }
 
-    /**
-     * Looks up a full shortcode (with colons, e.g. {@code :pig2:}) through
-     * ModernUI's font manager. Returns null when ModernUI is absent or the
-     * shortcode is unknown.
-     */
     public static String lookup(String shortcode) {
         resolve();
         if (!available || shortcode == null) return null;
@@ -80,13 +58,6 @@ public final class ModernUIEmojiCompat {
         }
     }
 
-    /**
-     * Replaces every known ModernUI shortcode in the given text field, preserving
-     * the cursor as if the player had typed the emoji in place. Commands are
-     * intentionally left untouched, matching ModernUI's behaviour.
-     *
-     * @return true if at least one shortcode was replaced
-     */
     public static boolean replaceIn(TextFieldWidget field) {
         if (!isEnabled() || field == null) return false;
         String text = field.getText();
@@ -112,10 +83,6 @@ public final class ModernUIEmojiCompat {
         return any;
     }
 
-    /**
-     * Pure string replacement helper, used by unit tests to pin down the
-     * matching/order rules without needing a live ModernUI install.
-     */
     static String replaceAll(String text, Function<String, String> lookup) {
         Matcher matcher = SHORTCODE_PATTERN.matcher(text);
         StringBuilder sb = new StringBuilder(text.length());

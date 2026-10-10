@@ -33,17 +33,15 @@ public class MentionNotificationBanner {
     private static final int AVATAR_HAT = 26;
     private static final int AVATAR_X = 8;
     private static final int TEXT_X = AVATAR_X + AVATAR + 6;
-    private static final int TEXT_X_PLAIN = 8;   // no-avatar banners (system) start text flush left
-    private static final int MAX_TEXT_W = 170;   // fixed content-area width cap for every banner
+    private static final int TEXT_X_PLAIN = 8;
+    private static final int MAX_TEXT_W = 170;
     private static final int BANNER_H = 36;
     private static final int MAX_MSG_LINES = 2;
     private static final int SHADOW_OFF = UiTokens.SHADOW_OFFSET_PANEL;
     private static final float COMPACT_SCALE = 0.75f;
-    // Mobile-style overlap: each newer banner covers the top half of the banner
-    // below it, so older banners peek out from behind like a notification stack.
+
     private static final float STACK_OVERLAP = 0.5f;
 
-    /** Newest first. */
     private final List<ActiveBanner> banners = new ArrayList<>();
     private final List<ExitingBanner> exiting = new ArrayList<>();
 
@@ -61,8 +59,6 @@ public class MentionNotificationBanner {
         };
         Text labeledName = Text.literal(prefix).append(senderName);
 
-        // System banners carry no sender — plain text, no avatar, flush text start.
-        // [系统] 标签与第一行内容同行，内容宽度预算扣掉标签宽，避免同行溢出横幅
         boolean hasAvatar = type != NotificationType.SYSTEM;
         int textOriginX = hasAvatar ? TEXT_X : TEXT_X_PLAIN;
         int maxTextW = Math.min(MAX_TEXT_W, mc.getWindow().getScaledWidth() - textOriginX - 12);
@@ -83,7 +79,7 @@ public class MentionNotificationBanner {
 
         List<OrderedText> msgLines = mc.textRenderer.wrapLines(content, contentMaxW);
         if (msgLines.size() > MAX_MSG_LINES) {
-            // Styled truncation: keeps per-run colors of multi-colored system lines
+
             msgLines = mc.textRenderer.wrapLines(truncateStyled(content, contentMaxW * 2 - dotsW, mc.textRenderer, "..."), contentMaxW);
             if (msgLines.size() > MAX_MSG_LINES)
                 msgLines = msgLines.subList(0, MAX_MSG_LINES);
@@ -92,12 +88,11 @@ public class MentionNotificationBanner {
         int textW = mc.textRenderer.getWidth(nameSeq);
         for (var line : msgLines) textW = Math.max(textW, mc.textRenderer.getWidth(line));
         if (!hasAvatar && !msgLines.isEmpty()) {
-            // 纯文本：[系统] 与第一行内容并排，横幅宽度按合并行算
+
             textW = Math.max(textW, mc.textRenderer.getWidth(nameSeq) + mc.textRenderer.getWidth(msgLines.get(0)));
         }
         int bannerW = textOriginX + textW + 12;
-        // 高度：头像横幅固定 36（装名字+内容+头像）；纯文本系统横幅按行数紧凑
-        // （上下各 5px 边距），1 行 ~20 / 2 行 ~30，不再留大片空白
+
         int bannerH = hasAvatar ? BANNER_H
             : mc.textRenderer.fontHeight * msgLines.size() + 10;
 
@@ -111,8 +106,6 @@ public class MentionNotificationBanner {
     public void tick() {
         long now = System.currentTimeMillis();
 
-        // Natural expiry: snapshot every current position, remove expired banners,
-        // then let the remaining ones push up to fill the gaps.
         List<ActiveBanner> expired = new ArrayList<>();
         for (ActiveBanner b : banners) {
             if (now >= b.totalVisibleMs) expired.add(b);
@@ -149,9 +142,6 @@ public class MentionNotificationBanner {
         MinecraftClient mc = MinecraftClient.getInstance();
         long now = System.currentTimeMillis();
 
-        // Exiting banners render behind the active stack. Their exit follows the
-        // selected banner animation style so natural expiry and eviction feel
-        // consistent with the entrance style.
         AnimationStyle exitStyle = AnimationStyle.parse(ChatBubbleClientSetup.config().bannerAnimStyle());
         for (ExitingBanner e : exiting) {
             float t = Math.min(1f, (float) (now - e.startMs) / EXIT_MS);
@@ -166,14 +156,13 @@ public class MentionNotificationBanner {
                 alpha = exitFade(1f - t);
             } else if (exitStyle == AnimationStyle.FADE) {
                 alpha = exitFade(1f - t);
-            } else { // ZOOM
+            } else {
                 alpha = exitFade(1f - t);
                 scale = e.scale * (1f - 0.5f * t);
             }
             renderBanner(g, e.data, screenW, y, scale, alpha);
         }
 
-        // Draw oldest first so newer banners render on top and can overlap them.
         for (int i = banners.size() - 1; i >= 0; i--) {
             ActiveBanner b = banners.get(i);
             float y = currentY(b, now);
@@ -191,16 +180,13 @@ public class MentionNotificationBanner {
         long now = System.currentTimeMillis();
         int maxStack = maxStack();
 
-        // New messages always win: drop any banners that are already exiting.
         exiting.clear();
 
-        // Snapshot current render state before mutating the list.
         for (ActiveBanner b : banners) {
             b.fromY = currentY(b, now);
             b.fromScale = currentScale(b, now);
         }
 
-        // Full stack: evict the oldest (bottom) banner.
         if (banners.size() >= maxStack && !banners.isEmpty()) {
             ActiveBanner oldest = banners.get(banners.size() - 1);
             exiting.add(new ExitingBanner(oldest.data, now, oldest.fromY, oldest.fromScale));
@@ -210,7 +196,6 @@ public class MentionNotificationBanner {
         ActiveBanner nb = new ActiveBanner(pb, now, now + visibleDurationMs(), now);
         banners.add(0, nb);
 
-        // Every previously visible banner is now pushed down / compacted.
         for (ActiveBanner b : banners) {
             if (b != nb) {
                 b.enterStartMs = -1;
@@ -333,14 +318,12 @@ public class MentionNotificationBanner {
         RoundRectRenderer.fill(g, x + SHADOW_OFF, iy + SHADOW_OFF,
             x + bannerW + SHADOW_OFF, iy + bannerH + SHADOW_OFF, cornerRadius, shadowColor);
 
-        // Background：SDF 圆角（与阴影同 shader，半径配置实时生效；不可被资源包覆盖）
         int bgAlpha = (int) ((bg >>> 24) * bgAlphaMul);
         RoundRectRenderer.fill(g, x, iy, x + bannerW, iy + bannerH, cornerRadius,
             (bgAlpha << 24) | (bg & 0x00FFFFFF));
 
         int textX = x + (b.hasAvatar ? TEXT_X : TEXT_X_PLAIN);
-        // Compact banners show only the first content line, matching the mobile
-        // notification style: avatar + title + one-line preview.
+
         List<OrderedText> drawLines = scale < 1f && b.msgLines.size() > 1
             ? b.msgLines.subList(0, 1) : b.msgLines;
         int nameColor, msgColor;
@@ -350,13 +333,11 @@ public class MentionNotificationBanner {
             SkinResolver.drawAvatar(g, b.senderUUID, senderName, x + AVATAR_X, avatarY,
                 AVATAR, AVATAR_HAT, alpha, SkinResolver.isOffline(b.senderUUID, senderName));
 
-            // Name (prefix already baked into nameSeq in enqueue)
             int nameY = iy + 6;
             int nameAlpha = (int) ((theme.textPrimary() >>> 24) * alpha);
             nameColor = (nameAlpha << 24) | (theme.textPrimary() & 0x00FFFFFF);
             g.drawText(mc.textRenderer, b.nameSeq, textX, nameY, nameColor, false);
 
-            // Message lines
             int msgAlpha = (int) ((theme.textSecondary() >>> 24) * alpha);
             msgColor = (msgAlpha << 24) | (theme.textSecondary() & 0x00FFFFFF);
             int msgY = nameY + mc.textRenderer.fontHeight + 2;
@@ -364,7 +345,7 @@ public class MentionNotificationBanner {
                 g.drawText(mc.textRenderer, drawLines.get(i), textX,
                     msgY + i * mc.textRenderer.fontHeight, msgColor, false);
         } else {
-            // Plain-text banner: [系统] label + content vertically centered, single row
+
             int nameAlpha = (int) ((theme.textPrimary() >>> 24) * alpha);
             nameColor = (nameAlpha << 24) | (theme.textPrimary() & 0x00FFFFFF);
             int msgAlpha = (int) ((theme.textSecondary() >>> 24) * alpha);
@@ -383,13 +364,10 @@ public class MentionNotificationBanner {
         if (scale != 1f) g.getMatrices().pop();
     }
 
-    /** 退出淡出曲线：ease-in（慢起快走），07 §1.4 退出规范（raw 从 1→0）。 */
     private static float exitFade(float raw) {
         return raw * (2f - raw);
     }
 
-    // Width-limit a text run by run, keeping each run's style (colors of
-    // multi-colored system lines survive truncation), then append the ellipsis.
     private static Text truncateStyled(Text src, int maxWidth,
                                        net.minecraft.client.font.TextRenderer font, String suffix) {
         int budget = maxWidth - font.getWidth(suffix);
