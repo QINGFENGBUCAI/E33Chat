@@ -10,12 +10,6 @@ import net.minecraft.util.Identifier;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Server -> client: open the server-config GUI with the current server settings
- * snapshot. Triggered by /e33chat gui (OP). The handler (opening the client
- * Screen) lives in ChatBubbleClientSetup so a dedicated server never loads the
- * client-only Screen class.
- */
 //#if MC >= 12005
 public record ServerConfigScreenPayload(boolean useTpa, boolean historyEnabled, boolean templateDebug,
                                         boolean mediaEnabled, boolean mediaAutoClean, boolean easyBotCompat,

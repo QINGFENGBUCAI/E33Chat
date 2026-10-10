@@ -2,14 +2,6 @@ package com.niuqu.chatbubble.compat;
 
 import net.minecraft.client.network.ClientPlayerEntity;
 
-/**
- * Client-side chat/command sending across the 1.19 chat rework.
- *
- * {@code ClientPlayNetworkHandler.sendChatMessage/sendChatCommand} only appeared in
- * 1.19.3. Before that the entry points lived on {@code ClientPlayerEntity} and the
- * signatures differ again between the pre-1.19 and 1.19.0-1.19.2 eras, so the whole
- * dispatch is centralised here instead of being regex-rewritten per call site.
- */
 public final class ChatSender {
     private ChatSender() {}
 

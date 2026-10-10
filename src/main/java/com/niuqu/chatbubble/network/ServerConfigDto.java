@@ -4,13 +4,6 @@ import net.minecraft.network.PacketByteBuf;
 
 import java.util.List;
 
-/**
- * 共享 DTO：ServerConfigScreenPayload 与 ServerConfigSavePayload 的
- * 9 字段载荷（7 boolean + 2 List&lt;String&gt;）。
- *
- * 字段顺序即网络字节序契约（写序 = 读序），不得改动既有字段位置；2.4.10 在
- * easyBotCompat 之后追加 groupsEnabled。payload ID 不变。
- */
 public record ServerConfigDto(boolean useTpa, boolean historyEnabled, boolean templateDebug,
                               boolean mediaEnabled, boolean mediaAutoClean, boolean easyBotCompat,
                               boolean groupsEnabled,

@@ -21,11 +21,6 @@ import net.minecraft.world.level.GameType;
 
 import java.util.UUID;
 
-/**
- * 玩家资料卡（2.4.10）：右键头像菜单"查看资料"打开。展示头像（face+hat）、
- * 名称、在线状态、UUID、延迟、游戏模式，带 私聊 / 复制UUID 快捷操作。
- * Esc 或点遮罩返回聊天界面。纯客户端（tab 列表信息），零服务器依赖。
- */
 public class PlayerProfileScreen extends Screen {
 
     private static final int PANEL_W = 220;
@@ -35,7 +30,6 @@ public class PlayerProfileScreen extends Screen {
     private final Screen parent;
     private final String playerName;
 
-    // Layout (computed in init/relocated on resize)
     private int panelX, panelY;
     private int btnWhisperX, btnCopyX, btnY, btnW;
 
@@ -68,14 +62,17 @@ public class PlayerProfileScreen extends Screen {
 
     @Override
     public void render(DrawContext g, int mouseX, int mouseY, float partialTick) {
+        //#if MC >= 26000
+
+        //#else
         //#if MC >= 12002
         renderBackground(g, mouseX, mouseY, partialTick);
         //#else
         //$$ renderBackground(g);
         //#endif
+        //#endif
         ChatBubbleTheme.Colors c = Appearance.snapshot();
 
-        // Panel (SDF 圆角：阴影 + 底色，与气泡同画法)
         RoundRectRenderer.fill(g, panelX + 2, panelY + 3, panelX + PANEL_W + 2, panelY + PANEL_H + 3,
             8, 0x55000000);
         RoundRectRenderer.fill(g, panelX, panelY, panelX + PANEL_W, panelY + PANEL_H,
@@ -87,13 +84,11 @@ public class PlayerProfileScreen extends Screen {
             && MinecraftClient.getInstance().player.getName().getString().equalsIgnoreCase(playerName);
         UUID uuid = online ? info.getProfile().getId() : null;
 
-        // Hero: head (face + hat layer) — 复用 SkinResolver 的统一头像绘制与灰显
         int headS = 40;
         int headX = panelX + (PANEL_W - headS) / 2;
         int headY = panelY + 14;
         SkinResolver.drawAvatar(g, uuid, playerName, headX, headY, headS, headS + 6, 1f, !isSelf && !online);
 
-        // Name + badge
         int nameW = textRenderer.getWidth(playerName);
         String badge = Text.translatable(isSelf ? "e33chat.profile.self"
             : online ? "e33chat.profile.online" : "e33chat.profile.offline").getString();
@@ -104,7 +99,6 @@ public class PlayerProfileScreen extends Screen {
         g.drawText(textRenderer, playerName, nameX, nameY, c.textPrimary(), false);
         g.drawText(textRenderer, badge, nameX + nameW + 6, nameY, badgeColor, false);
 
-        // Fields
         int fieldX = panelX + 16;
         int fieldY = nameY + 18;
         int lineH = textRenderer.fontHeight + 4;
@@ -113,7 +107,7 @@ public class PlayerProfileScreen extends Screen {
         fieldY = drawField(g, Text.translatable("e33chat.profile.latency").getString(),
             online ? info.getLatency() + " ms" : "—", fieldX, fieldY, lineH, c);
         GameMode gt = online ? info.getGameMode() : null;
-        // 1.21.5 把 GameMode.getName() 换成了 getTranslatableName()（返回 Text）
+
         //#if MC >= 12105
         String modeName = gt != null ? gt.getTranslatableName().getString() : "—";
         //#else
@@ -122,7 +116,6 @@ public class PlayerProfileScreen extends Screen {
         drawField(g, Text.translatable("e33chat.profile.gamemode").getString(),
             modeName, fieldX, fieldY, lineH, c);
 
-        // Buttons
         boolean hoverW = over(mouseX, mouseY, btnWhisperX, btnY, btnW, BTN_H);
         boolean hoverC = over(mouseX, mouseY, btnCopyX, btnY, btnW, BTN_H);
         RoundRectRenderer.fill(g, btnWhisperX, btnY, btnWhisperX + btnW, btnY + BTN_H, 4,
@@ -153,6 +146,9 @@ public class PlayerProfileScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        //#if MC >= 260300
+        button = com.niuqu.chatbubble.compat.InputCompat.glfwButton(button);
+        //#endif
         if (button == 0) {
             if (over(mouseX, mouseY, btnWhisperX, btnY, btnW, BTN_H)) {
                 MinecraftClient mc = MinecraftClient.getInstance();
@@ -166,7 +162,7 @@ public class PlayerProfileScreen extends Screen {
                 MinecraftClient.getInstance().keyboard.setClipboard(text);
                 return true;
             }
-            // Click outside the panel closes (WeChat-style dismiss)
+
             if (!over(mouseX, mouseY, panelX, panelY, PANEL_W, PANEL_H)) {
                 close();
                 return true;

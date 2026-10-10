@@ -7,14 +7,6 @@ import java.util.UUID;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.Text;
 
-/**
- * Layer 2: structural tell-click attribution. Plugins attach "click to
- * whisper" events to sender names — the command holds the real profile name,
- * giving deterministic attribution even on nickname servers.
- *
- * Extracted from ChatListenerMixin during the 2.3.14 restructure; behaviour
- * unchanged.
- */
 public final class TellClickDetector {
     private TellClickDetector() {}
 
@@ -68,8 +60,7 @@ public final class TellClickDetector {
         }
 
         if (sender != null) {
-            // The clicked segment must actually be the sender's displayed name — feedback like
-            // "杀死了E33EPUS" carries a whole-line /tell click whose first segment is not a name
+
             String clicked = clickedText[0].replaceAll("§.", "").trim();
             boolean clickedIsName = false;
             for (String cand : ChatClassifier.nameCandidates(sender)) {

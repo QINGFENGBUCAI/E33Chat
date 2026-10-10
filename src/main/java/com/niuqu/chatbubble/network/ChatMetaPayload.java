@@ -87,11 +87,6 @@ public record ChatMetaPayload(UUID senderUUID, String senderName, String message
     //$$ }
     //#endif
 
-    /** Mention targets are a handful of names; the count comes off the wire, so
-     *  an unclamped pre-allocation (vanilla readList/readCollection sizes the
-     *  list from the wire count) lets one packet OOM the receiver.
-     *  26.3 removed FriendlyByteBuf.writeCollection/readList — the helpers below
-     *  write the identical wire format (VarInt count + elements) by hand. */
     private static final int MAX_MENTION_TARGETS = 200;
 
     private static void writeMentions(PacketByteBuf buf, List<String> list) {

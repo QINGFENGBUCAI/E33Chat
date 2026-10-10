@@ -16,14 +16,8 @@ import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
 import javax.imageio.stream.ImageOutputStream;
 
-/**
- * Turns a local file or a clipboard image into uploadable bytes (scaled to
- * MAX_EDGE, re-encoded). Pure-image logic, headless-safe except the AWT
- * clipboard read itself.
- */
 public final class LocalImageSource {
-    // 1280px long edge: chat images don't need more (240px render cap), and
-    // an 8MB photo compresses to a few hundred KB — fast upload and download.
+
     public static final int MAX_EDGE = 1280;
 
     public record PreparedImage(byte[] bytes, String fileName, String contentType) {
@@ -32,24 +26,15 @@ public final class LocalImageSource {
         }
     }
 
-    /** Outcome of preparing a local file for upload. */
     public sealed interface Prep {
-        /**
-         * Uploadable bytes. {@code animated} means the bytes are the untouched
-         * source rather than a re-encode.
-         */
+
         record Ok(PreparedImage image, boolean animated) implements Prep {}
-        /**
-         * An animated source heavier than the receiver can render. Carries the
-         * broken limit so the UI can say which one, instead of the generic
-         * failure toast.
-         */
+
         record Rejected(AnimatedImageLoader.OverBudget reason) implements Prep {}
     }
 
     private LocalImageSource() {}
 
-    /** Loads + scales + re-encodes a local image file. Null if unreadable/unsupported. */
     public static PreparedImage fromFile(File f) {
         if (f == null || !f.isFile()) return null;
         try {
@@ -65,16 +50,6 @@ public final class LocalImageSource {
         }
     }
 
-    /**
-     * Prepare a local file for upload, sending animated sources byte-for-byte.
-     *
-     * <p>{@link #fromFile} runs the file through {@code ImageIO.read} and
-     * re-encodes it as a single PNG — for a GIF that reads only the first frame,
-     * so the animation never reached the upload. Here an animated file passes
-     * through untouched, but only when it fits what the receiver can render;
-     * anything heavier is rejected with a reason rather than quietly downgraded
-     * to a still image, because "sent but frozen" is the bug being fixed.</p>
-     */
     public static Prep prepare(File f) {
         if (f == null || !f.isFile()) return new Prep.Ok(null, false);
         byte[] raw;
@@ -94,7 +69,6 @@ public final class LocalImageSource {
         return new Prep.Ok(fromFile(f), false);
     }
 
-    /** Reads an image from the system clipboard (AWT). Null if none/error. */
     public static PreparedImage fromClipboard() {
         try {
             Object data = Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.imageFlavor);
@@ -110,7 +84,7 @@ public final class LocalImageSource {
         int w = src.getWidth();
         int h = src.getHeight();
         if (w <= 0 || h <= 0) return null;
-        // Scale down long edge (chat images; keeps upload small and fast).
+
         double scale = Math.min(1.0, (double) MAX_EDGE / Math.max(w, h));
         BufferedImage img = src;
         if (scale < 1.0) {
@@ -143,7 +117,7 @@ public final class LocalImageSource {
 
     private static byte[] toJpeg(BufferedImage img) {
         try {
-            // JPEG has no alpha — composite onto white first.
+
             BufferedImage rgb = new BufferedImage(img.getWidth(), img.getHeight(), BufferedImage.TYPE_INT_RGB);
             Graphics2D g = rgb.createGraphics();
             g.setColor(java.awt.Color.WHITE);
@@ -178,12 +152,6 @@ public final class LocalImageSource {
         return n.endsWith(".png") || n.endsWith(".jpg") || n.endsWith(".jpeg") ? n : n + ".png";
     }
 
-    /**
-     * Keeps an animated file's original name, ensuring it carries the extension
-     * its real format needs. The receiver can only probe animation by extension
-     * or content, and third-party hosts hand back extension-less URLs — carrying
-     * a truthful name is what lets the download side recognise it.
-     */
     private static String sanitizeAnimated(String name, String format) {
         String n = sanitize(name);
         String ext = "." + format;

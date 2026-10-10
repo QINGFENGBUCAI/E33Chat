@@ -6,15 +6,6 @@ import net.minecraft.text.Text;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Wrapped tooltip lines across the 1.21.6 GUI rework.
- *
- * {@code DrawContext.drawTooltip} took {@code List<OrderedText>} (produced by
- * {@code TextRenderer.wrapLines}) before 1.21.6; from 1.21.6 the wrapped overload
- * takes {@code List<Text>} instead, so the pre-wrapped lines are rebuilt as Texts
- * here. Without this the single-Text overload would render one unwrapped line and
- * long descriptions would overflow the screen.
- */
 public final class TooltipCompat {
     private TooltipCompat() {}
 

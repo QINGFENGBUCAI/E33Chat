@@ -8,7 +8,6 @@ import net.minecraft.network.packet.CustomPayload;
 //#endif
 import net.minecraft.util.Identifier;
 
-/** Server -> client sync of server-side settings (currently: use_tpa). */
 //#if MC >= 12005
 public record ConfigSyncPayload(boolean useTpa) implements CustomPayload {
 //#else

@@ -8,11 +8,6 @@ import net.minecraft.network.packet.CustomPayload;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 
-/**
- * C2S handshake: the client announces it runs E33Chat right after logging in.
- * The server uses this to route group chat (packet for mod clients, plain
- * formatted line for vanilla ones) and to push the group list immediately.
- */
 //#if MC >= 12005
 public record ClientHelloPayload() implements CustomPayload {
 //#else
@@ -57,12 +52,6 @@ public record ClientHelloPayload() implements CustomPayload {
     }
     //#endif
 
-    /**
-     * Client-side dispatch. Only sent when the server actually negotiated the
-     * e33chat channel: on a vanilla server the payload has no peer, and a failed
-     * send inside the login flow must degrade to a warning, never cost the rest
-     * of the login (the join event fires mid-{@code handleLogin}).
-     */
     public static void send() {
         //#if MC >= 12005
         if (!net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.canSend(ID)) {
@@ -88,7 +77,6 @@ public record ClientHelloPayload() implements CustomPayload {
         //#endif
     }
 
-    /** Server-side hook, invoked from ChatBubbleMod's receiver. */
     public static void handleServer(ClientHelloPayload payload, ServerPlayerEntity player) {
         com.niuqu.chatbubble.server.GroupManager.onClientHello(player);
     }

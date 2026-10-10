@@ -14,13 +14,6 @@ import com.niuqu.chatbubble.HeadTextureHelper;
 
 import java.util.function.Supplier;
 
-/**
- * 拦截 SkinTextureDownloader.registerTextureInManager,在皮肤纹理加载时
- * 提取并注册混合头部纹理 (face + hat 预混合)。
- *
- * <p>仅 MC 26.1+ 可用 (SkinTextureDownloader + ClientAsset 使用 Mojang 官方名称)。
- * 旧版本通过 drawPlayerHead 的回退路径分层绘制 face + hat。</p>
- */
 @Mixin(SkinTextureDownloader.class)
 public abstract class SkinTextureDownloaderMixin {
 

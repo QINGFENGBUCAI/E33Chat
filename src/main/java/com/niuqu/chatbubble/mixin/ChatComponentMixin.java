@@ -38,10 +38,7 @@ public class ChatComponentMixin {
     private long lastRepostTime;
 
     //#if MC >= 26000
-    // 26.x: ChatComponent no longer renders directly — it feeds the deferred
-    // pipeline via extractRenderState, so the old -8px matrix shift has no
-    // equivalent. Only the "hide vanilla chat while our screen is open" cancel
-    // survives here.
+
     @Inject(method = "extractRenderState(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Lnet/minecraft/client/gui/Font;IIILnet/minecraft/client/gui/components/ChatComponent$DisplayMode;Z)V",
             at = @At("HEAD"), cancellable = true)
     private void onRender(CallbackInfo ci) {
@@ -76,9 +73,7 @@ public class ChatComponentMixin {
     //#endif
 
     //#if MC >= 26000
-    // 26.x: the public addMessage(Text) entry is gone; every public entry
-    // (addPlayerMessage / addClientSystemMessage / addServerSystemMessage)
-    // funnels into this private overload, so one hook captures everything.
+
     @Inject(method = "addMessage(Lnet/minecraft/network/chat/Component;Lnet/minecraft/network/chat/MessageSignature;Lnet/minecraft/client/multiplayer/chat/GuiMessageSource;Lnet/minecraft/client/multiplayer/chat/GuiMessageTag;)V",
             at = @At("HEAD"), cancellable = true)
     private void onAddMessage(Text message, net.minecraft.network.chat.MessageSignature signature,
@@ -105,13 +100,8 @@ public class ChatComponentMixin {
     //#endif
     //#endif
 
-    // Vanilla chat gets a unified player-style format for whispers/quotes:
-    //   <sender>[私聊] content   (whisper in/out, incl. self-whisper)
-    //   <sender>[引用] content   (quote reply, detected via the echo's quoted flag)
-    // The sender component keeps its style so colored nicknames/prefixes survive.
     private void repostToVanilla(Text name, String content, boolean quoting) {
-        // banner.quote/whisper carry a trailing space (banner prefix convention),
-        // so content is appended without an extra separator.
+
         Text tag = (quoting
             ? Text.translatable("e33chat.banner.quote").formatted(Formatting.YELLOW)
             : Text.translatable("e33chat.banner.whisper").formatted(Formatting.LIGHT_PURPLE));
@@ -120,8 +110,7 @@ public class ChatComponentMixin {
             .append(Text.literal(content));
         String repostStr = reformatted.getString();
         long nowMs = System.currentTimeMillis();
-        // Server echoes a whisper twice (signed outgoing + incoming) within ~15ms;
-        // both would rewrite to the same line without this guard.
+
         if (ChatMessageStore.isRepostDuplicate(lastRepostText, lastRepostTime, repostStr, nowMs)) {
             ChatMessageStore.debugLog(() -> "[e33chat] Repost deduped | '" + repostStr + "'");
             return;
@@ -130,8 +119,7 @@ public class ChatComponentMixin {
         lastRepostTime = nowMs;
         ChatMessageStore.debugLog(() -> "[e33chat] Repost to vanilla | '" + repostStr + "' | quoting=" + quoting);
         e33chat$reposting = true;
-        // 3-arg addMessage with a null indicator: the 1-arg overload forces
-        // MessageIndicator.system(), which logs "[System] [CHAT]" and styles the line
+
         //#if MC >= 11900
         ((ChatHud) (Object) this).addMessage(reformatted, null, null);
         //#else
@@ -140,12 +128,9 @@ public class ChatComponentMixin {
         e33chat$reposting = false;
     }
 
-    // The vanilla chat gets the raw [[CICode,url=...]] line (long URL → spammy).
-    // Rewrite it to a "[图片]" placeholder so the bubble renders the image while
-    // the vanilla surface stays compact, independent of ChatImage being installed.
     private void rewriteVanillaImageCode(Text finalComponent, CallbackInfo ci) {
         Text placeholder = BracketCodec.toPlaceholderText(finalComponent);
-        if (placeholder == finalComponent) return; // no image code, nothing to do
+        if (placeholder == finalComponent) return;
         ci.cancel();
         e33chat$reposting = true;
         //#if MC >= 11900
@@ -160,28 +145,16 @@ public class ChatComponentMixin {
         if (!ChatBubbleClientSetup.config().enabled()) return;
         if (e33chat$reposting) return;
 
-        // 1-arg addMessage calls 3-arg internally with the SAME Component object —
-        // dedupe on object identity so two genuinely identical messages (same text,
-        // different objects) are never swallowed
         if (finalComponent == lastComponent) return;
         lastComponent = finalComponent;
         String text = finalComponent.getString();
 
-        // Outgoing whisper echo via the system channel ("你悄悄对 Steve 说: hi"):
-        // suppress the vanilla line and repost it as <me>[私聊] hi. Checked BEFORE
-        // consumePendingMeta: this path never sets pending meta, so consuming it here
-        // would eat a stale residue and misattribute the next real message.
         if (ChatMessageStore.consumeSuppressCapture()) {
             ci.cancel();
-            // Decorated name from the line itself, so this path matches the signed
-            // echo path's meta.senderName() — otherwise the repost dedup guard sees
-            // different strings (tab name vs chat-decorated name) and shows both
+
             Text name = ChatMessageStore.extractWhisperDisplayName(finalComponent,
                 ChatMessageStore.ownDisplayName());
-            // Vanilla outgoing lines carry only the target ("你悄悄地对X说" / "You
-            // whisper to X") — ownDisplayName() then supplies our name. Either way
-            // the local bubble was created with a bare name: patch it now that the
-            // echo reveals the real self display name.
+
             ChatMessageStore.cacheOwnDecoratedName(name);
             ChatMessageStore.updateLatestOwnSenderName(name);
             repostToVanilla(name, ChatMessageStore.extractWhisperContent(text, null),
@@ -202,10 +175,6 @@ public class ChatComponentMixin {
             );
         }
 
-        // Blocked sender: vanish completely — no vanilla line, no bubble, no
-        // banner/sound (addMessage below never runs). Checked before the echo and
-        // whisper-repost branches so a blocked player's whisper can't resurface
-        // as a [私聊] rewrite.
         if (BlockList.isPlayerBlocked(meta.rawPlayerName(), meta.senderName(),
                 ChatBubbleClientSetup.config().blockedPlayers())) {
             final String blockedName = meta.senderName().getString();
@@ -214,11 +183,6 @@ public class ChatComponentMixin {
             return;
         }
 
-        // Self-sent echo on the signed channel: plain chat keeps the vanilla line;
-        // whisper echoes get the [私聊] rewrite, quote replies get the [引用] rewrite
-        // (quote replies travel as plain chat, so the echo's quoted flag is their
-        // only rewrite signal). meta is trusted here (freshly consumed) and carries
-        // the server-decorated name + content, e.g. "[称号]E33EPUS" / "1234533425".
         EchoTracker.EchoMatch echo = ChatMessageStore.consumeEchoIfSenderMatches(meta.senderUUID(), meta.senderName(), text);
         if (echo.matched()) {
             if (meta.whisper() || echo.quoted()) {
@@ -234,7 +198,6 @@ public class ChatComponentMixin {
             return;
         }
 
-        // Incoming whisper (someone whispers you): same unified format, sender's name
         if (meta.whisper()) {
             ci.cancel();
             repostToVanilla(meta.senderName(), ChatMessageStore.extractWhisperContent(text, meta), false);
@@ -247,18 +210,11 @@ public class ChatComponentMixin {
             content = meta.rawContent();
         } else if (!rawStr.isBlank()
                 && !BracketCodec.parseOrExtract(meta.rawContent()).images().isEmpty()) {
-            // ChatImage (or a similar mod) rewrote the component before we
-            // captured it: the [[CICode,...]] bracket is gone from the line.
-            // Keep the pristine server-sent content so the bubble still renders
-            // the image and does not repeat the sender name.
+
             content = meta.rawContent();
         } else {
             content = finalComponent;
         }
-        // 2.3.10+: image bracket codes are kept raw in storage; the bubble
-        // renders them natively (BracketCodec strips the code, ImageLoader
-        // draws the picture). The vanilla chat still gets ChatImage's own
-        // conversion via ChatImage's mixins, so both surfaces agree.
 
         Text logComp = finalComponent, logContent = content;
         SenderMeta logMeta = meta;

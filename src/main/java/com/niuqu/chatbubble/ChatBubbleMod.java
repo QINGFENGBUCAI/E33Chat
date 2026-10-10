@@ -48,21 +48,14 @@ import java.util.regex.Pattern;
 public class ChatBubbleMod implements ModInitializer {
     public static final String MOD_ID = "e33chat";
 
-    // Align with Forge/Neo: \p{L}\p{N} covers non-ASCII names (cracked servers allow
-    // Chinese player names); @(\w+) only matched ASCII and missed them
     private static final Pattern MENTION_PATTERN = Pattern.compile("@([\\p{L}\\p{N}_]+)");
     private static final int HISTORY_MAX = 50;
 
     private static final Map<UUID, QuotePending> pendingQuotes = new HashMap<>();
-    // Every touch of historyBuffer goes through this lock. ArrayDeque is not
-    // thread safe and its trim (removeFirst) nulls the vacated slot for GC, so an
-    // unsynchronized `new ArrayList<>(historyBuffer)` snapshot could hand the
-    // encoder a null element - see the upstream 2.4.0 "Invalid player data" kick
-    // incident.
+
     private static final Object HISTORY_LOCK = new Object();
     private static final Deque<HistoryPayload.HistoryEntry> historyBuffer = new ArrayDeque<>();
 
-    // Server-side settings (loaded per-world from <world>/serverconfig/e33chat-server.json)
     private static boolean historyEnabled;
     private static boolean useTpa;
     private static boolean templateDebug;
@@ -78,7 +71,6 @@ public class ChatBubbleMod implements ModInitializer {
     private static boolean configLoaded;
     private static volatile com.niuqu.chatbubble.server.DiskMediaStore mediaStore;
 
-    /** Lazily-created per-world media store (next to the server config). */
     private static com.niuqu.chatbubble.server.DiskMediaStore mediaStore(net.minecraft.server.MinecraftServer server) {
         com.niuqu.chatbubble.server.DiskMediaStore s = mediaStore;
         if (s == null) {
@@ -95,23 +87,18 @@ public class ChatBubbleMod implements ModInitializer {
         return s;
     }
 
-    // GroupManager.say consumes quotes for group messages
     public record QuotePending(String quotedSenderName, String quotedContent, String messageHash, long time) {}
 
-    // A quote that never made it into a sent message (e.g. an anti-spam plugin blocked
-    // it) must not tag a later unrelated message — expire after 10s (parity with Forge)
     private static QuotePending takeQuote(UUID playerUUID) {
         QuotePending quote = pendingQuotes.remove(playerUUID);
         if (quote != null && System.currentTimeMillis() - quote.time() > 10_000) return null;
         return quote;
     }
 
-    /** Group chat path (2.4.10): consume the pending quote attached by QuoteSyncPayload. */
     public static QuotePending consumeQuote(UUID playerUUID) {
         return takeQuote(playerUUID);
     }
 
-    /** Group chat path: append an already-built entry (carries the group tag). */
     public static void addHistoryEntry(HistoryPayload.HistoryEntry entry) {
         addToHistory(entry);
     }
@@ -132,9 +119,7 @@ public class ChatBubbleMod implements ModInitializer {
         PayloadTypeRegistry.playS2C().register(MediaResponsePayload.ID, MediaResponsePayload.CODEC);
         PayloadTypeRegistry.playS2C().register(MediaCapPayload.ID, MediaCapPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(EasyBotConfigPayload.ID, EasyBotConfigPayload.CODEC);
-        // 2.4.10 group chat: handshake / say / directory / manage. Old clients
-        // drop unknown payloads harmlessly; a new client against an old server
-        // just never receives group_list, so the tab strip stays hidden.
+
         PayloadTypeRegistry.playC2S().register(ClientHelloPayload.ID, ClientHelloPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(GroupChatPayload.ID, GroupChatPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(GroupListPayload.ID, GroupListPayload.CODEC);
@@ -221,7 +206,6 @@ public class ChatBubbleMod implements ModInitializer {
         //$$ });
         //#endif
 
-        // Server-config GUI save: validate, persist to JSON, rebroadcast
         //#if MC >= 12005
         ServerPlayNetworking.registerGlobalReceiver(ServerConfigSavePayload.ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();
@@ -295,8 +279,7 @@ public class ChatBubbleMod implements ModInitializer {
         //#endif
 
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
-            // Load server config from <world>/serverconfig/ on first join (matching
-            // NeoForge's per-world ModConfig.Type.SERVER convention)
+
             if (!configLoaded) {
                 configLoaded = true;
                 var configPath = server.getSavePath(net.minecraft.util.WorldSavePath.ROOT)
@@ -306,12 +289,9 @@ public class ChatBubbleMod implements ModInitializer {
                 if (mediaAutoClean) mediaStore(server).cleanupExpired();
             }
 
-            // Always sync server-side settings so the client head menu matches the server
             sendServerConfigTripleTo(handler.player);
             com.niuqu.chatbubble.server.GroupManager.sendGroupList(handler.player);
 
-            // 编解码失败只记日志，不逃逸出登录事件链——原版会把它变成
-            // "Invalid player data" 踢人。历史快照在锁内取，编码器永远看不到活的 deque。
             if (!historyEnabled) return;
             try {
                 List<HistoryPayload.HistoryEntry> snapshot = snapshotHistory();
@@ -329,20 +309,14 @@ public class ChatBubbleMod implements ModInitializer {
             }
         });
 
-        // /e33chat template commands + /e33chat gui
         com.niuqu.chatbubble.command.E33ChatCommands.register();
 
-        // Drop the per-world media store on server stop so the next world (which may
-        // be a different save directory) lazily rebuilds it against its own path;
-        // also discard any in-flight upload sessions and their temp files.
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
             DiskMediaStore s = mediaStore;
             if (s != null) s.discardAllUploads();
             mediaStore = null;
             com.niuqu.chatbubble.server.GroupManager.onServerStopping(server);
-            // Singleplayer world switches reuse this JVM: without these, the
-            // next world inherits the previous world's config-loaded flag,
-            // quote attach window and history backlog.
+
             configLoaded = false;
             pendingQuotes.clear();
             synchronized (HISTORY_LOCK) {
@@ -350,7 +324,6 @@ public class ChatBubbleMod implements ModInitializer {
             }
         });
 
-        // Discard a leaving player's in-flight upload session (and temp file).
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             DiskMediaStore s = mediaStore;
             if (s != null) s.discardUploadsFor(handler.player.getName().getString());
@@ -358,10 +331,6 @@ public class ChatBubbleMod implements ModInitializer {
         });
     }
 
-    // Called from CommandManagerMixin.execute (parity with Forge ChatServerListener.onCommand):
-    // /msg /tell /w /whisper carry a quote the client synced (QuoteSyncPayload); consume it
-    // here and broadcast the quote meta, because vanilla private messages never hit
-    // ServerMessageEvents.CHAT_MESSAGE
     public static void consumePrivateMessageQuote(ParseResults<ServerCommandSource> parseResults, String command) {
         String[] parts = command.split(" ");
         if (parts.length < 3) return;
@@ -407,8 +376,6 @@ public class ChatBubbleMod implements ModInitializer {
         }
     }
 
-    // 四 payload 组合（use_tpa + templates + media cap + easybot）：JOIN 与 broadcast 共用。
-    // media/easybot 是独立能力 type——旧客户端安全丢未知 payload，混版本不会 desync。
     private static void sendServerConfigTripleTo(ServerPlayerEntity player) {
         //#if MC >= 12005
         ServerPlayNetworking.send(player,
@@ -435,7 +402,6 @@ public class ChatBubbleMod implements ModInitializer {
             new ArrayList<>(whisperTemplates), templateDebug);
     }
 
-    // Server-side state accessors for the command handler
     public static boolean useTpa() { return useTpa; }
     public static boolean historyEnabled() { return historyEnabled; }
     public static boolean templateDebug() { return templateDebug; }
@@ -455,20 +421,16 @@ public class ChatBubbleMod implements ModInitializer {
     }
 
     private static void addToHistory(HistoryPayload.HistoryEntry entry) {
-        // ArrayDeque.addLast(null) throws; dropping a null entry here keeps the
-        // failure out of the chat event that produced it.
+
         if (entry == null) return;
         synchronized (HISTORY_LOCK) {
             historyBuffer.addLast(entry);
-            // pollFirst, not removeFirst: a deque whose size drifted (the exact
-            // failure this lock is meant to survive) must not throw
-            // NoSuchElementException out of the chat event that fed it.
+
             while (historyBuffer.size() > HISTORY_MAX && historyBuffer.pollFirst() != null)
                 ;
         }
     }
 
-    /** Locked copy-on-write snapshot; the encoder never sees the live deque. */
     private static List<HistoryPayload.HistoryEntry> snapshotHistory() {
         synchronized (HISTORY_LOCK) {
             return new ArrayList<>(historyBuffer);

@@ -7,11 +7,6 @@ import net.minecraft.network.packet.CustomPayload;
 //#endif
 import net.minecraft.util.Identifier;
 
-/**
- * Server -> client: one chunk of a media download. The special form
- * (index 0, totalChunks 1, empty chunk) signals "not found" so the client can
- * fail the fetch instead of hanging.
- */
 //#if MC >= 12005
 public record MediaResponsePayload(String mediaId, int index, int totalChunks, byte[] chunk)
         implements CustomPayload {

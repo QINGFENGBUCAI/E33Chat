@@ -4,19 +4,9 @@ import com.niuqu.chatbubble.chat.WhisperSignal;
 import com.niuqu.chatbubble.store.ChatMessageStore;
 import net.minecraft.client.MinecraftClient;
 
-/**
- * Outgoing whisper-echo suppression decision (the text-path branch that runs
- * on the system channel when the translation key is gone — NCR-converted
- * servers). The key-path branch stays inside ChatClassifier.classifyByKey for
- * now; both share the same store state machine.
- *
- * Extracted from ChatListenerMixin during the 2.3.14 restructure; behaviour
- * unchanged.
- */
 public final class EchoSuppressor {
     private EchoSuppressor() {}
 
-    /** @return true when sysText is our own outgoing whisper echo and was suppressed. */
     public static boolean trySuppressOutgoingEcho(String sysText) {
         boolean hasEchoFlag = ChatMessageStore.hasPendingWhisperEcho();
         boolean hasKw = WhisperSignal.containsZh(sysText)

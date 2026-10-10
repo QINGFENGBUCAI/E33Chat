@@ -92,8 +92,6 @@ public class MentionNotificationController {
         }
     }
 
-    // System messages (server broadcasts/deaths/joins) pop the same banner as
-    // @/whisper/quote; no sender name — the [系统] label is the name row.
     public void onSystemMessage(Text content, int messageIndex) {
         if (MinecraftClient.getInstance().player == null) return;
         if (!ChatBubbleClientSetup.config().systemBannerEnabled()) return;

@@ -21,71 +21,44 @@ import net.minecraft.client.texture.NativeImageBackedTexture;
 import net.minecraft.client.texture.TextureManager;
 import net.minecraft.util.Identifier;
 
-/**
- * URL → memory cache → async HTTP fetch → decode → scale → texture upload.
- *
- * Anti-flood guards (a chat message is an attacker-controlled download trigger):
- *  - sliding window: at most RATE_LIMIT_PER_WINDOW new downloads per window;
- *    excess URLs queue (QUEUE_CAP) and are drained by {@link #tick()} when a
- *    slot frees up; beyond the queue cap the entry fails with "rate limited"
- *    (rendered with a distinct label).
- *  - cache cap: finished entries are LRU-evicted past CACHE_CAP, destroying
- *    their GPU textures.
- *  - decode is always scaled down to CARD_W x CARD_H before upload, so a
- *    hostile 16MB image costs ~230KB of GPU memory.
- */
 public final class ImageLoader {
     private static final Map<String, ImageEntry> CACHE = new ConcurrentHashMap<>();
     private static final Deque<String> LRU = new ArrayDeque<>();
     private static final Deque<ImageEntry> PENDING = new ArrayDeque<>();
 
-    // Dedicated daemon pool: ForkJoinPool.commonPool is shared with the whole
-    // mod ecosystem and frequently starved/blocked by other mods, which left
-    // fetches stuck in LOADING forever. Two threads is plenty for chat images.
     private static final java.util.concurrent.ExecutorService EXEC =
         java.util.concurrent.Executors.newFixedThreadPool(2, r -> {
             Thread t = new Thread(r, "e33chat-image");
             t.setDaemon(true);
             return t;
         });
-    // HTTP/1.1: the JDK's default HTTP/2 path is much slower against some
-    // servers (measured 11.7s vs curl's 3.6s on the same image); plain HTTP/1.1
-    // matches curl behaviour.
+
     private static final HttpClient CLIENT = HttpClient.newBuilder()
         .version(HttpClient.Version.HTTP_1_1)
         .connectTimeout(Duration.ofSeconds(8))
         .followRedirects(HttpClient.Redirect.NORMAL)
         .build();
 
-    /** Shared HTTP client (also used by ImageUploader). */
     public static HttpClient client() { return CLIENT; }
 
-    /** Shared worker pool (also used by ImageUploader). */
     public static java.util.concurrent.ExecutorService executor() { return EXEC; }
 
     private static final int MAX_RECEIVE_BYTES = 16 * 1024 * 1024;
-    // Direct fetches can be very slow in the user's network (TLS handshake +
-    // multi-hundred-KB bodies measured 30-45s); the budget must be generous so
-    // a slow-but-working link lands in LOADED, not FAILED.
+
     private static final long REQUEST_TIMEOUT_SECONDS = 60;
 
-    // Anti-flood knobs (grilled with the user, 2026-08-12)
     static final int RATE_LIMIT_PER_WINDOW = 4;
     static final long RATE_WINDOW_MS = 10_000;
     static final int QUEUE_CAP = 32;
     static final int CACHE_CAP = 64;
-    // Decode cap: large images keep enough pixels to fill the panel (which can
-    // be wider than the old 180px card), while small images are never upscaled.
+
     static final int CARD_W = 512;
     static final int CARD_H = 512;
 
-    // Dead links (bad URLs, 404s) used to retry every 10s, spamming the log and
-    // stealing anti-flood download slots from real images; 2 minutes is plenty.
     private static final long FAILED_RETRY_MS = 120_000;
     private static final Deque<Long> RECENT_STARTS = new ArrayDeque<>();
     private static volatile boolean enabled = true;
 
-    /** Incremented on every state flip; consumers (chat layout) use it to drop caches. */
     public static final java.util.concurrent.atomic.AtomicInteger VERSION = new java.util.concurrent.atomic.AtomicInteger();
 
     private ImageLoader() {}
@@ -107,7 +80,6 @@ public final class ImageLoader {
         }
     }
 
-    /** Main entry: returns the entry, kicking off the load if unseen. */
     public static ImageEntry getOrLoad(String url) {
         if (!enabled) return null;
         ImageEntry entry = CACHE.get(url);
@@ -115,9 +87,7 @@ public final class ImageLoader {
             entry = CACHE.computeIfAbsent(url, ImageLoader::startLoad);
         } else if (entry.state() == ImageEntry.State.FAILED
                 && System.currentTimeMillis() - entry.failedAtMillis() > FAILED_RETRY_MS) {
-            // Transient failures (DNS hiccup, slow server) should not poison the
-            // cache forever — retry after a quiet period. Replacing the entry
-            // atomically keeps concurrent renders from seeing a half-built one.
+
             ImageEntry fresh = new ImageEntry(url);
             if (CACHE.replace(url, entry, fresh)) {
                 startLoadInto(url, fresh);
@@ -136,7 +106,6 @@ public final class ImageLoader {
         evictIfNeeded();
     }
 
-    /** Drops the oldest finished entries past CACHE_CAP, destroying textures. */
     private static void evictIfNeeded() {
         synchronized (LRU) {
             if (LRU.size() <= CACHE_CAP) return;
@@ -144,7 +113,7 @@ public final class ImageLoader {
             while (it.hasNext() && LRU.size() > CACHE_CAP) {
                 String url = it.next();
                 ImageEntry e = CACHE.get(url);
-                // Never evict in-flight entries (their upload callback would leak).
+
                 if (e == null || e.state() == ImageEntry.State.LOADING) continue;
                 it.remove();
                 CACHE.remove(url, e);
@@ -159,12 +128,11 @@ public final class ImageLoader {
         }
     }
 
-    /** Headless-friendly: parse + validate the URL without touching MC. */
     public static boolean isUsableUrl(String url) {
         if (url == null || url.isBlank()) return false;
         String lower = url.toLowerCase();
         if (lower.startsWith("e33chat://")) {
-            // Server-hosted media: e33chat://media/<32-hex id>
+
             return lower.startsWith("e33chat://media/")
                 && com.niuqu.chatbubble.server.DiskMediaStore.isValidMediaId(
                     url.substring("e33chat://media/".length()));
@@ -178,7 +146,6 @@ public final class ImageLoader {
         }
     }
 
-    /** Pure size math for scaling (unit-testable). */
     public static int[] scaledSize(int w, int h) {
         if (w <= 0 || h <= 0) return new int[]{1, 1};
         if (w <= CARD_W && h <= CARD_H) return new int[]{w, h};
@@ -206,7 +173,7 @@ public final class ImageLoader {
             synchronized (PENDING) {
                 if (PENDING.size() < QUEUE_CAP) {
                     PENDING.addLast(entry);
-                    // entry stays LOADING; tick() drains when a slot frees
+
                 } else {
                     entry.markFailed("rate limited");
                 }
@@ -226,7 +193,6 @@ public final class ImageLoader {
         }
     }
 
-    /** Called every client tick; starts queued fetches as slots free up. */
     public static void tick() {
         if (!enabled) return;
         while (true) {
@@ -249,9 +215,7 @@ public final class ImageLoader {
         CompletableFuture.runAsync(() -> fetchAndDecode(url, entry), EXEC)
             .orTimeout(REQUEST_TIMEOUT_SECONDS + 5, TimeUnit.SECONDS)
             .exceptionally(t -> {
-                // The request-level timeout (HttpRequest.timeout) is what marks
-                // the entry FAILED; this future safety net must NOT flip state,
-                // otherwise a slow-but-finished download is discarded.
+
                 E33Log.info("[e33chat] image fetch {} -> future timeout after {}s (download may still finish)",
                     url, REQUEST_TIMEOUT_SECONDS + 5);
                 return null;
@@ -295,10 +259,7 @@ public final class ImageLoader {
                 E33Log.info("[e33chat] image fetch {} -> decode failed ({} bytes, {}ms)", url, body.length, t1 - t0);
                 return;
             }
-            // Scale down before upload: a hostile full-size image costs ~230KB
-            // of GPU memory instead of up to 9MB+, and renders identical at
-            // card size (the original can be re-downloaded if a full-size
-            // viewer is ever added).
+
             int[] sc = scaledSize(decoded.width(), decoded.height());
             if (sc[0] != decoded.width() || sc[1] != decoded.height()) {
                 NativeImage scaled = new NativeImage(NativeImage.Format.RGBA, sc[0], sc[1], false);
@@ -318,17 +279,13 @@ public final class ImageLoader {
                 url, decoded.width(), decoded.height(), body.length, t1 - t0);
 
             final RasterImageDecoder.DecodedImage uploadImage = decoded;
-            // Upload on the render thread, then flip state.
             MinecraftClient.getInstance().execute(() -> {
                 if (entry.state() != ImageEntry.State.LOADING) {
                     uploadImage.image().close();
                     E33Log.info("[e33chat] image upload SKIPPED (state {}) for {}", entry.state(), url);
                     return;
                 }
-                // NOTE: getTexture(id) returns the MISSING texture (black/purple)
-                // for unregistered ids — never null — so it can't guard registration.
-                // Re-register unconditionally (destroy first to avoid leaking the
-                // previous NativeImageBackedTexture on cache eviction + reload).
+
                 try {
                     Identifier id = Identifier.of("e33chat", "img/" + hash(url));
                     TextureManager tm = MinecraftClient.getInstance().getTextureManager();
@@ -355,7 +312,6 @@ public final class ImageLoader {
         return Integer.toHexString(url.hashCode());
     }
 
-    /** Package-private hooks for unit tests. */
     static Map<String, ImageEntry> cache() { return CACHE; }
     static void clearCacheForTest() {
         CACHE.clear();

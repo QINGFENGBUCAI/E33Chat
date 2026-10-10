@@ -128,7 +128,7 @@ class MessagePresentationTest {
     }
 
     @Test void rejectsBareShortNameWithoutStructure() {
-        // no colon after the name — broadcast sentence, stays rejected
+
         assertTrue(MessagePresentation.parseDecoratedPlayerLine(
             "a joined the game", List.of("a")).isEmpty());
     }
@@ -147,8 +147,6 @@ class MessagePresentationTest {
         assertTrue(parsed.isPresent());
         assertEquals("Steve", parsed.orElseThrow().playerName());
     }
-
-    // ---- legacy § color codes embedded as literal text content ----
 
     @Test void parsesLegacyColorCodeColonFormat() {
         var parsed = MessagePresentation.parseDecoratedPlayerLine(
@@ -174,8 +172,6 @@ class MessagePresentationTest {
         assertEquals("hi", parsed.orElseThrow().content());
     }
 
-    // ---- whitespace-only gap: broadcast sentence vs chat separator ----
-
     @Test void whitespaceGap_pureSpacesIsBroadcast() {
         assertTrue(MessagePresentation.isWhitespaceOnlyGap("Steve joined the game", 5, 6));
     }
@@ -200,8 +196,6 @@ class MessagePresentationTest {
         assertFalse(MessagePresentation.isWhitespaceOnlyGap("Steve", 5, 5));
     }
 
-    // ---- audit probes: formats that should parse (red = real gap) ----
-
     @Test void parsesNameSuffixBracketTitle() {
         var parsed = MessagePresentation.parseDecoratedPlayerLine(
             "Steve[LV.10]: hello", List.of("Steve"));
@@ -224,10 +218,8 @@ class MessagePresentationTest {
         assertEquals("hi", parsed.orElseThrow().content());
     }
 
-    // ---- audit probes: offline-server short/Chinese names ----
-
     @Test void parsesBareChineseNameWithColon() {
-        // cracked servers allow Chinese names; 2-char bare name + colon
+
         var parsed = MessagePresentation.parseDecoratedPlayerLine(
             "小明: 你好", List.of("小明"));
         assertTrue(parsed.isPresent());
@@ -236,7 +228,7 @@ class MessagePresentationTest {
     }
 
     @Test void rejectsBareChineseNameBroadcast() {
-        // no separator after the name — broadcast sentence stays rejected
+
         assertTrue(MessagePresentation.parseDecoratedPlayerLine(
             "小明 加入了游戏", List.of("小明")).isEmpty());
     }
@@ -249,20 +241,15 @@ class MessagePresentationTest {
     }
 
     @Test void unicodeArrowSeparatorNotSkipped() {
-        // Documented unsupported: the parser stops at ➤, and at the call
-        // site the whitespace-only name/content gap routes the message to
-        // system gray text. Loosening separators to "any non-name char"
-        // would misattribute comma-style broadcasts (Steve，welcome...).
+
         var parsed = MessagePresentation.parseDecoratedPlayerLine(
             "Steve ➤ hi", List.of("Steve"));
         assertTrue(parsed.isPresent());
         assertEquals("➤ hi", parsed.orElseThrow().content());
     }
 
-    // ---- broadcast spoof guard (2.2.8 audit G2) ----
-
     @Test void rejectsBroadcastLabelWithArrowPrefix() {
-        // 系统>>Steve: xxx —— ">>" 分隔符出现在名字前 = 广播标签，不是玩家聊天
+
         assertTrue(MessagePresentation.parseDecoratedPlayerLine(
             "系统>>Steve: 你好", List.of("Steve")).isEmpty());
         assertTrue(MessagePresentation.parseDecoratedPlayerLine(
@@ -279,7 +266,7 @@ class MessagePresentationTest {
     }
 
     @Test void rejectsBroadcastLabelWordPrefix() {
-        // 无分隔符的广播标签（bracket 包裹/空格分隔）同样不该归属成玩家
+
         assertTrue(MessagePresentation.parseDecoratedPlayerLine(
             "[系统]Steve: hi", List.of("Steve")).isEmpty());
         assertTrue(MessagePresentation.parseDecoratedPlayerLine(
@@ -295,7 +282,7 @@ class MessagePresentationTest {
     }
 
     @Test void broadcastLabelDoesNotRejectRealTitles() {
-        // 含"系统/服务器"前缀的真实称号/名字不受影响（整词匹配，不误伤）
+
         var parsed = MessagePresentation.parseDecoratedPlayerLine(
             "[系统管理员]Steve: hi", List.of("Steve"));
         assertTrue(parsed.isPresent());
@@ -307,7 +294,7 @@ class MessagePresentationTest {
     }
 
     @Test void decoratedChatStillParses() {
-        // 名字前是合法装饰（称号文本/括号/色码）不受影响
+
         var parsed = MessagePresentation.parseDecoratedPlayerLine(
             "[薄荷一区][主城] PlayerTitle_user/Ciao_Min: 额，在吗？",
             List.of("Ciao_Min"));
@@ -319,10 +306,8 @@ class MessagePresentationTest {
         assertEquals("hi", ncr.orElseThrow().content());
     }
 
-    // ---- multi-color § embedded names (2.2.8 audit G3) ----
-
     @Test void parsesColorCodeEmbeddedName() {
-        // S§6t§beve 名字内部嵌色码——双侧剥 § 后 "Steve" 命中
+
         var parsed = MessagePresentation.parseDecoratedPlayerLine(
             "S§6t§beve: hi", List.of("Steve"));
         assertTrue(parsed.isPresent());
@@ -338,19 +323,19 @@ class MessagePresentationTest {
     }
 
     @Test void parsesDecoratedColorCodeEmbeddedName() {
-        // 装饰 + 嵌色名 + 偏移映射到原文
+
         var parsed = MessagePresentation.parseDecoratedPlayerLine(
             "[VIP]S§6t§beve: hi", List.of("Steve"));
         assertTrue(parsed.isPresent());
         assertEquals("Steve", parsed.orElseThrow().playerName());
         assertEquals("hi", parsed.orElseThrow().content());
-        assertEquals(5, parsed.orElseThrow().nameStart());   // [VIP] 后
-        assertEquals(14, parsed.orElseThrow().nameEnd());    // S§6t§beve 原文长 8
-        assertEquals(16, parsed.orElseThrow().contentStart()); // ": " 后
+        assertEquals(5, parsed.orElseThrow().nameStart());
+        assertEquals(14, parsed.orElseThrow().nameEnd());
+        assertEquals(16, parsed.orElseThrow().contentStart());
     }
 
     @Test void colorCodeNameOffsetsMatchOriginalText() {
-        // 偏移必须指向原文（含色码的字符串），供 sliceStyled 切回原文
+
         String text = "S§6t§beve: hi";
         var parsed = MessagePresentation.parseDecoratedPlayerLine(text, List.of("Steve"));
         var pl = parsed.orElseThrow();

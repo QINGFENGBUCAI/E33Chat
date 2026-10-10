@@ -121,7 +121,7 @@
   "e33chat.emoji.tab_emoji": "😊 Emoji",
   "e33chat.emoji.tab_kaomoji": "✧ Kaomoji",
   "e33chat.sender.system": "System",
-  "e33chat.notif.new_messages": " new messages",
+  "e33chat.notif.new_messages": "%s new messages",
   "e33chat.notif.mention": "You were mentioned",
   "e33chat.sidebar.public": "Public",
   "e33chat.sidebar.search": "Search players",

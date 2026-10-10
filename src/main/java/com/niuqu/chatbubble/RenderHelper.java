@@ -13,13 +13,6 @@ import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
-/**
- * Cross-version GUI rendering facade.
- *
- * <p>1.20+ receives {@code DrawContext}; 1.16.5/1.18.2/1.19.2 receives
- * {@code MatrixStack}. Public methods intentionally accept {@code Object} so
- * version-specific call sites can pass either type after preprocessing.</p>
- */
 public final class RenderHelper {
     private RenderHelper() {}
 
@@ -79,8 +72,7 @@ public final class RenderHelper {
                                    int width, int height, int textureWidth, int textureHeight) {
         //#if MC >= 12000
         //#if MC >= 12102
-        // MC >= 1.21.2: use the color overload (the non-color overload cannot carry
-        // a per-call tint/alpha)
+
         DrawHelper.drawTexture((DrawContext) ctx, texture, x, y, u, v, width, height, textureWidth, textureHeight, 0xFFFFFFFF);
         //#else
         //$$ DrawHelper.drawTexture((DrawContext) ctx, texture, x, y, u, v, width, height, textureWidth, textureHeight);
@@ -107,7 +99,6 @@ public final class RenderHelper {
                                    int textureWidth, int textureHeight) {
         //#if MC >= 12000
         //#if MC >= 12102
-        // MC >= 1.21.2: use the color overload (see above)
         DrawHelper.drawTexture((DrawContext) ctx, texture, x, y, width, height, u, v, regionWidth, regionHeight, textureWidth, textureHeight, 0xFFFFFFFF);
         //#else
         //$$ DrawHelper.drawTexture((DrawContext) ctx, texture, x, y, width, height, u, v, regionWidth, regionHeight, textureWidth, textureHeight);

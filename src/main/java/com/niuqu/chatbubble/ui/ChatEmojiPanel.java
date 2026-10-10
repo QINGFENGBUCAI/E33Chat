@@ -24,12 +24,6 @@ public class ChatEmojiPanel {
     private static final int EMOTE_SLOT = 26;
     private static final int EMOTE_COLS = 5;
 
-    /**
-     * Emotes whose file name says they are animated, so the grid can mark them.
-     * Keyed by path + last-modified because a replacement file reuses the name;
-     * resolved from the extension rather than a content probe, which would
-     * download every emote just to draw a badge.
-     */
     private static final java.util.Map<String, Boolean> EMOTE_ANIMATED = new java.util.HashMap<>();
 
     private static boolean isAnimatedEmote(java.io.File f) {
@@ -43,19 +37,14 @@ public class ChatEmojiPanel {
         return animated;
     }
 
-    // 面板宽度自适应：聊天面板按固定物理宽设计（6x 时 panelW 收缩到 ~166），
-    // 表情面板若固定 170 逻辑宽会反超面板 → clamp 边界反转 → 溢出屏幕左边。
-    // 收缩到 panelW-4（保证 clamp 右界 ≥ 左界），最小 100。
     private static int fitWidth(int natural, int panelW) {
         return Math.max(100, Math.min(natural, panelW - 4));
     }
 
-    // 表情列数随实际宽度收缩（SLOT 不变）
     private static int gridCols(int pw) {
         return Math.max(1, (pw - 8) / SLOT);
     }
 
-    // 弹层 x 夹在聊天面板内且不超屏幕左右（表情/快捷/搜索共用模式）
     private static int clampX(int px, int pw, int panelX, int panelW) {
         int screenW = net.minecraft.client.MinecraftClient.getInstance().getWindow().getScaledWidth();
         int max = Math.min(panelX + panelW - pw - 2, screenW - pw - 2);
@@ -96,7 +85,6 @@ public class ChatEmojiPanel {
     public int scroll;
     public int tab;
 
-    /** Screen 注入的关闭请求钩子（播放关闭动画）；null 时直接隐藏（D07-6）。 */
     public Runnable closeRequest;
 
     private void requestClose() {
@@ -165,7 +153,7 @@ public class ChatEmojiPanel {
         int a255 = (int) (255 * alpha);
         java.util.List<java.io.File> emotes = EmoteStore.list();
         int cols = Math.max(1, (pw - 8) / EMOTE_SLOT);
-        int n = emotes.size() + 1; // +1 add slot
+        int n = emotes.size() + 1;
         int rows = (n + cols - 1) / cols;
         int totalH = rows * EMOTE_SLOT + 4;
         int maxScroll = Math.max(0, totalH - ch + 4);
@@ -187,9 +175,7 @@ public class ChatEmojiPanel {
                     ex, ey, EMOTE_SLOT - 1, EMOTE_SLOT - 1, alpha);
             if (i < emotes.size()) {
                 java.io.File f = emotes.get(i);
-                // 面板格子里显示静态缩略图，不播动画：26px 的格子根本看不清 GIF，
-                // 且帧上限提到 120 后，32 个格子同时逐帧动画会白白吃帧时间和显存。
-                // 发到消息里的表情仍然逐帧播放（那里尺寸才够大）。
+
                 net.minecraft.util.Identifier tex = EmoteStore.texture(f);
                 if (tex != null)
                     com.niuqu.chatbubble.texture.ColoredTextureRenderer.drawWithAlpha(g, tex,
@@ -198,7 +184,7 @@ public class ChatEmojiPanel {
                     g.drawText(font, "?", ex + EMOTE_SLOT / 2 - 3,
                         ey + (EMOTE_SLOT - font.fontHeight) / 2,
                         com.niuqu.chatbubble.render.ChatBubbleTheme.alphaBlend(c.textMuted(), a255), false);
-                // 角标：发出去之后是动的（缩略图说明不了这件事）
+
                 if (isAnimatedEmote(f)) {
                     String dot = "GIF";
                     int dw = font.getWidth(dot);

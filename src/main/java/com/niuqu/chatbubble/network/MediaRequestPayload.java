@@ -7,7 +7,6 @@ import net.minecraft.network.packet.CustomPayload;
 //#endif
 import net.minecraft.util.Identifier;
 
-/** Client -> server: request to download a server-hosted media file. */
 //#if MC >= 12005
 public record MediaRequestPayload(String mediaId) implements CustomPayload {
 //#else

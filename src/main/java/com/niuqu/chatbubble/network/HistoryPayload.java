@@ -42,11 +42,8 @@ public record HistoryPayload(List<HistoryPayload.HistoryEntry> entries)
         String group
     ) {}
 
-    /** Cracked/offline senders already arrive as UUID(0,0); reuse it for a missing one. */
     private static final UUID NULL_UUID = new UUID(0, 0);
 
-    /** Entry bound: the count comes off the wire, so an unclamped pre-allocation
-     *  lets one hostile packet OOM the receiver. */
     private static final int MAX_ENTRIES = 200;
 
     //#if MC >= 12005
@@ -95,14 +92,6 @@ public record HistoryPayload(List<HistoryPayload.HistoryEntry> entries)
     //$$ }
     //#endif
 
-    /**
-     * Robustness, learned from a field incident: this packet is built from a
-     * snapshot of the server's history buffer and encoded while the join-event
-     * chain is still running, so one null row used to throw an NPE that cost the
-     * joining player their login ("Invalid player data"). Rows that cannot be
-     * encoded are skipped; the header count is the filtered list's size, so it
-     * can never over-count what follows.
-     */
     private static PacketByteBuf writeAll(PacketByteBuf buf, List<HistoryEntry> entries) {
         List<HistoryEntry> rows = new ArrayList<>();
         if (entries != null) {
@@ -110,8 +99,7 @@ public record HistoryPayload(List<HistoryPayload.HistoryEntry> entries)
                 if (e != null) rows.add(e);
             }
             if (rows.size() < entries.size()) {
-                // One line of evidence for "the history arrived short": dropping a
-                // row is deliberate, but it must not be invisible.
+
                 com.niuqu.chatbubble.E33Log.warn("[e33chat] History packet: dropped {} null row(s) of {}",
                     entries.size() - rows.size(), entries.size());
             }

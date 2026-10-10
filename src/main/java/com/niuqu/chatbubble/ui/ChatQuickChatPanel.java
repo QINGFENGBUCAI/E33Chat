@@ -27,7 +27,6 @@ public class ChatQuickChatPanel {
     public boolean visible;
     public int scrollOffset;
 
-    /** Screen 注入的关闭请求钩子（播放关闭动画，含输入框隐藏）；null 时直接隐藏（D07-6）。 */
     public Runnable closeRequest;
 
     private void requestClose() {
@@ -47,8 +46,6 @@ public class ChatQuickChatPanel {
         int separatorH = visiblePhrases > 0 ? 4 : 0;
         int panelH = 8 + listH + separatorH + 20;
 
-        // 高 GUI 缩放（6x）时 panelW 收缩到 ~100 < 固定宽 140 → 居中会左溢出屏幕。
-        // clamp 到面板内：min>max 时 Mth.clamp 返回下限（panelX+2），不会反转溢出
         int px = MathHelper.clamp(panelX + panelW / 2 - W / 2, panelX + 2, panelX + panelW - W - 2);
         int py = barTop - panelH - 4;
 
@@ -66,7 +63,7 @@ public class ChatQuickChatPanel {
             int trackTop = py + 4;
             int trackBottom = py + 4 + listH;
             int trackRgb = c.scrollbar() & 0x00FFFFFF;
-            // 白色纹理 × tint 动态着色：颜色（主题色 + 透明度）由 tint 控制，纹理可覆盖
+
             com.niuqu.chatbubble.texture.ColoredTextureRenderer.drawTinted(g,
                 com.niuqu.chatbubble.texture.UiTextureManager.rl(com.niuqu.chatbubble.texture.UiElement.QUICK_SCROLLBAR_TRACK),
                 trackX, trackTop, 3, trackBottom - trackTop, (0x30 << 24) | trackRgb);
@@ -128,8 +125,6 @@ public class ChatQuickChatPanel {
         input.setVisible(true);
     }
 
-    // 输入框几何判定（与 render/handleClick 同款公式）：点击在输入框区域内直接聚焦，
-    // 不依赖 widget 点击命中链路（yarn/1.21.1 TextFieldWidget 点击不自动聚焦）
     public static boolean isInsideInput(int mx, int my, int panelX, int panelW, int barTop, int totalPhrases) {
         int visiblePhrases = Math.min(totalPhrases, MAX_VISIBLE);
         int listH = visiblePhrases * ROW_H;
@@ -153,8 +148,6 @@ public class ChatQuickChatPanel {
         int separatorH = visiblePhrases > 0 ? 4 : 0;
         int panelH = 8 + listH + separatorH + 20;
 
-        // 高 GUI 缩放（6x）时 panelW 收缩到 ~100 < 固定宽 140 → 居中会左溢出屏幕。
-        // clamp 到面板内：min>max 时 Mth.clamp 返回下限（panelX+2），不会反转溢出
         int px = MathHelper.clamp(panelX + panelW / 2 - W / 2, panelX + 2, panelX + panelW - W - 2);
         int py = barTop - panelH - 4;
 

@@ -7,11 +7,6 @@ import net.minecraft.network.packet.CustomPayload;
 //#endif
 import net.minecraft.util.Identifier;
 
-/**
- * Client -> server: one chunk of a media upload (2.3.13 server-side media
- * hosting). The upload is split into DiskMediaStore.CHUNK_BYTES chunks so a
- * large image stays under the protocol packet size limit.
- */
 //#if MC >= 12005
 public record MediaUploadPayload(long uploadId, int index, int totalChunks,
                                  int totalBytes, String contentType, byte[] chunk)

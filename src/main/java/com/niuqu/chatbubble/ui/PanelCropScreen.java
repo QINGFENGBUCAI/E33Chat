@@ -16,16 +16,6 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 
-/**
- * Framing editor for the custom chat-panel background (2.4.12, client-only).
- *
- * The panel is a tall narrow column, so a normal picture loses its sides to the
- * cover crop and there was no way to say which part should survive. This screen
- * shows the whole picture with a selection box locked to the panel's aspect
- * ratio: drag inside the box to move it, scroll to tighten, Confirm writes
- * {@code panel_bg_crop} (normalized center + zoom, so it survives the panel
- * changing shape) and Cancel leaves the config untouched.
- */
 public class PanelCropScreen extends Screen {
 
     private static final int PAD = 16;
@@ -38,7 +28,6 @@ public class PanelCropScreen extends Screen {
 
     private float centerX, centerY, zoom;
 
-    // Layout
     private int imgX, imgY, dispW, dispH;
     private int btnCancelX, btnConfirmX, btnY;
     private boolean dragging;
@@ -55,10 +44,7 @@ public class PanelCropScreen extends Screen {
 
     @Override
     protected void init() {
-        // The decode+upload is asynchronous and only the chat panel used to kick
-        // it off, so opening this screen straight from the settings screen left
-        // it showing nothing at all. Start it here, and if it is still in flight
-        // the render pass keeps re-running init (cheap) until the size is known.
+
         PanelBackground.ensureLoaded();
         lastKnownSize = PanelBackground.imageWidth() * 10000 + PanelBackground.imageHeight();
         layout();
@@ -66,14 +52,12 @@ public class PanelCropScreen extends Screen {
 
     @Override
     public void tick() {
-        // Wait for the picture: without this the screen stays blank forever when
-        // it was opened before the first frame ever drew the chat panel.
+
         if (PanelBackground.available()) {
             int now = PanelBackground.imageWidth() * 10000 + PanelBackground.imageHeight();
             if (now != lastKnownSize) {
                 lastKnownSize = now;
-                // yarn Screen has no rebuildWidgets(); re-running init() is the
-                // equivalent, and this screen builds no widgets of its own.
+
                 clearChildren();
                 init();
             }
@@ -91,7 +75,7 @@ public class PanelCropScreen extends Screen {
             imgX = imgY = 0;
         } else {
             float scale = Math.min((float) availW / texW, (float) availH / texH);
-            // Never blow a small picture up past its own size; it only looks worse.
+
             scale = Math.min(scale, 1f);
             dispW = Math.max(1, Math.round(texW * scale));
             dispH = Math.max(1, Math.round(texH * scale));
@@ -103,16 +87,12 @@ public class PanelCropScreen extends Screen {
         btnCancelX = btnConfirmX - BTN_W - 8;
     }
 
-    /**
-     * The selection box in screen coordinates: source rect in picture space,
-     * scaled by the picture's own on-screen scale.
-     */
     private int[] selectionScreenRect() {
         int texW = PanelBackground.imageWidth();
         int texH = PanelBackground.imageHeight();
         if (texW <= 0 || texH <= 0 || dispW <= 0) return null;
         float aspect = PanelBackground.lastTargetAspect();
-        // Integer stand-ins for the panel's shape keep sourceRect's maths intact.
+
         int targetW = Math.max(1, Math.round(aspect * 10000f));
         int targetH = 10000;
         int[] src = PanelBackground.sourceRect(texW, texH, targetW, targetH,
@@ -127,22 +107,25 @@ public class PanelCropScreen extends Screen {
 
     @Override
     public void render(DrawContext g, int mouseX, int mouseY, float partialTick) {
+        //#if MC >= 26000
+
+        //#else
         //#if MC >= 12002
         renderBackground(g, mouseX, mouseY, partialTick);
         //#else
         //$$ renderBackground(g);
         //#endif
+        //#endif
         ChatBubbleTheme.Colors c = Appearance.snapshot();
 
         Identifier tex = PanelBackground.textureId();
         if (tex != null && dispW > 0) {
-            // The whole picture, unscaled by any crop: the point of the editor is
-            // to see what is being left out.
+
             ColoredTextureRenderer.drawWithAlpha(g, tex, imgX, imgY, dispW, dispH,
                 0f, 0f, PanelBackground.imageWidth(), PanelBackground.imageHeight(),
                 PanelBackground.imageWidth(), PanelBackground.imageHeight(), 1f);
         } else {
-            // Never leave the user staring at an empty screen: say why it is empty.
+
             String reason = PanelBackground.failed() ? "e33chat.crop.failed"
                 : PanelBackground.loading() ? "e33chat.crop.loading" : "e33chat.crop.no_image";
             String msg = Text.translatable(reason).getString();
@@ -152,13 +135,13 @@ public class PanelCropScreen extends Screen {
 
         int[] sel = selectionScreenRect();
         if (sel != null) {
-            // Dim everything the panel will NOT show.
+
             int dim = 0x99000000;
             g.fill(imgX, imgY, imgX + dispW, sel[1], dim);
             g.fill(imgX, sel[1] + sel[3], imgX + dispW, imgY + dispH, dim);
             g.fill(imgX, sel[1], sel[0], sel[1] + sel[3], dim);
             g.fill(sel[0] + sel[2], sel[1], imgX + dispW, sel[1] + sel[3], dim);
-            // Selection border: 1px, white, plus corner ticks so the shape reads.
+
             int border = 0xFFFFFFFF;
             g.fill(sel[0], sel[1], sel[0] + sel[2], sel[1] + 1, border);
             g.fill(sel[0], sel[1] + sel[3] - 1, sel[0] + sel[2], sel[1] + sel[3], border);
@@ -166,7 +149,6 @@ public class PanelCropScreen extends Screen {
             g.fill(sel[0] + sel[2] - 1, sel[1], sel[0] + sel[2], sel[1] + sel[3], border);
         }
 
-        // Hint + buttons
         String hint = Text.translatable("e33chat.crop.hint").getString();
         g.drawText(textRenderer, hint, PAD, btnY + 6, c.textSecondary(), false);
 
@@ -186,6 +168,9 @@ public class PanelCropScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        //#if MC >= 260300
+        button = com.niuqu.chatbubble.compat.InputCompat.glfwButton(button);
+        //#endif
         if (button != 0) return super.mouseClicked(mouseX, mouseY, button);
         if (over(mouseX, mouseY, btnCancelX, btnY, BTN_W, BTN_H)) {
             close();
@@ -208,8 +193,7 @@ public class PanelCropScreen extends Screen {
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
         if (dragging && dispW > 0 && dispH > 0) {
-            // Screen delta -> normalized picture delta. Clamped so a stray drag can
-            // never push the window off the picture (sourceRect clamps again too).
+
             centerX = MathHelper.clamp(centerX + (float) dragX / dispW, 0f, 1f);
             centerY = MathHelper.clamp(centerY + (float) dragY / dispH, 0f, 1f);
             return true;

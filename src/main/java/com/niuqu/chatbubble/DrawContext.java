@@ -23,11 +23,6 @@ import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.render.VertexFormats;
 
-/**
- * Polyfill DrawContext for pre-1.20 versions (1.16.5, 1.18.2, 1.19.x).
- * Wraps a MatrixStack and delegates rendering to DrawableHelper / TextRenderer.
- * Placed in com.niuqu.chatbubble to avoid Fabric Loom excluding net.minecraft.* sources.
- */
 public class DrawContext extends DrawableHelper {
     private final MatrixStack matrices;
     private final VertexConsumerProvider.Immediate immediate;
@@ -45,7 +40,6 @@ public class DrawContext extends DrawableHelper {
         immediate.draw();
     }
 
-    // ---- fill ----
     public void fill(int x1, int y1, int x2, int y2, int color) {
         DrawableHelper.fill(matrices, x1, y1, x2, y2, color);
     }
@@ -54,7 +48,6 @@ public class DrawContext extends DrawableHelper {
         fillGradient(matrices, x1, y1, x2, y2, color1, color2);
     }
 
-    // ---- drawText (3 overloads) ----
     public int drawText(TextRenderer renderer, Text text, int x, int y, int color, boolean shadow) {
         return drawText(renderer, text.asOrderedText(), x, y, color, shadow);
     }
@@ -75,18 +68,14 @@ public class DrawContext extends DrawableHelper {
         }
     }
 
-    // ---- drawTexture ----
-    // Simple 7-param: (Identifier, x, y, u, v, w, h)
     public void drawTexture(Identifier texture, int x, int y, float u, float v, int width, int height) {
         drawTexture(texture, x, y, width, height, u, v, width, height, 256, 256);
     }
 
-    // 8 param: (Identifier, x, y, u, v, w, h, regionSize)
     public void drawTexture(Identifier texture, int x, int y, float u, float v, int width, int height, int regionWidth, int regionHeight) {
         drawTexture(texture, x, y, width, height, u, v, regionWidth, regionHeight, 256, 256);
     }
 
-    // 10 param: (Identifier, x, y, w, h, u, v, regionW, regionH, texW, texH)
     public void drawTexture(Identifier texture, int x, int y, int width, int height,
                             float u, float v, int regionWidth, int regionHeight, int textureWidth, int textureHeight) {
         //#if MC >= 11800
@@ -101,7 +90,6 @@ public class DrawContext extends DrawableHelper {
         //#endif
     }
 
-    // 11 param: (Identifier, x, y, u, v, w, h, regionW, regionH, texW, texH) with int u,v
     public void drawTexture(Identifier texture, int x, int y, int width, int height,
                             int u, int v, int regionWidth, int regionHeight, int textureWidth, int textureHeight) {
         drawTexture(texture, x, y, width, height, (float) u, (float) v, regionWidth, regionHeight, textureWidth, textureHeight);
@@ -121,7 +109,6 @@ public class DrawContext extends DrawableHelper {
     //$$ }
     //#endif
 
-    // ---- scissor ----
     //#if MC < 11900
     public void enableScissor(int x1, int y1, int x2, int y2) {
         RenderSystem.enableScissor(x1, y1, x2, y2);
@@ -132,20 +119,15 @@ public class DrawContext extends DrawableHelper {
     }
     //#endif
 
-    // ---- drawTooltip (stubs - actual tooltip rendering handled by GuiCompat for pre-1.20) ----
     public void drawTooltip(TextRenderer renderer, Text text, int x, int y) {
-        // Pre-1.20 tooltip rendering is handled via Screen.renderTooltip in GuiCompat
     }
 
     public void drawTooltip(TextRenderer renderer, java.util.List<OrderedText> lines, Object positioner, int x, int y, boolean useShadow) {
-        // Pre-1.20 tooltip rendering is handled via Screen.renderTooltip in GuiCompat
     }
 
     public void drawTooltip(TextRenderer renderer, java.util.List<OrderedText> lines, Object positioner, int x, int y) {
-        // Pre-1.20 tooltip rendering is handled via Screen.renderTooltip in GuiCompat
     }
 
-    // ---- drawBorder (compat for 1.16.5 ~ 1.19.x) ----
     public void drawBorder(int x, int y, int w, int h, int color) {
         fill(x, y, x + w, y + 1, color);
         fill(x, y + h - 1, x + w, y + h, color);
@@ -153,13 +135,12 @@ public class DrawContext extends DrawableHelper {
         fill(x + w - 1, y, x + w, y + h, color);
     }
 
-    // ---- drawHoverEvent / setTooltipForNextFrame (stubs) ----
     public void drawHoverEvent(TextRenderer renderer, net.minecraft.text.Style style, int x, int y) {
-        // Pre-1.20 hover event handled via Screen.renderTooltip in GuiCompat
+
     }
 
     public void setTooltipForNextFrame(net.minecraft.text.Text text, int x, int y) {
-        // Stub - tooltip rendering is handled differently in pre-1.20
+
     }
 }
 //#endif

@@ -10,8 +10,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class TemplateMatcherTest {
 
-    // Mirrors the mixin resolver: a name resolves when it equals or contains a known
-    // player name (plugin decorations wrap the bare name, e.g. "[称号]Steve")
     private static final TemplateMatcher.NameResolver KNOWN = name -> {
         if (name == null) return false;
         for (String n : List.of("Steve", "Alex", "E33EPUS")) {
@@ -44,8 +42,6 @@ class TemplateMatcherTest {
             whisperTpl != null ? List.of(whisper(whisperTpl)) : List.of(), KNOWN);
     }
 
-    // ===== compile validation =====
-
     @Test void rejectsBlank() { assertNotNull(TemplateMatcher.compile("   ").error()); }
 
     @Test void rejectsLiteralOnly() { assertNotNull(TemplateMatcher.compile("Hello world").error()); }
@@ -57,7 +53,7 @@ class TemplateMatcherTest {
     }
 
     @Test void acceptsContentNotLast() {
-        // 2.2.7: content may sit mid-template — suffix-style formats like "[聊天]" work
+
         TemplateMatcher.CompiledTemplate t = chat("{display_name}: {content} [聊天]");
         var r = TemplateMatcher.match("Steve: hi [聊天]", List.of(t), List.of(), KNOWN).orElseThrow();
         assertEquals("Steve", r.displayName());
@@ -65,8 +61,7 @@ class TemplateMatcherTest {
     }
 
     @Test void rejectsDuplicateField() {
-        // 2.2.7: repeated fields would create duplicate named groups -> PatternSyntaxException;
-        // compile must reject gracefully instead of crashing
+
         assertNotNull(TemplateMatcher.compile("{prefix}{prefix}{display_name}: {content}").error());
         assertNotNull(TemplateMatcher.compile("{display_name}{display_name}: {content}").error());
         assertNotNull(TemplateMatcher.compile("{sender}{sender}: {content}").error());
@@ -81,7 +76,7 @@ class TemplateMatcherTest {
     }
 
     @Test void rejectsMisspelledContentPlaceholder() {
-        // {conten} is unknown -> treated as literal -> no {content} field -> invalid
+
         assertNotNull(TemplateMatcher.compile("{display_name}: {conten}").error());
     }
 
@@ -93,8 +88,6 @@ class TemplateMatcherTest {
         TemplateMatcher.CompiledTemplate t = chat("{display_name}: {foo} {content}");
         assertEquals(List.of("foo"), t.unknownFields());
     }
-
-    // ===== chat matching =====
 
     @Test void matchesColonFormatWithOffsets() {
         var r = matchChat("Steve: hello", "{display_name}: {content}").orElseThrow();
@@ -121,7 +114,7 @@ class TemplateMatcherTest {
     }
 
     @Test void matchesPrefixField() {
-        // the <...> brackets force the prefix group to capture the decoration
+
         var r = matchChat("[A]<Steve>: hello", "{prefix}<{display_name}>: {content}").orElseThrow();
         assertEquals("[A]", r.prefix());
         assertEquals("Steve", r.displayName());
@@ -136,8 +129,7 @@ class TemplateMatcherTest {
     }
 
     @Test void matchesSpaceBeforeSeparator() {
-        // the name area may itself contain ": " when the decoration does — the lazy
-        // group backtracks to the separator that makes the whole line match
+
         var r = matchChat("[A] Steve: hi", "{display_name}: {content}").orElseThrow();
         assertEquals("[A] Steve", r.displayName());
         assertEquals("hi", r.content());
@@ -173,7 +165,7 @@ class TemplateMatcherTest {
     }
 
     @Test void unknownPlaceholderActsAsLiteral() {
-        // {foo} is not a field -> literal in the pattern, so it anchors the match
+
         var r = matchChat("Steve: {foo} hi", "{display_name}: {foo} {content}").orElseThrow();
         assertEquals("hi", r.content());
     }
@@ -200,11 +192,8 @@ class TemplateMatcherTest {
         assertEquals("{display_name} >> {content}", r.template().raw());
     }
 
-    // ===== 2.2.7: {sep} placeholder + real plugin formats =====
-
     @Test void sepMatchesCommonSeparators() {
-        // {sep} matches >> / colon-family / » / > or plain spaces — one template fits
-        // multiple separator styles (EssentialsChat, CMI, DeluxeChat)
+
         for (String line : List.of("Steve: hi", "Steve：hi", "Steve >> hi", "Steve » hi", "Steve > hi", "Steve hi")) {
             var r = matchChat(line, "{display_name}{sep}{content}");
             assertTrue(r.isPresent(), "should match: " + line);
@@ -220,7 +209,7 @@ class TemplateMatcherTest {
     }
 
     @Test void matchesEssentialsXPrefixedFormat() {
-        // &7[...]&r arrive as literal text when the plugin did not parse them to styles
+
         var r = matchChat("&7[Guest]&r Steve&7:&r hello", "&7[Guest]&r {display_name}&7:&r {content}").orElseThrow();
         assertEquals("Steve", r.displayName());
         assertEquals("hello", r.content());
@@ -233,9 +222,7 @@ class TemplateMatcherTest {
     }
 
     @Test void matchesCmiAdjacentPrefix() {
-        // {prefix}{display_name} adjacent without an anchor: the lazy prefix takes the
-        // empty match and display absorbs the decoration — the name still resolves
-        // via contains, and the slice keeps the prefix like the guards do
+
         var r = matchChat("[Admin]Steve: hi", "{prefix}{display_name}: {content}").orElseThrow();
         assertEquals("", r.prefix());
         assertEquals("[Admin]Steve", r.displayName());
@@ -254,8 +241,6 @@ class TemplateMatcherTest {
         assertEquals("Bob", r.target());
         assertEquals("hi", r.content());
     }
-
-    // ===== whisper matching =====
 
     @Test void matchesIncomingWhisperFormat() {
         var r = match("Alex悄悄地对你说: hi", "{sender}悄悄地对你说: {content}", null).orElseThrow();
@@ -284,11 +269,11 @@ class TemplateMatcherTest {
 
     @Test void whisperWithUnresolvableNamesFallsBackToChat() {
         TemplateMatcher.NameResolver nobody = name -> false;
-        // whisper neither name known -> chat template also fails the gate -> empty
+
         assertTrue(TemplateMatcher.match("Alex → Bob: hi",
             List.of(chat("{display_name}: {content}")),
             List.of(whisper("{sender} → {target}: {content}")), nobody).isEmpty());
-        // ...but a chat template that does match and resolve wins
+
         TemplateMatcher.NameResolver alex = name -> name.equals("Alex → Bob");
         var r = TemplateMatcher.match("Alex → Bob: hi",
             List.of(chat("{display_name}: {content}")),
@@ -296,8 +281,6 @@ class TemplateMatcherTest {
         assertFalse(r.whisper());
         assertEquals("Alex → Bob", r.displayName());
     }
-
-    // ===== template inference from a real message =====
 
     @Test void infersColonTemplate() {
         var tpl = TemplateMatcher.inferFromMessage("Steve: hello", List.of("Steve", "Alex"));
@@ -328,7 +311,7 @@ class TemplateMatcherTest {
     }
 
     @Test void whisperTemplatesTriedBeforeChat() {
-        // both templates structurally match; whisper must win
+
         var r = TemplateMatcher.match("Alex悄悄地对你说: hi",
             List.of(chat("{display_name}: {content}")),
             List.of(whisper("{sender}悄悄地对你说: {content}")), KNOWN).orElseThrow();

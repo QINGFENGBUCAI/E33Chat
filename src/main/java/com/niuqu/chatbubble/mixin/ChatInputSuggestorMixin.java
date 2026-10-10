@@ -19,7 +19,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class ChatInputSuggestorMixin {
 
     //#if MC >= 26000
-    // 26.x: the suggestor feeds the deferred pipeline via extractRenderState
+
     @Inject(method = "extractRenderState(Lnet/minecraft/client/gui/GuiGraphicsExtractor;II)V",
             at = @At("HEAD"), cancellable = true)
     private void onRenderMessages(DrawContext context, int mouseX, int mouseY, CallbackInfo ci) {

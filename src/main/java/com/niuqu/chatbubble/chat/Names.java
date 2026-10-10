@@ -1,8 +1,5 @@
 package com.niuqu.chatbubble.chat;
 
-/**
- * Shared name-character predicates for the message pipeline.
- */
 public final class Names {
     private Names() {}
 

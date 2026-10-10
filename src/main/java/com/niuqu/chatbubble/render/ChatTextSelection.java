@@ -4,13 +4,6 @@ import java.util.List;
 
 public final class ChatTextSelection {
 
-    /**
-     * Selection highlight: a saturated "selection blue" (Windows/QQ-style).
-     * Deliberately hue-distinct from grey system text and bubble greys — the
-     * old luminance-based white/black overlays read as mid-grey patches that
-     * blended into grey text — and near-opaque so it stays a solid block on
-     * any bubble/panel background.
-     */
     private static final int SELECTION_BG = 0xE02D6FD6;
     private static final int SELECTION_FG = 0xFFFFFFFF;
 

@@ -7,11 +7,6 @@ import net.minecraft.network.packet.CustomPayload;
 //#endif
 import net.minecraft.util.Identifier;
 
-/**
- * Server -> client: result of a media upload. mediaId is a 32-hex UUID when
- * successful (URL becomes e33chat://media/<mediaId>); otherwise error holds a
- * short reason and mediaId is null.
- */
 //#if MC >= 12005
 public record MediaUploadAckPayload(long uploadId, String mediaId, String error)
         implements CustomPayload {

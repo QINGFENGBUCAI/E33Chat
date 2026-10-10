@@ -23,15 +23,12 @@ public class ChatSearchPanel {
 
     public boolean visible;
 
-    // 弹层 x 夹在聊天面板内且不超屏幕左右（与表情面板同一模式）——6x 时
-    // panelW 收缩到 ~166 < 180，固定居中会溢出屏幕左边
     static int clampX(int px, int pw, int panelX, int panelW) {
         int screenW = net.minecraft.client.MinecraftClient.getInstance().getWindow().getScaledWidth();
         int max = Math.min(panelX + panelW - pw - 2, screenW - pw - 2);
         return net.minecraft.util.math.MathHelper.clamp(px, Math.min(panelX + 2, max), max);
     }
 
-    // 宽度也随聊天面板收缩（仅 clamp 不收缩时，180 > 166 依然左溢出 16px）
     private static int fitW(int panelWidth) {
         return Math.max(100, Math.min(PANEL_W, panelWidth - 4));
     }

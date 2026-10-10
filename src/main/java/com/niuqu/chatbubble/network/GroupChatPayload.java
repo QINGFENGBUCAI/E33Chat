@@ -9,11 +9,6 @@ import net.minecraft.util.Identifier;
 
 import java.util.UUID;
 
-/**
- * S2C group chat message, sent only to members running the mod (vanilla
- * members receive a plain formatted line instead). Carries the full content so
- * the client builds the bubble locally — no text-tag parsing, no echo.
- */
 //#if MC >= 12005
 public record GroupChatPayload(UUID senderUUID, String senderName, String groupName,
                                String content, String quoteSender, String quoteContent)
@@ -23,7 +18,6 @@ public record GroupChatPayload(UUID senderUUID, String senderName, String groupN
 //$$                                String content, String quoteSender, String quoteContent) {
 //#endif
 
-    // Server caps content; the codec below caps reads via readString(max)
     private static final int MAX_TEXT = 2048;
 
     //#if MC >= 12005
@@ -102,7 +96,6 @@ public record GroupChatPayload(UUID senderUUID, String senderName, String groupN
     }
     //#endif
 
-    /** Client-side hook, invoked from ChatBubbleClientSetup's receiver. */
     public static void handleClient(GroupChatPayload payload) {
         com.niuqu.chatbubble.store.ChatMessageStore.addGroupMessage(
             net.minecraft.text.Text.literal(payload.content()),

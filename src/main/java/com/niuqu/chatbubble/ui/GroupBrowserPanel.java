@@ -17,15 +17,6 @@ import net.minecraft.text.Text;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * [+] group browser popup (2.4.10): lists the server's groups (capped at
- * MAX_ROWS; the rest stay reachable through /e33chat group list), lets the
- * player join by clicking a row, leave joined ones, and create new groups.
- *
- * The panel only paints and hit-tests; actions are returned encoded
- * (ACT_*) with the group name in {@link #actionGroup} so the screen owns the
- * packet dispatch — same contract as ChatSettingsMenu.handleQuickAction.
- */
 public class GroupBrowserPanel {
     public static final int ACT_NONE = 0;
     public static final int ACT_JOIN = 101;
@@ -41,7 +32,6 @@ public class GroupBrowserPanel {
 
     public boolean visible;
 
-    /** Group name of the last returned action (join/leave/create). */
     public String actionGroup;
 
     private int px, py, w, h;
@@ -50,7 +40,6 @@ public class GroupBrowserPanel {
     private int[] leaveBtn = null;
     private int[] createBtn = null;
 
-    /** Visible row cap keeps the popup fixed-size; more groups → command hint. */
     private static int visibleRows(int groupCount) {
         return Math.min(groupCount, MAX_ROWS);
     }
@@ -76,8 +65,7 @@ public class GroupBrowserPanel {
         int y = py + 3;
         g.drawText(font, Text.translatable("e33chat.group.browser_title").getString(),
             px + 6, y, ChatBubbleTheme.alphaBlend(c.textPrimary(), a255), false);
-        // 加入是"点群名即可"，没有邀请流程——把这句话写在标题右侧，省得玩家
-        // 以为要先邀请/被邀请（2.4.11 用户反馈）。
+
         String hint = Text.translatable("e33chat.group.browser_hint").getString();
         g.drawText(font, hint, px + w - 6 - font.getWidth(hint), y,
             ChatBubbleTheme.alphaBlend(c.textMuted(), a255), false);
@@ -157,7 +145,6 @@ public class GroupBrowserPanel {
         createBtn = new int[]{bx, y, bx + bw, y + INPUT_H};
     }
 
-    /** Encoded action, or ACT_NONE. Clicks inside the panel are consumed (returns -1). */
     public int handleClick(double mx, double my, TextRenderer font,
                            int panelX, int panelW, int barTop, TextFieldWidget createInput) {
         if (!visible) return ACT_NONE;

@@ -8,11 +8,6 @@ import net.minecraft.text.Text;
 
 import java.util.UUID;
 
-/**
- * 真实副作用实现（B4 上移）：横幅转发给 MentionNotificationController，
- * 公共/引用提示音直接播放。由 ChatBubbleClientSetup.onInitializeClient()
- * 注册为 ChatMessageStore 的观察者——store 不再直接依赖 Minecraft 单例。
- */
 public class ChatMessageEffects implements ChatMessageStore.MessageEffectObserver {
     @Override
     public void onMentionOrQuote(Text content, ChatMessageStore.SenderMeta meta,

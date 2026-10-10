@@ -44,9 +44,7 @@ public class ChatBubbleHudOverlay {
     public static void render(DrawContext g) {
         MinecraftClient mc = MinecraftClient.getInstance();
         if (mc.player == null || mc.options == null) return;
-        // F1 hides through vanilla hudHidden (InGameHud is skipped entirely).
-        // F3 does not toggle hudHidden, so mirror the same "no E33Chat HUD while
-        // the debug screen is open" behavior here.
+
         //#if MC >= 12100
         //#if MC < 26000
         if (mc.inGameHud.getDebugHud().shouldShowDebugHud()) return;
@@ -90,8 +88,6 @@ public class ChatBubbleHudOverlay {
         g.getMatrices().pop();
     }
 
-    // Fabric's HUD layer draws behind the screen batch; screens that render over
-    // it re-invoke this so the banner stays visible on top
     public static void renderBannerForScreen(DrawContext g) {
         MinecraftClient mc = MinecraftClient.getInstance();
         if (mc.player == null || mc.options == null) return;
@@ -116,9 +112,8 @@ public class ChatBubbleHudOverlay {
         return mx >= cfg().hudIconX() && mx <= cfg().hudIconX() + ICON_S && my >= iconY && my <= iconY + ICON_S + mc.textRenderer.fontHeight + 2;
     }
 
-
     private static void drawIcon(DrawContext g, int x, int y) {
-        // getTexture 无缓存时自动 new ResourceTexture 懒加载（资源包可覆盖，F3+T 即时生效）
+
         g.drawTexture(chatIconTex(), x, y, 0.0F, 0.0F, ICON_S, ICON_S, ICON_S, ICON_S);
     }
 

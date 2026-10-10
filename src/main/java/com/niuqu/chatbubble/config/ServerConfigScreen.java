@@ -32,53 +32,41 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * Server-config GUI (opened by /e33chat gui, filled from a ServerConfigScreenPayload
- * snapshot). Follows ChatBubbleConfigScreen's structure: category tree on the left,
- * option rows on the right (label + widget), smooth animated scrolling with
- * persistent scrollbars, same bg/title/colors. Edits live in local lists; Save
- * sends everything back over ServerConfigSavePayload — the server re-validates,
- * persists and rebroadcasts. Esc / Cancel discards.
- */
 public class ServerConfigScreen extends Screen {
     private final Screen lastScreen;
-    /** True while this screen has pushed its HUD-hide request (see init/removed). */
+
     private boolean hudHidden;
 
-    // 几何常量：与客户端配置界面完全一致
     private static final int ROW_H = 32;
     private static final int START_Y = 40;
     private static final int CAT_X = 24;
     private static final int CAT_W = 96;
     private static final int CAT_ROW_H = 22;
     private static final int INPUT_W = 170;
-    // 模板行编辑框与普通输入框统一 170px。右侧 ✕ 20px 收在控件组内，
-    // 整组右对齐 previewX-8，与其他行控件右缘对齐
+
     private static final int TEMPLATE_INPUT_W = 170;
-    // 操作按钮/开关按钮宽度：对齐客户端配置界面的 INPUT_W=90（除 + / ✕ 小按钮）
+
     private static final int BUTTON_W = 90;
     private static final int SCROLLBAR_W = 6;
 
-    // 常见格式预设：基础格式 + 真实插件默认格式（2.2.7 起）。{sep} 匹配
-    // >> / 冒号 / » / > 或纯空格，一条模板覆盖多种分隔符风格。
     private static final String[] CHAT_PRESETS = {
         "{display_name}{sep}{content}",
-        "<{display_name}> {content}",                       // EssentialsX 默认
+        "<{display_name}> {content}",
         "[{display_name}]: {content}",
         "{prefix}{display_name}{sep}{content}",
-        "&7[{group}]&r {display_name}&7:&r {content}",      // EssentialsX 带前后缀示例
-        "[Guest] {display_name} > {content}",               // DeluxeChat
+        "&7[{group}]&r {display_name}&7:&r {content}",
+        "[Guest] {display_name} > {content}",
         "{display_name} >> {content}",
         "-{display_name}- {content}",
         "【{display_name}】{content}",
-        "[{prefix}] <{external}> {content}",                // EasyBot 默认群消息格式
-        "<{external}> {content}",                           // EasyBot 去掉群名前缀
+        "[{prefix}] <{external}> {content}",
+        "<{external}> {content}",
     };
     private static final String[] WHISPER_PRESETS = {
         "{sender}悄悄地对你说{sep}{content}",
         "{sender} whispered to you{sep}{content}",
-        "[/msg from {sender}] {content}",                   // CMI 接收视角
-        "{sender} -> {target}{sep}{content}",               // DeluxeChat
+        "[/msg from {sender}] {content}",
+        "{sender} -> {target}{sep}{content}",
         "[私聊] {sender}{sep}{content}",
         "{sender}私聊 {target}{sep}{content}",
     };
@@ -91,7 +79,6 @@ public class ServerConfigScreen extends Screen {
         "e33chat.server.cat.tutorial",
     };
 
-    // 打开时的快照（用于变更检测）+ 可编辑的本地副本（发送前不生效）
     private final boolean initUseTpa, initHistory, initDebug, initMedia, initAutoClean, initEasyBot, initGroups;
     private boolean useTpaV, historyV, debugV, mediaV, autoCleanV, easyBotV, groupsV;
     private final List<String> initChat, initWhisper;
@@ -100,22 +87,19 @@ public class ServerConfigScreen extends Screen {
     private boolean genVisible;
     private String genText = "";
     private String error;
-    // 从消息生成失败的红字提示：渲染在生成输入框所在行下方（与模板行警告同风格）
+
     private String genError;
     private Row genInputRow;
     private String previewChatResult = "", previewWhisperResult = "";
-    // 模板行输入时实时校验的错误（box → 错误文本）；rebuild 时清空
+
     private final java.util.Map<TextFieldWidget, String> boxErrors = new java.util.LinkedHashMap<>();
-    // 从消息生成成功后，把示例消息代入预览框（重建后填入一次）
+
     private String pendingPreviewText;
 
     private int selectedCat;
     private final com.niuqu.chatbubble.render.SmoothScrollPane rightPane = new com.niuqu.chatbubble.render.SmoothScrollPane();
     private final com.niuqu.chatbubble.render.SmoothScrollPane treePane = new com.niuqu.chatbubble.render.SmoothScrollPane();
 
-    // 右区行：label 左对齐 optLabelX；widgets 右对齐 inputX（模板行的 ✕ 例外：紧跟 label 后）
-    // extraText 渲染在行内下半部（预览结果）；tooltipKey 非空时悬停显示 key+".desc"
-    // title=true 时 label 按分区标题样式画（灰字 + 右侧延伸分割线）
     private record Row(Text label, List<Element> widgets,
                        String extraText, int height, String tooltipKey, boolean title) {}
     private final List<Row> rows = new ArrayList<>();
@@ -149,15 +133,14 @@ public class ServerConfigScreen extends Screen {
 
     private ChatBubbleTheme.Colors c() { return ChatBubbleTheme.DARK.colors(); }
 
-    // ===== 几何：公式与客户端一致，控件宽度固定 =====
     private int dividerX() { return CAT_X + CAT_W + 12; }
     private int optLabelX() { return dividerX() + 14; }
     private int previewX() { return width - 26; }
     private int inputX() { return previewX() - 8 - INPUT_W; }
     private int optAreaW() { return previewX() - optLabelX() - 4; }
-    // 右区文本（预览结果/错误提示）的最大像素宽度：从标签左缘到控件右缘线
+
     private int rightAreaW() { return previewX() - 8 - optLabelX(); }
-    // 按钮右对齐到控件右缘线 previewX-8（与输入框右缘对齐）；两个按钮时左侧按钮再让 4px
+
     private int btnRight() { return previewX() - 8 - BUTTON_W; }
     private int btnLeft() { return btnRight() - 4 - BUTTON_W; }
     private int viewTop() { return START_Y; }
@@ -177,7 +160,6 @@ public class ServerConfigScreen extends Screen {
         return Math.max(0, START_Y + CAT_ROW_H * CAT_KEYS.length - viewBottom());
     }
 
-    // ===== 行构建：widgets 必须注册为 renderable，否则不渲染也不响应点击 =====
     private <T extends net.minecraft.client.gui.widget.ClickableWidget> T reg(T w) {
         return addDrawableChild(w);
     }
@@ -223,7 +205,7 @@ public class ServerConfigScreen extends Screen {
     }
 
     private void buildTemplateRows(List<String> list, boolean chat) {
-        // 模板行：标签(左) + [编辑框][✕](右对齐到控件右缘线 previewX-8，与其他行控件右缘对齐)
+
         for (int i = 0; i < list.size(); i++) {
             int idx = i;
             Text label = Text.translatable("e33chat.server.template_n", i + 1);
@@ -231,7 +213,7 @@ public class ServerConfigScreen extends Screen {
             box.setText(list.get(idx));
             box.setChangedListener(s -> {
                 if (idx < list.size()) list.set(idx, s);
-                // 实时校验：编译失败即时红字提示
+
                 var r = TemplateMatcher.compile(s);
                 if (r.template() == null) boxErrors.put(box, r.error());
                 else boxErrors.remove(box);
@@ -241,7 +223,7 @@ public class ServerConfigScreen extends Screen {
             rows.add(new Row(label, List.of(reg(rm), reg(box)), null, ROW_H,
                 "e33chat.server.template_n", false));
         }
-        // 操作行：添加 / 从消息生成 各 90px，从右往右对齐到控件右缘线
+
         ButtonWidget add = ButtonWidget.builder(Text.translatable("e33chat.server.add"), b -> { list.add(""); rebuild(); })
             .dimensions(btnLeft(), 0, BUTTON_W, 20).build();
         if (chat) {
@@ -262,7 +244,7 @@ public class ServerConfigScreen extends Screen {
         } else {
             rows.add(row(Text.translatable("e33chat.server.actions"), List.of(add), null, "e33chat.server.actions"));
         }
-        // 常见格式预设：标题行 + 逐行[模板字符串(标签,按按钮左缘截断)][+正方形按钮右对齐]
+
         String[] presets = chat ? CHAT_PRESETS : WHISPER_PRESETS;
         rows.add(titleRow(Text.translatable("e33chat.server.preset_section")));
         for (String p : presets) {
@@ -272,7 +254,7 @@ public class ServerConfigScreen extends Screen {
             Text label = Text.literal(truncate(p, inputX() - optLabelX() - 8));
             rows.add(new Row(label, List.of(reg(pb)), null, ROW_H, null, false));
         }
-        // 预览：输入即出结果，结果渲染在行内下半部
+
         TextFieldWidget preview = mkBox(inputX(), INPUT_W);
         preview.setChangedListener(s -> {
             if (chat) previewChatResult = runPreview(s, chatV, false);
@@ -286,7 +268,6 @@ public class ServerConfigScreen extends Screen {
             chat ? previewChatResult : previewWhisperResult, "e33chat.server.preview"));
     }
 
-    // 教程：分节速查。每节 = 标题行 + 段落行（像素换行）+ 间距；原理节放最后（进阶）
     private void buildTutorialRows() {
         for (String key : List.of("quick", "concept", "fields", "faq", "why")) {
             rows.add(titleRow(Text.translatable("e33chat.tutorial." + key + ".title")));
@@ -303,7 +284,6 @@ public class ServerConfigScreen extends Screen {
         }
     }
 
-    // 按像素宽度逐字符换行（中英文通吃；中文无空格，不能按空格分词）
     private List<String> wrapText(String raw) {
         List<String> out = new ArrayList<>();
         StringBuilder cur = new StringBuilder();
@@ -329,7 +309,6 @@ public class ServerConfigScreen extends Screen {
         return out;
     }
 
-    // 按像素宽度截断标签文本，超宽加省略号
     private String truncate(String s, int maxWidth) {
         if (textRenderer.getWidth(s) <= maxWidth) return s;
         String cut = textRenderer.trimToWidth(s, maxWidth - 6);
@@ -339,7 +318,7 @@ public class ServerConfigScreen extends Screen {
     private void generateFromMessage() {
         String inferred = TemplateMatcher.inferFromMessage(genText, knownNames()).orElse(null);
         if (inferred == null) {
-            // 复制功能只复制纯正文（不含玩家名），先提示要贴含名字的完整行
+
             genError = Text.translatable("e33chat.server.gen_failed").getString()
                 + "  " + Text.translatable("e33chat.server.gen_howto").getString();
             return;
@@ -347,7 +326,7 @@ public class ServerConfigScreen extends Screen {
         chatV.add(inferred);
         genVisible = false;
         genError = null;
-        // 向导反馈：用源消息自动跑一次预览，重建后预览框填入该消息并显示解析结果
+
         pendingPreviewText = genText;
         genText = "";
         rebuild();
@@ -390,14 +369,11 @@ public class ServerConfigScreen extends Screen {
             }).dimensions(btnRight(), 0, BUTTON_W, 20).build();
     }
 
-    // 创建输入框（统一 maxLength 200）
     private TextFieldWidget mkBox(int x, int w) {
         TextFieldWidget box = new TextFieldWidget(textRenderer, x, 0, w, 20, Text.literal(""));
         box.setMaxLength(200);
         return box;
     }
-
-    // ===== 保存 / 变更检测 =====
 
     private boolean changed() {
         return useTpaV != initUseTpa || historyV != initHistory || debugV != initDebug
@@ -480,8 +456,7 @@ public class ServerConfigScreen extends Screen {
 
     @Override
     protected void init() {
-        // Hide the HUD via HudVisibility (InGameHudMixin cancels the HUD render);
-        // options.hudHidden is the F1 flag and would also hide the hand.
+
         if (!hudHidden) {
             com.niuqu.chatbubble.render.HudVisibility.push();
             hudHidden = true;
@@ -514,7 +489,6 @@ public class ServerConfigScreen extends Screen {
         rebuild();
     }
 
-    // 按当前 rightPane.offset() 重排右侧控件 y 与可见性（控件顶对齐行 y，同客户端）
     private void relayoutWidgets() {
         int y = viewTop() - rightPane.offset();
         for (Row row : rows) {
@@ -527,8 +501,6 @@ public class ServerConfigScreen extends Screen {
             y += row.height();
         }
     }
-
-    // ===== 滚动条 + 平滑滚动（照抄客户端配置界面机制，几何内联） =====
 
     private static int sbThumbH(int trackH, int totalH) {
         return Math.max(8, (int) ((long) trackH * trackH / totalH));
@@ -593,10 +565,11 @@ public class ServerConfigScreen extends Screen {
         }
     }
 
-    // ===== 交互 =====
-
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        //#if MC >= 260300
+        button = com.niuqu.chatbubble.compat.InputCompat.glfwButton(button);
+        //#endif
         int rMax = calcMaxScroll();
         if (rMax > 0 && mouseX >= rTrackX() && mouseX < rTrackX() + SCROLLBAR_W
                 && mouseY >= viewTop() && mouseY < viewBottom()) {
@@ -669,8 +642,6 @@ public class ServerConfigScreen extends Screen {
         return super.mouseReleased(mouseX, mouseY, button);
     }
 
-    // ===== 渲染 =====
-
     @Override
     public void render(DrawContext g, int mouseX, int mouseY, float partialTick) {
         g.drawTexture(UiTextureManager.rl(UiElement.CONFIG_BG, ChatBubbleTheme.DARK),
@@ -680,7 +651,6 @@ public class ServerConfigScreen extends Screen {
 
         String tooltipKey = null;
 
-        // 左侧分类树（照抄客户端：选中高亮 + 左侧竖条，裁剪到视口）
         g.enableScissor(CAT_X, START_Y, dividerX(), viewBottom());
         int ly = START_Y - treePane.offset();
         for (int i = 0; i < CAT_KEYS.length; i++) {
@@ -699,16 +669,14 @@ public class ServerConfigScreen extends Screen {
         drawBar(g, tTrackX(), START_Y, viewBottom(), tTotalH(), treePane.offset(), calcTreeMaxScroll(),
             mouseX, mouseY, treePane.dragging());
 
-        // 分类与选项区分隔线
         g.drawTexture(UiTextureManager.rl(UiElement.DIVIDER, ChatBubbleTheme.DARK),
             dividerX(), START_Y - 6, 1, viewBottom() - (START_Y - 6), 0f, 0f, 16, 16, 16, 16);
 
-        // 右区选项行，硬裁剪到视口；普通行 label 垂直居中对齐按钮（y+6），教程小行顶部对齐（y+2）
         g.enableScissor(optLabelX() - 4, viewTop(), width, viewBottom());
         int y = viewTop() - rightPane.offset();
         for (Row row : rows) {
             if (row.title()) {
-                // 分区标题：灰字左对齐 + 字右侧延伸一条细分隔线（同客户端配置界面）
+
                 Text label = row.label();
                 g.drawText(textRenderer, label, optLabelX(), y + 11, c().configLabel(), false);
                 int lineX = optLabelX() + textRenderer.getWidth(label) + 8;
@@ -730,7 +698,7 @@ public class ServerConfigScreen extends Screen {
                 g.drawText(textRenderer, Text.literal(truncate(row.extraText(), rightAreaW())),
                     optLabelX(), y + 21, c().textSecondary(), false);
             }
-            // 实时校验错误：行内控件下方红字（模板行），像素截断防溢出
+
             for (Element w : row.widgets()) {
                 if (w instanceof TextFieldWidget eb && boxErrors.containsKey(eb)) {
                     g.drawText(textRenderer, Text.literal(truncate(boxErrors.get(eb), rightAreaW())),
@@ -738,7 +706,7 @@ public class ServerConfigScreen extends Screen {
                     break;
                 }
             }
-            // 生成失败提示：对齐在生成输入框所在行下方（与模板警告同风格），像素截断
+
             if (genError != null && row == genInputRow) {
                 g.drawText(textRenderer, Text.literal(truncate(genError, rightAreaW())),
                     optLabelX(), y + 22, 0xFFFF4444, false);
@@ -761,7 +729,7 @@ public class ServerConfigScreen extends Screen {
                 width / 2 + 112, height - 26, c().configLabel(), false);
 
         if (error != null) {
-            // 保存校验失败：底部固定红字（模板行/生成行的实时错误已在行下方各自显示），像素截断
+
             g.drawText(textRenderer, Text.literal(truncate(error, rightAreaW())),
                 optLabelX(), viewBottom() - 12, 0xFFFF4444, false);
         }
@@ -773,7 +741,7 @@ public class ServerConfigScreen extends Screen {
     //#if MC >= 12002
     @Override
     public void renderBackground(DrawContext g, int mouseX, int mouseY, float partialTick) {
-        // no-op：背景已在 render() 开头画一次（同客户端）
+
     }
     //#else
     //$$ @Override

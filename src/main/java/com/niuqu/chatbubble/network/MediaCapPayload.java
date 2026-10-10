@@ -8,12 +8,6 @@ import net.minecraft.network.packet.CustomPayload;
 //#endif
 import net.minecraft.util.Identifier;
 
-/**
- * Server -> client: media hosting capability (2.3.13). A separate type on
- * purpose: old clients drop unknown payloads harmlessly, so a mixed-version
- * client/server never desyncs (an appended field inside ConfigSyncV2 would
- * break old clients decoding a shorter body). Absent payload = disabled.
- */
 //#if MC >= 12005
 public record MediaCapPayload(boolean mediaEnabled) implements CustomPayload {
 //#else

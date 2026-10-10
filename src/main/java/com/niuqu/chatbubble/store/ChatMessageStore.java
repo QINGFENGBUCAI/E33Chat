@@ -15,10 +15,8 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-
 public class ChatMessageStore {
-    // 通知/声音副作用观察者（B4 上移，2.3.15）：store 只做判断与数据，
-    // 横幅/提示音由客户端注册的实现执行；测试环境默认 no-op，不依赖 Minecraft 单例。
+
     public interface MessageEffectObserver {
         void onMentionOrQuote(Text content, SenderMeta meta, int index, String replySender);
         void onWhisperReceived(UUID senderUUID, Text senderName, Text content, int index);
@@ -48,18 +46,14 @@ public class ChatMessageStore {
     private static String pendingReplyContent;
     private static String pendingReplySender;
 
-    // True when a repost would duplicate one just sent: the server echoes a whisper
-    // twice (signed outgoing + incoming variants) within ~15ms, and both would be
-    // rewritten to the same <name>[私聊] line without this guard.
     public static boolean isRepostDuplicate(String lastRepostText, long lastRepostTime, String newText, long now) {
         return EchoTracker.isRepostDuplicate(lastRepostText, lastRepostTime, newText, now);
     }
 
-
     private static String currentWorldKey;
 
     public record SeenPlayer(UUID uuid, String profileName, String displayName) {}
-    // LRU cap: bounds the per-message full scan in knownNameVariants/findSeenUuid
+
     private static final int SEEN_PLAYERS_CAP = 512;
     private static final Map<UUID, SeenPlayer> seenPlayers = new LinkedHashMap<>(16, 0.75f, true) {
         @Override
@@ -68,18 +62,14 @@ public class ChatMessageStore {
         }
     };
 
-    // Server-synced setting: head-menu teleport uses /tpa instead of /tp (default false)
     private static volatile boolean serverUseTpa = false;
     public static void setServerUseTpa(boolean v) { serverUseTpa = v; }
     public static boolean useTpa() { return serverUseTpa; }
 
-    // Server-configured message-format templates (empty = disabled, heuristic guards only)
     private static volatile List<com.niuqu.chatbubble.chat.TemplateMatcher.CompiledTemplate> serverChatTemplates = List.of();
     private static volatile List<com.niuqu.chatbubble.chat.TemplateMatcher.CompiledTemplate> serverWhisperTemplates = List.of();
     private static volatile boolean serverTemplateDebug = false;
-    // EasyBot QQ relay compatibility. The server may override it (payload absent
-    // = server runs no/old e33chat, so the client default applies); the server
-    // toggle stays authoritative for servers that do sync it.
+
     private static volatile boolean easyBotCompat = true;
 
     public static void setEasyBotCompat(boolean v) { easyBotCompat = v; }
@@ -93,8 +83,6 @@ public class ChatMessageStore {
         serverTemplateDebug = templateDebug;
     }
 
-    // A template the server configured but the client rejects must not silently
-    // vanish — log the reason once at sync time
     private static List<com.niuqu.chatbubble.chat.TemplateMatcher.CompiledTemplate> compileTemplates(List<String> raws) {
         if (raws == null || raws.isEmpty()) return List.of();
         List<com.niuqu.chatbubble.chat.TemplateMatcher.CompiledTemplate> out = new ArrayList<>();
@@ -166,7 +154,6 @@ public class ChatMessageStore {
         return raw.equals(storedStripped) || (!stripped.isEmpty() && stripped.equals(storedStripped));
     }
 
-    // player? Online candidates + self + seen players. Mirrors the mixin's gate.
     public static boolean isKnownPlayerName(String name) {
         if (name == null || name.isEmpty()) return false;
         var player = net.minecraft.client.MinecraftClient.getInstance().player;
@@ -192,24 +179,14 @@ public class ChatMessageStore {
                              String rawPlayerName,
                              boolean whisper, String whisperPartner) {}
 
-
     public static void setPendingMeta(SenderMeta meta) {
         EchoTracker.setPendingMeta(meta);
     }
 
-
-    // 2s TTL: if addMessage never runs (another mod cancelled it), a stale
-    // note must not misattribute an unrelated later message
     public static SenderMeta consumePendingMeta() {
         return EchoTracker.consumePendingMeta();
     }
 
-
-    // quoted: the sent message was a quote reply — carried on the echo record so a
-    // later unrelated message can never inherit the [引用] tag (quote replies travel
-    // as plain chat, so the echo's quoted flag is their only rewrite signal)
-    
-    
     public static void markPendingWhisperEcho(String target) {
         EchoTracker.markPendingWhisperEcho(target);
     }
@@ -222,11 +199,9 @@ public class ChatMessageStore {
         return EchoTracker.consumeSuppressQuoted();
     }
 
-
     private static void purgeStaleWhisperEchoes() {
         EchoTracker.purgeStaleWhisperEchoes();
     }
-
 
     public static boolean hasPendingWhisperEcho() {
         return EchoTracker.hasPendingWhisperEcho();
@@ -240,31 +215,21 @@ public class ChatMessageStore {
         EchoTracker.consumeWhisperEcho();
     }
 
-
-    // 5s TTL: if the outgoing-whisper echo never reaches addMessage (another
-    // mod cancelled it), a stale flag must not swallow an unrelated message
     public static boolean consumeSuppressCapture() {
         return EchoTracker.consumeSuppressCapture();
     }
 
-
-    // Echoes not consumed within 10s (e.g. commands with no chat feedback) would
-    // otherwise poison the counter and swallow later self-attributed messages
     private static void purgeStaleEchoes() {
         EchoTracker.purgeStaleEchoes();
     }
-
 
     public static void incrementPendingEcho(String sentText) {
         EchoTracker.incrementPendingEcho(sentText);
     }
 
-
     public static EchoTracker.EchoMatch consumeEchoBySystemChat(String incomingText) {
         return EchoTracker.consumeEchoBySystemChat(incomingText);
     }
-
-
 
     public static void debugLog(java.util.function.Supplier<String> msg) {
         if (ChatBubbleClientSetup.config().debugLog())
@@ -279,21 +244,14 @@ public class ChatMessageStore {
         return EchoTracker.consumeEchoIfSenderMatches(senderUUID, senderName, incomingText);
     }
 
-
-    // True when needle occurs in haystack with no name character (letter/digit/_)
-    // adjacent — "[VIP]Steve" and "<Steve>" hit, "SteveAdmin" and "Steve2" do not.
     public static boolean containsWholeName(String haystack, String needle) {
         return EchoTracker.containsWholeName(haystack, needle);
     }
-
 
     public static boolean isNamePart(char c) {
         return EchoTracker.isNamePart(c);
     }
 
-
-    // The local echo bubble is created with the bare name before the server's
-    // decorated version (titles/prefixes) is known — patch it when the echo arrives
     public static void updateLatestOwnSenderName(Text senderName) {
         for (int i = messages.size() - 1; i >= 0 && i >= messages.size() - 5; i--) {
             ChatMessage m = messages.get(i);
@@ -314,7 +272,6 @@ public class ChatMessageStore {
         return false;
     }
 
-    // time is epoch millis so history spans days/weeks without losing the date
     public record ChatMessage(
         UUID senderUUID,
         Text senderName,
@@ -331,7 +288,7 @@ public class ChatMessageStore {
         String whisperPartner,
         String group
     ) {
-        // Wither helpers: field-level updates without rebuilding 13-arg constructors.
+
         public ChatMessage withSenderName(Text newSenderName) {
             return new ChatMessage(senderUUID, newSenderName, content, time,
                 isOwn, isSystem, replyContent, replySender, messageHash, duplicateCount,
@@ -351,9 +308,6 @@ public class ChatMessageStore {
         }
     }
 
-    // Display names can't identify a sender reliably: the local echo bubble's name
-    // gets patched from bare to decorated once the server echo arrives, so the next
-    // local echo would never match it — compare raw player names when both are known
     private static boolean isSameSender(ChatMessage last, Text senderName, String rawPlayerName) {
         if (rawPlayerName != null && !rawPlayerName.isEmpty()
             && last.rawPlayerName() != null && !last.rawPlayerName().isEmpty()) {
@@ -362,10 +316,6 @@ public class ChatMessageStore {
         return last.senderName().getString().equals(senderName.getString());
     }
 
-    // ==== Blocked players ====
-    // Matching rules live in BlockList (pure predicates); here we only operate
-    // on the message list. Blocking must also drop already-loaded history, or
-    // the sender's old messages keep showing after the block takes effect.
     public static void purgeBlocked(List<? extends String> blocked) {
         if (blocked == null || blocked.isEmpty()) return;
         messages.removeIf(m -> !m.isOwn() && !m.isSystem()
@@ -373,15 +323,11 @@ public class ChatMessageStore {
         bumpListVersion();
     }
 
-    // History restored from disk / server packets must not re-import blocked
-    // senders' messages, or they reappear on the next world join
     private static boolean isBlockedMessage(ChatMessage m) {
         return BlockList.isPlayerBlocked(m.rawPlayerName(), m.senderName(),
             ChatBubbleClientSetup.config().blockedPlayers());
     }
 
-    // package-private test seam: headless unit tests stub this to return null
-    // so addMessage never touches MinecraftClient.getInstance()
     public static java.util.function.Supplier<net.minecraft.entity.player.PlayerEntity> localPlayerSupplier =
         () -> net.minecraft.client.MinecraftClient.getInstance().player;
 
@@ -389,7 +335,6 @@ public class ChatMessageStore {
         addMessage(content, senderUUID, senderName, isSystem, rawPlayerName, whisper, whisperPartner, localSend, null);
     }
 
-    /** Group chat entry point (2.4.10): the packet handler passes the owning group. */
     public static void addGroupMessage(Text content, UUID senderUUID, Text senderName,
                                        String group, String quoteSender, String quoteContent) {
         if (group != null && !group.isEmpty()) {
@@ -406,17 +351,11 @@ public class ChatMessageStore {
     public static void addMessage(Text content, UUID senderUUID, Text senderName, boolean isSystem, String rawPlayerName, boolean whisper, String whisperPartner, boolean localSend, String group) {
         String messageHash = String.valueOf(content.getString().hashCode());
 
-        // A message that is only whitespace/control chars — e.g. a server chat-clear
-        // made of nothing but newlines — is dropped so it produces no bubble/preview.
-        // Real newlines are kept in the stored content so the chat list renders them as
-        // line breaks; single-line contexts (preview/hint) flatten them separately.
         if (content.getString().isBlank()) return;
 
         var localPlayer = localPlayerSupplier.get();
         String playerName = localPlayer != null ? localPlayer.getName().getString() : "";
-        // UUID is deterministic; the name fallback covers system-channel messages
-        // flattened by NCR where the UUID is nil. Name-only comparison misjudged
-        // same-named players on offline (cracked) servers.
+
         boolean own = localPlayer != null && senderUUID != null
             && senderUUID.equals(localPlayer.getUuid());
         if (!own) {
@@ -425,18 +364,13 @@ public class ChatMessageStore {
                 : senderName != null && senderName.getString().equals(playerName);
         }
 
-        // Remember our own decorated name (titles/prefixes) whenever it appears in
-        // chat — the outgoing whisper echo has no self name to extract, and the tab
-        // list display name is null on vanilla servers.
         if (own) cacheOwnDecoratedName(senderName);
 
         if (ChatBubbleClientSetup.config().antiSpam() && !messages.isEmpty()) {
             ChatMessage last = messages.get(messages.size() - 1);
             if (!last.isSystem() && isSameSender(last, senderName, rawPlayerName)
                 && last.content().getString().equals(content.getString())) {
-                // The merged bubble's quote block must reflect THIS send, not
-                // inherit the previous one's — an unquoted identical follow-up
-                // after a quoted send otherwise keeps a stale [引用] block.
+
                 EchoTracker.PendingMeta pending = EchoTracker.removePendingMeta(messageHash);
                 if (pending != null && System.currentTimeMillis() - pending.createdAt() > 10_000) {
                     pending = null;
@@ -515,10 +449,6 @@ public class ChatMessageStore {
                 messages.size(), replySender);
         }
 
-        // localSend = the user's own send feedback bubble — normally not a
-        // received whisper, so skip the (self-)whisper banner/sound; but
-        // own-whisper notify explicitly wants a banner for self /msg, and the
-        // controller gates on isOwn/selfNotify anyway.
         if (whisper && rawPlayerName != null
             && ChatBubbleClientSetup.config().mentionWhisperBanner()
             && (!localSend || ChatBubbleClientSetup.config().ownWhisperNotify())) {
@@ -526,9 +456,6 @@ public class ChatMessageStore {
                 senderUUID, senderName, content, messages.size());
         }
 
-        // System messages pop as a banner like @/whisper/quote (no sender name —
-        // the system label is enough, avoiding "[系统] 系统"). Independent toggle,
-        // on by default.
         if (isSystem && ChatBubbleClientSetup.config().systemBannerEnabled()) {
             effectObserver.onSystemMessage(content, messages.size());
         }
@@ -562,7 +489,6 @@ public class ChatMessageStore {
         return out;
     }
 
-    // Plain-text variant for the few Screen call sites that build a single-line String.
     public static String singleLine(String s) {
         return stripControls(s);
     }
@@ -580,11 +506,6 @@ public class ChatMessageStore {
         return messages;
     }
 
-    // ==== Filtered-view cache ====
-    // The chat screen asks for the public/whisper view every frame; re-filtering
-    // up to MAX messages each frame is pure waste. Every mutation of `messages`
-    // must bump the version (see bumpListVersion) or these views go stale.
-    // Returned lists are shared — callers must not modify them.
     private static int listVersion = 0;
     private static void bumpListVersion() { listVersion++; }
 
@@ -594,7 +515,6 @@ public class ChatMessageStore {
     private static final Map<String, List<ChatMessage>> whisperCache = new HashMap<>();
     private static int whisperCacheVersion = -1;
 
-    /** Mutators of {@code messages} are expected to call this (direct field access). */
     public static int listVersion() { return listVersion; }
 
     public static List<ChatMessage> getWhisperMessages(String partnerName) {
@@ -610,7 +530,7 @@ public class ChatMessageStore {
                 result.add(msg);
             }
         }
-        // Partners are few; the cap only guards a runaway partner list.
+
         if (whisperCache.size() > 64) whisperCache.clear();
         whisperCache.put(partnerName, result);
         return result;
@@ -707,15 +627,11 @@ public class ChatMessageStore {
 
     public static String getPendingReplySender() { return pendingReplySender; }
 
-    // Epoch-minute bucket: carries the date, so a message crossing midnight
-    // gets a new key and its own separator automatically
     public static String timeKey(long timeMillis, int interval) {
         if (interval <= 0) return "";
         return String.valueOf(timeMillis / (interval * 60_000L));
     }
 
-    // WeChat-style separator: same day "15:30", other day "07-31 15:30",
-    // other year "2025-12-31 15:30"
     public static String formatTime(long timeMillis) {
         var dt = java.time.Instant.ofEpochMilli(timeMillis)
             .atZone(java.time.ZoneId.systemDefault()).toLocalDateTime();
@@ -725,25 +641,14 @@ public class ChatMessageStore {
         return dt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
     }
 
-    // True when a quote reply was sent within the echo window: the local bubble's
-    // addMessage consumes pendingReplyContent before the server echo returns, so
-    // the vanilla-chat [引用] tag can't read it — this timestamp is the residue.
     public static boolean wasRecentQuoteAt(long quoteSendTime, long now) {
         return EchoTracker.wasRecentQuoteAt(quoteSendTime, now);
     }
-
 
     public static boolean wasRecentQuote() {
         return EchoTracker.wasRecentQuote();
     }
 
-
-    // Content extraction from a vanilla whisper line ("你悄悄对 Steve 说: hi" -> "hi").
-    // meta wins when it is trusted (incoming whisper sets it); the outgoing-echo path
-    // never sets pending meta, so callers must pass null there to avoid stale residue.
-    // Uses the FIRST separator: the structural colon sits before the content, so
-    // content that itself contains ": " must not be truncated (lastIndexOf would).
-    // Consistent with MessagePresentation.extractWhisperContent.
     public static String extractWhisperContent(String text, SenderMeta meta) {
         if (meta != null && meta.rawContent() != null) {
             String rc = meta.rawContent().getString();
@@ -757,22 +662,15 @@ public class ChatMessageStore {
         return text.substring(start).trim();
     }
 
-    // Display-name extraction from a vanilla whisper line, keeping prefix decorations
-    // and colors: "你悄悄地对[称号]E33EPUS说：hi" -> "[称号]E33EPUS".
-    // Covers zh/en outgoing+incoming templates; falls back when no template matches.
     public static Text extractWhisperDisplayName(Text fullLine, Text fallback) {
         String fullStr = fullLine.getString();
-        // zh incoming: "[称号]Steve悄悄地对你说：hi" -> name = [0, "悄悄地对你说")
+
         int qiaoIdx = fullStr.indexOf("悄悄地对你说");
         if (qiaoIdx > 0) {
             Text area = sliceStyled(fullLine, 0, qiaoIdx);
             if (!area.getString().isBlank()) return stripItalic(area);
         }
-        // zh outgoing: "你悄悄地对[称号]Steve说：hi" — the name after "悄悄地对"
-        // is the TARGET, not the sender (the sender is "你" = self); the caller's
-        // fallback carries our own decorated name. Some plugins echo the outgoing
-        // line with the sender's decorated name ("[称号]E33EPUS悄悄地对Steve说") —
-        // extract that prefix instead of falling back to the bare name.
+
         int duiIdx = fullStr.indexOf("悄悄地对");
         if (duiIdx >= 0) {
             int sayIdx = fullStr.indexOf("说：", duiIdx);
@@ -785,9 +683,7 @@ public class ChatMessageStore {
                 return fallback;
             }
         }
-        // "X whisper to Y: hi" — X is the sender (decorated on plugin servers).
-        // Vanilla English outgoing is "You whisper to X" (X = target), so "You"
-        // is not a real name and falls back.
+
         int toIdx = fullStr.indexOf("whisper to ");
         if (toIdx >= 0) {
             int colonIdx = fullStr.indexOf(":", toIdx);
@@ -808,9 +704,6 @@ public class ChatMessageStore {
         return fallback;
     }
 
-    // Rebuild a component with italic cleared on every run — vanilla decorates
-    // whisper lines gray+italic and the decoration style bleeds into extracted
-    // names; 1.20.1 has no mapStyle, so walk the tree via visit.
     private static Text stripItalic(Text src) {
         MutableText out = Text.empty();
         src.visit((style, text) -> {
@@ -822,11 +715,6 @@ public class ChatMessageStore {
 
     private static Text ownDecoratedName;
 
-    // Best available self name: tab list > decorated name seen in chat > scoreboard
-    // team (color/prefix/suffix) > bare name. Vanilla servers send no tab-list
-    // display name, so the chat cache is the reliable source for the outgoing
-    // whisper repost; NCR servers add no cache before the first own line, so the
-    // team color is the only blue-name source there.
     public static Text ownDisplayName() {
         var player = net.minecraft.client.MinecraftClient.getInstance().player;
         if (player != null && player.networkHandler != null) {
@@ -839,7 +727,7 @@ public class ChatMessageStore {
         if (player != null && player.getScoreboardTeam() != null) {
             var team = player.getScoreboardTeam();
             //#if MC >= 26000
-            // 26.x: 队伍前缀/后缀改名为 getPlayerPrefix/getPlayerSuffix，颜色是 ChatFormatting
+
             Text pfx = team.getPlayerPrefix();
             Text sfx = team.getPlayerSuffix();
             Formatting col = team.getColor();
@@ -867,8 +755,6 @@ public class ChatMessageStore {
         return ownDecoratedName;
     }
 
-    // Own-echoes skip addMessage entirely (consumeEchoIfSenderMatches returns
-    // early), so callers on the message path must cache the decorated name too.
     public static void cacheOwnDecoratedName(Text senderName) {
         var player = net.minecraft.client.MinecraftClient.getInstance().player;
         String bare = player != null ? player.getName().getString() : "";
@@ -880,7 +766,6 @@ public class ChatMessageStore {
     public static int size() {
         return messages.size();
     }
-
 
     public static void setCurrentWorld(String name) {
         if (java.util.Objects.equals(name, currentWorldKey)) return;
@@ -895,13 +780,9 @@ public class ChatMessageStore {
         if (isRefinement || hasPendingMessages) {
             hasUnreadMentionFlag = false;
             if (ChatBubbleClientSetup.config().chatHistoryEnabled() && isWorldSpecific(currentWorldKey)) {
-                // Messages that arrived before the world key was known (MOTD, join
-                // notices) must stay newest — load saved history underneath them
-                // instead of appending it after
+
                 List<ChatMessage> early = new ArrayList<>(messages);
-                // The backlog can land before the world key is known, so its rows are
-                // the "early" ones here: hand their keys to the loader and it will not
-                // restore the same lines a second time underneath them.
+
                 Map<String, Integer> skipKeys = usableSkips(backlogKeys, mergeCountsOf(early));
                 backlogKeys.clear();
                 messages.clear();
@@ -928,86 +809,54 @@ public class ChatMessageStore {
         return HistoryStore.getHistoryFile(worldKey);
     }
 
-
-    // Pre-2.2.3 files used an ASCII-only sanitizer + String.hashCode; load them for
-    // migration when the new path does not exist yet
     private static File getLegacyHistoryFile(String worldKey) {
         return HistoryStore.getLegacyHistoryFile(worldKey);
     }
-
 
     private static String sha256Short(String s) {
         return HistoryStore.sha256Short(s);
     }
 
-
-    // ---- History line format: JSONL since 2.3.9 (styled components + uuid) ----
-    // Format details live in HistoryStore; the TSV branch there only reads
-    // pre-2.3.9 legacy lines.
-
-    // Commands that carry credentials must never land in the history file —
-    // mirrors the AuthMe-family login/register aliases
     public static boolean isSensitiveCommand(String text) {
         return HistoryStore.isSensitiveCommand(text);
     }
-
 
     public static String toLine(ChatMessage msg) {
         return HistoryStore.toLine(msg);
     }
 
-
     public static ChatMessage fromLine(String line) {
         return HistoryStore.fromLine(line);
     }
 
-
-    // Legacy JSONL branch: one message per line as {"sender":...,"content":...}
     private static ChatMessage fromJsonLine(String line) {
         return HistoryStore.fromJsonLine(line);
     }
-
 
     private static Text componentFrom(Map<String, Object> obj, String jsonKey, String textKey) {
         return HistoryStore.componentFrom(obj, jsonKey, textKey);
     }
 
-
     private static String escapeField(String s) {
         return HistoryStore.escapeField(s);
     }
-
 
     private static String unescapeField(String s) {
         return HistoryStore.unescapeField(s);
     }
 
-
     public static Text parseStyledText(String s) {
         return HistoryStore.parseStyledText(s);
     }
-
 
     private static Style applySectionCode(Style style, char code) {
         return HistoryStore.applySectionCode(style, code);
     }
 
-
-    // Legacy file stores LocalTime (HH:mm:ss) with no date; anchor the file's
-    // last-saved day on the file mtime and walk backwards: an earlier message
-    // whose clock time is LATER than its successor crossed midnight
     private static List<ChatMessage> loadLegacyFile(File f) {
         return HistoryStore.loadLegacyFile(f);
     }
 
-
-    // History saves run on a dedicated single-thread executor: the snapshot is
-    // taken on the client thread (the messages list is only mutated there), while
-    // the expensive styled-JSON serialization and the full-file rewrite — tens of
-    // megabytes at the 10000-message cap — stay off the render path. One thread
-    // keeps saves ordered and never overlapping on the same tmp file. The write is
-    // still tmp + atomic move, so a killed task leaves the previous file intact;
-    // the thread is daemon so it never holds the JVM open on exit.
     private static final java.util.concurrent.ExecutorService SAVE_EXECUTOR =
         java.util.concurrent.Executors.newSingleThreadExecutor(r -> {
             Thread t = new Thread(r, "e33chat-history-save");
@@ -1021,13 +870,10 @@ public class ChatMessageStore {
         long gen = historyGeneration;
         File f = getHistoryFile(worldKey);
         SAVE_EXECUTOR.execute(() -> {
-            // The history was cleared (generation bumped) after this snapshot was
-            // taken — the clear's delete task is queued after us on the same
-            // single-thread executor, so skip the write entirely.
+
             if (gen != historyGeneration) return;
             f.getParentFile().mkdirs();
-            // Atomic replace: write the tmp file fully, then move it over — a crash
-            // mid-write leaves the previous file intact instead of a truncated one
+
             File tmp = new File(f.getParentFile(), f.getName() + ".tmp");
             try (Writer w = new OutputStreamWriter(new FileOutputStream(tmp), StandardCharsets.UTF_8)) {
                 for (ChatMessage msg : snapshot) {
@@ -1041,8 +887,7 @@ public class ChatMessageStore {
                 E33Log.warn("[e33chat] Failed to read/write chat history", e);
                 return;
             }
-            // Re-check after the write: the history may have been cleared while we
-            // were serializing. Drop the tmp instead of resurrecting stale data.
+
             if (gen != historyGeneration) {
                 tmp.delete();
                 return;
@@ -1062,7 +907,6 @@ public class ChatMessageStore {
         });
     }
 
-    /** True when clearing would actually delete something (messages or files). */
     public static boolean hasHistoryToClear() {
         if (!messages.isEmpty()) return true;
         if (currentWorldKey == null) return false;
@@ -1070,18 +914,6 @@ public class ChatMessageStore {
             || getLegacyHistoryFile(currentWorldKey).exists();
     }
 
-    /**
-     * Permanently clears the current world's chat history: the in-memory list and
-     * the saved JSONL file (plus any legacy file for the same world).
-     *
-     * <p>Race handling: a save snapshot taken before this call may still be queued
-     * or in-flight on {@link #SAVE_EXECUTOR}. We bump {@link #historyGeneration} so
-     * stale writes abort, and we also enqueue an ordered delete on the same
-     * single-thread executor — since all file writes and this delete share the
-     * executor, the delete always runs after any already-queued stale write, so the
-     * file cannot be resurrected. The immediate synchronous delete keeps the on-disk
-     * state truthful right away (and covers an exit before the queued task runs).
-     */
     public static void clearCurrentWorldHistory() {
         messages.clear();
         backlogKeys.clear();
@@ -1098,8 +930,6 @@ public class ChatMessageStore {
         if (f.exists()) f.delete();
         if (legacy.exists()) legacy.delete();
 
-        // Ordered safety-net delete (see javadoc). File handles are captured on the
-        // client thread — MinecraftClient.getInstance() must not be touched off-thread.
         final long gen = historyGeneration;
         final File cur = f;
         final File leg = legacy;
@@ -1110,26 +940,15 @@ public class ChatMessageStore {
         });
     }
 
-    // Periodic autosave: a crash only loses messages newer than the last flush.
-    // Called from the client tick; the world switch path in setCurrentWorld still
-    // saves on world change / quit. historyDirty skips re-scheduling when nothing
-    // new arrived since the last save; the actual write happens on the save
-    // executor (see SAVE_EXECUTOR).
     private static final long AUTO_SAVE_MS = 30_000;
     private static long lastAutoSave;
     private static boolean historyDirty;
 
-    // Bumped whenever the history is cleared: any save snapshot taken before the
-    // clear becomes stale and must not write the file back (see saveMessages).
-    // Volatile because the save executor reads it off-thread.
     private static volatile long historyGeneration;
 
-    // Retention cleanup: files older than the configured days are dropped on
-    // world join (0 = keep forever, the default)
     public static boolean isExpired(long fileMtime, long now, int retentionDays) {
         return HistoryStore.isExpired(fileMtime, now, retentionDays);
     }
-
 
     private static void cleanupOldHistory() {
         int days = ChatBubbleClientSetup.config().historyRetentionDays();
@@ -1157,8 +976,7 @@ public class ChatMessageStore {
     }
 
     private static void loadMessages(String worldKey, Map<String, Integer> skipCounts) {
-        // Own the map: a caller may hand over an immutable one, and takeFresh
-        // consumes it as it goes.
+
         skipCounts = skipCounts.isEmpty() ? java.util.Collections.<String, Integer>emptyMap()
             : new HashMap<>(skipCounts);
         File f = getHistoryFile(worldKey);
@@ -1167,7 +985,7 @@ public class ChatMessageStore {
             if (legacy.exists()) f = legacy;
         }
         if (!f.exists()) return;
-        // Stale tmp file from a crash between write and rename — safe to discard
+
         new File(f.getParentFile(), f.getName() + ".tmp").delete();
         String head;
         try (java.io.BufferedReader br = new java.io.BufferedReader(new java.io.InputStreamReader(
@@ -1178,17 +996,14 @@ public class ChatMessageStore {
             return;
         }
         if (head == null) return;
-        // Strip a UTF-8 BOM some editors write, which would break the JSON-array check
+
         if (head.startsWith("﻿")) head = head.substring(1);
-        // Legacy files are a JSON array (starts with '['); new files are JSONL.
-        // A legacy file migrates to JSONL on the next save (memory is the source).
+
         if (head.trim().startsWith("[")) {
             List<ChatMessage> legacy = loadLegacyFile(f);
             for (ChatMessage m : legacy) {
                 if (BlockList.isBlocked(m)) continue;
-                // Only suppress rows whose merged backlog twin is still on screen
-                // (skipCounts is budgeted by the caller) — a MOTD/join notice can
-                // never evict a saved line here.
+
                 if (!skipCounts.isEmpty() && !takeFresh(skipCounts, mergeKeyOf(m))) continue;
                 messages.add(m);
                 if (!m.isSystem() && !m.senderUUID().equals(new UUID(0, 0)))
@@ -1219,23 +1034,11 @@ public class ChatMessageStore {
         bumpListVersion();
     }
 
-
-    // ==== Server backlog merge (upstream 2.4.15) ====
-
-    // 本会话起点：backlog 行插在「磁盘恢复的历史」之上、「本次会话产生的消息」
-    // 之下——它是"我离开的时候发生了什么"，属于历史而不是进服提示之后。排序
-    // 只用客户端自己的时钟，服务端时钟偏差不会打乱本地列表。
     private static final long SESSION_START_MS = System.currentTimeMillis();
 
-    /** Backlog 的键剥 § 色码（10000 行恢复时不能每行编译一次正则）。 */
     private static final java.util.regex.Pattern MERGE_NAME_COLOR =
         java.util.regex.Pattern.compile("§.");
 
-    /**
-     * 服务端 backlog 插入过的行键。只有这些键允许在恢复磁盘历史时压制同名行：
-     * 若用「列表里所有行」，MOTD/进服提示就会顶掉磁盘上的一行，下次存盘把那行
-     * 永久写没。
-     */
     private static final Map<String, Integer> backlogKeys = new HashMap<>();
 
     private static String mergeKey(String senderName, String content, String group) {
@@ -1252,12 +1055,6 @@ public class ChatMessageStore {
         return mergeKey(name, m.content().getString(), m.group());
     }
 
-    /**
-     * How many copies of each line the given rows already hold (multiset). An
-     * anti-spam merged bubble stands for duplicateCount sends, so it covers that
-     * many backlog rows; counting it as one would hand the player back copies of
-     * messages they already saw.
-     */
     private static Map<String, Integer> mergeCountsOf(List<ChatMessage> rows) {
         Map<String, Integer> counts = new HashMap<>();
         for (ChatMessage m : rows)
@@ -1265,12 +1062,6 @@ public class ChatMessageStore {
         return counts;
     }
 
-    /**
-     * Suppression budget still backed by a live row. A recorded backlog key may only
-     * hide a saved twin while the merged copy is actually on screen: once that row is
-     * gone (a blocked sender purged it, the list cap truncated it) the saved line has
-     * to come back instead of vanishing from the file at the next save.
-     */
     private static Map<String, Integer> usableSkips(Map<String, Integer> recorded,
                                                     Map<String, Integer> present) {
         Map<String, Integer> out = new HashMap<>();
@@ -1282,7 +1073,6 @@ public class ChatMessageStore {
         return out;
     }
 
-    /** Consume one already-held copy of the key; false means the other side covers it. */
     private static boolean takeFresh(Map<String, Integer> counts, String key) {
         Integer left = counts.get(key);
         if (left != null && left > 0) {
@@ -1294,14 +1084,11 @@ public class ChatMessageStore {
 
     public static void addHistoryMessages(List<com.niuqu.chatbubble.network.HistoryPayload.HistoryEntry> entries) {
         if (entries == null || entries.isEmpty()) return;
-        // 合并而不是丢弃。2.4.15 之前本地列表非空时整包退回——只要有本地历史
-        // 甚至只有一条进服提示，服务端历史就被静默丢掉。防重复的初衷改由逐行
-        // 多集去重实现：backlog 行只有在列表没有同键余量时才插入（计数比较，
-        // 本地发过两次 + 服务端存过两次的行不会再次拿到任何一份）。
+
         Map<String, Integer> seen = mergeCountsOf(messages);
         List<ChatMessage> fresh = new ArrayList<>();
         for (var e : entries) {
-            if (e == null) continue;                                  // hostile/raced row
+            if (e == null) continue;
             String sender = e.senderName() != null ? e.senderName() : "";
             String content = e.content() != null ? e.content() : "";
             if (content.isBlank()) continue;
@@ -1341,15 +1128,13 @@ public class ChatMessageStore {
                                       String quoteSender, String quoteContent, List<String> mentionTargets) {
         for (int i = messages.size() - 1; i >= 0; i--) {
             ChatMessage msg = messages.get(i);
-            // Offline/cracked players fall back to UUID(0,0) on the receiving side,
-            // so match by raw player name as well when the UUID doesn't line up
+
             boolean nameMatch = senderName != null && !senderName.isEmpty()
                 && msg.rawPlayerName() != null && msg.rawPlayerName().equals(senderName);
             if (msg.messageHash().equals(messageHash)
                 && (msg.senderUUID().equals(senderUUID) || nameMatch)) {
                 if (msg.replyContent() != null) continue;
-                // Anti-spam merge produced this bubble (the second send had no
-                // quote) — a late ChatMeta for the first send must not tag it
+
                 if (msg.duplicateCount() > 1) continue;
                 if (System.currentTimeMillis() - msg.time() > 5_000) continue;
                 if (!quoteContent.isEmpty()) {
@@ -1368,9 +1153,7 @@ public class ChatMessageStore {
             }
         }
         if (!quoteContent.isEmpty()) {
-            // A pending meta whose chat message never arrived (swallowed by another
-            // mod, or older than the 5s apply window) would leak forever — drop stale
-            // ones here, matching the 10s TTL the consume path already enforces.
+
             long cutoff = System.currentTimeMillis() - 10_000;
             EchoTracker.prunePendingMetas(cutoff);
             EchoTracker.putPendingMeta(messageHash, senderUUID, quoteSender, quoteContent, mentionTargets);

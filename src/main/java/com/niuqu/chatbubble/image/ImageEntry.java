@@ -3,10 +3,6 @@ package com.niuqu.chatbubble.image;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.util.Identifier;
 
-/**
- * Loading state of one image URL. Texture upload happens on the render
- * thread; everything else happens on a worker thread.
- */
 public final class ImageEntry {
     public enum State { LOADING, LOADED, FAILED }
 

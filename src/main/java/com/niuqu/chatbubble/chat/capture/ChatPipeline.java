@@ -9,17 +9,9 @@ import java.util.UUID;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.Text;
 
-/**
- * Unified guard-layer orchestration shared by the system/disguised channels.
- *
- * Extracted from ChatListenerMixin during the 2.3.14 restructure: the two
- * channels previously carried ~50 duplicated lines each for the Layer-3
- * decorated-name parse; the name-area extraction helpers moved along.
- */
 public final class ChatPipeline {
     private ChatPipeline() {}
 
-    // Pulls styled server prefixes out of the decorated line: "[Group]<Steve> hi" -> "[Group]Steve"
     public static Text extractDecoratedName(Text fullLine, String contentStr,
                                                  String rawName, Text fallback) {
         if (contentStr == null || contentStr.isEmpty()) return fallback;
@@ -52,7 +44,7 @@ public final class ChatPipeline {
                 if (tail < ns.length()) out.append(ChatMessageStore.sliceStyled(nameArea, tail, ns.length()));
                 return out;
             }
-            // Team-decorated names sit inside the brackets: "<[Team]Steve>" -> "[Team]Steve"
+
             if (ns.length() > 2 && ns.charAt(0) == '<' && ns.charAt(ns.length() - 1) == '>') {
                 return ChatMessageStore.sliceStyled(nameArea, 1, ns.length() - 1);
             }
@@ -60,14 +52,9 @@ public final class ChatPipeline {
         return nameArea;
     }
 
-    /**
-     * Layer 3: parse a decorated player line — text-level fallback for servers
-     * that strip click events. Returns null when the line is not a player line
-     * (or is a broadcast sentence with a whitespace-only gap).
-     */
     public static ChatMessageStore.SenderMeta tryParsePlayerLine(
             Text message, String text, String logTag) {
-        // 进服窗口守卫：包可能在本地玩家实体就绪前到达，解引用会 NPE
+
         var self = MinecraftClient.getInstance().player;
         if (self == null) return null;
         var connection = self.networkHandler;
@@ -85,12 +72,11 @@ public final class ChatPipeline {
             ChatMessageStore.debugLog(() -> "[e33chat] " + logTag + "(blank display) | text='" + text + "'");
             return null;
         }
-        // 偏移来自 parser（双侧剥 § 后的映射），嵌色名 S§6t§beve 也正确
+
         int nameIdx = pl.nameStart();
         int nameEnd = pl.nameEnd();
         int contentStart = pl.contentStart();
-        // Whitespace-only gap = broadcast sentence (Steve joined the game),
-        // not chat: server chat formats always separate name and content
+
         if (MessagePresentation.isWhitespaceOnlyGap(text, nameEnd, contentStart)) {
             ChatMessageStore.debugLog(() -> "[e33chat] " + logTag + "(line skip: broadcast sentence) | text='" + text + "'");
             return null;

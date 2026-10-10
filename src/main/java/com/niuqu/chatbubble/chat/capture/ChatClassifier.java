@@ -8,18 +8,9 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.text.Text;
 
-/**
- * Guard 0: deterministic routing by vanilla translation key, plus the player
- * name resolution helpers it shares with the other guards.
- *
- * Extracted from ChatListenerMixin during the 2.3.14 restructure — the mixin
- * keeps only the @Inject shells and forwards here. Behaviour unchanged.
- */
 public final class ChatClassifier {
     private ChatClassifier() {}
 
-    // Nick plugins put the tab-list display name in chat instead of the profile name;
-    // legacy plugins may embed section-sign color codes in names, so offer stripped variants too
     public static String[] nameCandidates(PlayerListEntry info) {
         var out = new java.util.LinkedHashSet<String>();
         String profile = GuiCompat.profileName(info.getProfile());
@@ -36,10 +27,6 @@ public final class ChatClassifier {
         if (!stripped.isEmpty()) out.add(stripped);
     }
 
-    // Vanilla broadcasts (advancements/deaths/joins) lead with a clickable player name,
-    // which tell-click would wrongly claim as chat — keep them as system messages.
-    // chat.type.admin is the op echo "[Steve: Teleported ...]",
-    // announcement/emote are /say and /me — same trap
     public static boolean isVanillaBroadcast(Text message) {
         if (message.getContent() instanceof net.minecraft.text.TranslatableTextContent tc) {
             String key = tc.getKey();
@@ -68,9 +55,7 @@ public final class ChatClassifier {
                 if (cand.equals(displayName)) return info;
             }
         }
-        // Team/plugin decorations wrap the name ("[Title]Steve") — longest match wins
-        // so "Steve2" is never claimed by "Steve". Min length 3 keeps 1-2 char names
-        // from substring-matching random text when the real sender is offline
+
         PlayerListEntry best = null;
         int bestLen = 0;
         for (var info : online) {
@@ -84,11 +69,6 @@ public final class ChatClassifier {
         return best;
     }
 
-    // ===== Layer 0: deterministic routing by vanilla translation key.=====
-    // NCR/FreedomChat stuff the decorated component tree into system packets unchanged,
-    // so the key survives conversion. Unknown keys fall through to the heuristics below.
-
-    /** @return true when the message was routed (pending meta set / suppressed). */
     public static boolean classifyByKey(Text message) {
         if (!(message.getContent() instanceof net.minecraft.text.TranslatableTextContent tc)) return false;
         String key = tc.getKey();
@@ -115,7 +95,7 @@ public final class ChatClassifier {
             }
             var player = MinecraftClient.getInstance().player;
             if (player != null && args.length >= 2) {
-                // /msg sent outside our UI (another mod, key bind) — no local bubble exists
+
                 String partner = argAsComponent(args[0]).getString().replaceAll("§.", "").trim();
                 Text content = argAsComponent(args[1]);
                 String own = player.getName().getString();
@@ -131,7 +111,7 @@ public final class ChatClassifier {
             Text name = argAsComponent(args[0]);
             Text content = argAsComponent(args[1]);
             String contentStr = content.getString();
-            // Xaero shares waypoint data as chat — converted servers wrap it in chat.type.text
+
             if (contentStr.startsWith("xaero-waypoint:")
                 || contentStr.startsWith("xaero_waypoint:")
                 || contentStr.startsWith("xaero_waypoint_add:")) {
