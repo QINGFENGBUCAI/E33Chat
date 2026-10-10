@@ -16,7 +16,6 @@ import java.util.function.Supplier;
 
 @Mixin(SkinTextureDownloader.class)
 public abstract class SkinTextureDownloaderMixin {
-
     @ModifyArg(
         method = "registerTextureInManager",
         at = @At(

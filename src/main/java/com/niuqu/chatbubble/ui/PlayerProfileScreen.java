@@ -22,7 +22,6 @@ import net.minecraft.world.level.GameType;
 import java.util.UUID;
 
 public class PlayerProfileScreen extends Screen {
-
     private static final int PANEL_W = 220;
     private static final int PANEL_H = 196;
     private static final int BTN_H = 16;

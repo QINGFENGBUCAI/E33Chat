@@ -4,7 +4,6 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class AnimationTest {
-
     @Test void easeOutCubic_endpoints() {
         assertEquals(0f, Animation.easeOutCubic(0f), 0.0001f);
         assertEquals(1f, Animation.easeOutCubic(1f), 0.0001f);

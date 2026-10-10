@@ -279,7 +279,6 @@ public class ChatBubbleMod implements ModInitializer {
         //#endif
 
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
-
             if (!configLoaded) {
                 configLoaded = true;
                 var configPath = server.getSavePath(net.minecraft.util.WorldSavePath.ROOT)
@@ -421,7 +420,6 @@ public class ChatBubbleMod implements ModInitializer {
     }
 
     private static void addToHistory(HistoryPayload.HistoryEntry entry) {
-
         if (entry == null) return;
         synchronized (HISTORY_LOCK) {
             historyBuffer.addLast(entry);

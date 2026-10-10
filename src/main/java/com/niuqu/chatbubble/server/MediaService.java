@@ -38,7 +38,6 @@ public final class MediaService {
     }
 
     private static void sendNotFound(ServerPlayerEntity sender, String mediaId) {
-
         //#if MC >= 12005
         ServerPlayNetworking.send(sender, new MediaResponsePayload(mediaId, 0, 1, new byte[0]));
         //#else
@@ -73,7 +72,6 @@ public final class MediaService {
             result = store.beginUpload(uploadId, sender.getName().getString(),
                 totalChunks, totalBytes, contentType);
             if (result == null) {
-
                 result = store.acceptChunk(uploadId, index, chunk);
             }
         } else {

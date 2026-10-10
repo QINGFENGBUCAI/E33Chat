@@ -63,7 +63,6 @@ public final class TemplateLayer {
             && uid.equals(MinecraftClient.getInstance().player.getUuid());
         if (isSelf) {
             if (tpl.whisper()) {
-
                 ChatMessageStore.markSuppressCapture();
                 ChatMessageStore.debugLog(() -> "[e33chat] " + logTag + "(template outgoing whisper) | text='" + text + "'");
                 return null;

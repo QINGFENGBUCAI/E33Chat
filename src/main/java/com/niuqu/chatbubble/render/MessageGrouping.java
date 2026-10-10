@@ -21,5 +21,4 @@ public final class MessageGrouping {
         if (!a.equals(b)) return false;
         return msg.time() - prev.time() <= GROUP_TIME_MS;
     }
-
 }

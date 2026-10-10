@@ -13,7 +13,6 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class BracketCodecTest {
-
     @Test
     void cicodeTagIsParsed() {
         ParseResult r = BracketCodec.parse(Text.literal("hi [[CICode,url=https://a.com/x.png]] there"));

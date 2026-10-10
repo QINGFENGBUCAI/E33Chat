@@ -54,7 +54,6 @@ public final class ChatPipeline {
 
     public static ChatMessageStore.SenderMeta tryParsePlayerLine(
             Text message, String text, String logTag) {
-
         var self = MinecraftClient.getInstance().player;
         if (self == null) return null;
         var connection = self.networkHandler;

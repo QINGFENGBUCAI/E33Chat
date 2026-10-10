@@ -21,7 +21,6 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
 public class ChatBubbleHudOverlay {
-
     private static final int ICON_S = 16;
     private static final int SRC_U = 6;
     private static final int SRC_V = 6;
@@ -113,7 +112,6 @@ public class ChatBubbleHudOverlay {
     }
 
     private static void drawIcon(DrawContext g, int x, int y) {
-
         g.drawTexture(chatIconTex(), x, y, 0.0F, 0.0F, ICON_S, ICON_S, ICON_S, ICON_S);
     }
 

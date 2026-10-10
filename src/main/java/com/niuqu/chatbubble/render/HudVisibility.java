@@ -1,7 +1,6 @@
 package com.niuqu.chatbubble.render;
 
 public final class HudVisibility {
-
     private static int hides;
 
     private HudVisibility() {}

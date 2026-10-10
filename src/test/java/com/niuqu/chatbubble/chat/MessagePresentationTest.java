@@ -128,7 +128,6 @@ class MessagePresentationTest {
     }
 
     @Test void rejectsBareShortNameWithoutStructure() {
-
         assertTrue(MessagePresentation.parseDecoratedPlayerLine(
             "a joined the game", List.of("a")).isEmpty());
     }
@@ -219,7 +218,6 @@ class MessagePresentationTest {
     }
 
     @Test void parsesBareChineseNameWithColon() {
-
         var parsed = MessagePresentation.parseDecoratedPlayerLine(
             "小明: 你好", List.of("小明"));
         assertTrue(parsed.isPresent());
@@ -228,7 +226,6 @@ class MessagePresentationTest {
     }
 
     @Test void rejectsBareChineseNameBroadcast() {
-
         assertTrue(MessagePresentation.parseDecoratedPlayerLine(
             "小明 加入了游戏", List.of("小明")).isEmpty());
     }
@@ -241,7 +238,6 @@ class MessagePresentationTest {
     }
 
     @Test void unicodeArrowSeparatorNotSkipped() {
-
         var parsed = MessagePresentation.parseDecoratedPlayerLine(
             "Steve ➤ hi", List.of("Steve"));
         assertTrue(parsed.isPresent());
@@ -249,7 +245,6 @@ class MessagePresentationTest {
     }
 
     @Test void rejectsBroadcastLabelWithArrowPrefix() {
-
         assertTrue(MessagePresentation.parseDecoratedPlayerLine(
             "系统>>Steve: 你好", List.of("Steve")).isEmpty());
         assertTrue(MessagePresentation.parseDecoratedPlayerLine(
@@ -266,7 +261,6 @@ class MessagePresentationTest {
     }
 
     @Test void rejectsBroadcastLabelWordPrefix() {
-
         assertTrue(MessagePresentation.parseDecoratedPlayerLine(
             "[系统]Steve: hi", List.of("Steve")).isEmpty());
         assertTrue(MessagePresentation.parseDecoratedPlayerLine(
@@ -282,7 +276,6 @@ class MessagePresentationTest {
     }
 
     @Test void broadcastLabelDoesNotRejectRealTitles() {
-
         var parsed = MessagePresentation.parseDecoratedPlayerLine(
             "[系统管理员]Steve: hi", List.of("Steve"));
         assertTrue(parsed.isPresent());
@@ -294,7 +287,6 @@ class MessagePresentationTest {
     }
 
     @Test void decoratedChatStillParses() {
-
         var parsed = MessagePresentation.parseDecoratedPlayerLine(
             "[薄荷一区][主城] PlayerTitle_user/Ciao_Min: 额，在吗？",
             List.of("Ciao_Min"));
@@ -307,7 +299,6 @@ class MessagePresentationTest {
     }
 
     @Test void parsesColorCodeEmbeddedName() {
-
         var parsed = MessagePresentation.parseDecoratedPlayerLine(
             "S§6t§beve: hi", List.of("Steve"));
         assertTrue(parsed.isPresent());
@@ -323,7 +314,6 @@ class MessagePresentationTest {
     }
 
     @Test void parsesDecoratedColorCodeEmbeddedName() {
-
         var parsed = MessagePresentation.parseDecoratedPlayerLine(
             "[VIP]S§6t§beve: hi", List.of("Steve"));
         assertTrue(parsed.isPresent());
@@ -335,7 +325,6 @@ class MessagePresentationTest {
     }
 
     @Test void colorCodeNameOffsetsMatchOriginalText() {
-
         String text = "S§6t§beve: hi";
         var parsed = MessagePresentation.parseDecoratedPlayerLine(text, List.of("Steve"));
         var pl = parsed.orElseThrow();

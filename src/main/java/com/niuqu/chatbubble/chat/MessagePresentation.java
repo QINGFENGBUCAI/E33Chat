@@ -85,7 +85,6 @@ public final class MessagePresentation {
                 int openAngle = ct.lastIndexOf('<', idx);
                 int closeAngle = ct.indexOf('>', idx + cleanName.length());
                 if (openAngle >= 0 && closeAngle >= 0 && closeAngle - openAngle <= 64) {
-
                 } else {
                     int bracketClose = ct.lastIndexOf(']', idx);
                     if (bracketClose >= 0) {

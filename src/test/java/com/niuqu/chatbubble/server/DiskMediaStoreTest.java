@@ -12,7 +12,6 @@ import java.util.Arrays;
 import static org.junit.jupiter.api.Assertions.*;
 
 class DiskMediaStoreTest {
-
     private static byte[] payload(int size) {
         byte[] b = new byte[size];
         for (int i = 0; i < size; i++) b[i] = (byte) (i * 31);
@@ -136,7 +135,6 @@ class DiskMediaStoreTest {
 
     @Test
     void urlValidationMatchesStore() {
-
         assertTrue(DiskMediaStore.isValidMediaId("abcdef0123456789abcdef0123456789"));
         assertTrue(DiskMediaStore.isValidMediaId(DiskMediaStore.newMediaId()));
     }

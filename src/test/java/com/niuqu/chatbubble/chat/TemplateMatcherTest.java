@@ -9,7 +9,6 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.*;
 
 class TemplateMatcherTest {
-
     private static final TemplateMatcher.NameResolver KNOWN = name -> {
         if (name == null) return false;
         for (String n : List.of("Steve", "Alex", "E33EPUS")) {
@@ -53,7 +52,6 @@ class TemplateMatcherTest {
     }
 
     @Test void acceptsContentNotLast() {
-
         TemplateMatcher.CompiledTemplate t = chat("{display_name}: {content} [聊天]");
         var r = TemplateMatcher.match("Steve: hi [聊天]", List.of(t), List.of(), KNOWN).orElseThrow();
         assertEquals("Steve", r.displayName());
@@ -61,7 +59,6 @@ class TemplateMatcherTest {
     }
 
     @Test void rejectsDuplicateField() {
-
         assertNotNull(TemplateMatcher.compile("{prefix}{prefix}{display_name}: {content}").error());
         assertNotNull(TemplateMatcher.compile("{display_name}{display_name}: {content}").error());
         assertNotNull(TemplateMatcher.compile("{sender}{sender}: {content}").error());
@@ -76,7 +73,6 @@ class TemplateMatcherTest {
     }
 
     @Test void rejectsMisspelledContentPlaceholder() {
-
         assertNotNull(TemplateMatcher.compile("{display_name}: {conten}").error());
     }
 
@@ -114,7 +110,6 @@ class TemplateMatcherTest {
     }
 
     @Test void matchesPrefixField() {
-
         var r = matchChat("[A]<Steve>: hello", "{prefix}<{display_name}>: {content}").orElseThrow();
         assertEquals("[A]", r.prefix());
         assertEquals("Steve", r.displayName());
@@ -129,7 +124,6 @@ class TemplateMatcherTest {
     }
 
     @Test void matchesSpaceBeforeSeparator() {
-
         var r = matchChat("[A] Steve: hi", "{display_name}: {content}").orElseThrow();
         assertEquals("[A] Steve", r.displayName());
         assertEquals("hi", r.content());
@@ -165,7 +159,6 @@ class TemplateMatcherTest {
     }
 
     @Test void unknownPlaceholderActsAsLiteral() {
-
         var r = matchChat("Steve: {foo} hi", "{display_name}: {foo} {content}").orElseThrow();
         assertEquals("hi", r.content());
     }
@@ -193,7 +186,6 @@ class TemplateMatcherTest {
     }
 
     @Test void sepMatchesCommonSeparators() {
-
         for (String line : List.of("Steve: hi", "Steve：hi", "Steve >> hi", "Steve » hi", "Steve > hi", "Steve hi")) {
             var r = matchChat(line, "{display_name}{sep}{content}");
             assertTrue(r.isPresent(), "should match: " + line);
@@ -209,7 +201,6 @@ class TemplateMatcherTest {
     }
 
     @Test void matchesEssentialsXPrefixedFormat() {
-
         var r = matchChat("&7[Guest]&r Steve&7:&r hello", "&7[Guest]&r {display_name}&7:&r {content}").orElseThrow();
         assertEquals("Steve", r.displayName());
         assertEquals("hello", r.content());
@@ -222,7 +213,6 @@ class TemplateMatcherTest {
     }
 
     @Test void matchesCmiAdjacentPrefix() {
-
         var r = matchChat("[Admin]Steve: hi", "{prefix}{display_name}: {content}").orElseThrow();
         assertEquals("", r.prefix());
         assertEquals("[Admin]Steve", r.displayName());
@@ -311,7 +301,6 @@ class TemplateMatcherTest {
     }
 
     @Test void whisperTemplatesTriedBeforeChat() {
-
         var r = TemplateMatcher.match("Alex悄悄地对你说: hi",
             List.of(chat("{display_name}: {content}")),
             List.of(whisper("{sender}悄悄地对你说: {content}")), KNOWN).orElseThrow();

@@ -87,7 +87,6 @@ public class ChatBubbleClientSetup implements ClientModInitializer {
         if (Files.exists(configPath)) {
             config = ConfigManager.load(configPath);
         } else if (Files.exists(recentDirPath)) {
-
             config = ConfigManager.load(recentDirPath);
         } else if (Files.exists(legacyPath)) {
             config = ConfigManager.load(legacyPath);

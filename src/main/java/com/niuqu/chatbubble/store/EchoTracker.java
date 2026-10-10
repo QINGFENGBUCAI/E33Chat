@@ -130,7 +130,6 @@ public final class EchoTracker {
             }
         }
         if (match) {
-
             if (incomingText != null) {
                 for (int i = pendingEchoes.size() - 1; i >= 0; i--) {
                     if (incomingText.equals(pendingEchoes.get(i).text())) {

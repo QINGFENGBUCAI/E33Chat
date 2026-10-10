@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Set;
 
 public final class GroupChannelState {
-
     public static final String TAB_ALL = "#all";
     public static final String TAB_WORLD = "#world";
     public static final String TAB_SYSTEM = "#system";

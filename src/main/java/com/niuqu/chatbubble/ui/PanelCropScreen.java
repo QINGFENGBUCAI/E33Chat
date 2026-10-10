@@ -17,7 +17,6 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 
 public class PanelCropScreen extends Screen {
-
     private static final int PAD = 16;
     private static final int BTN_H = 20;
     private static final int BTN_W = 90;
@@ -44,7 +43,6 @@ public class PanelCropScreen extends Screen {
 
     @Override
     protected void init() {
-
         PanelBackground.ensureLoaded();
         lastKnownSize = PanelBackground.imageWidth() * 10000 + PanelBackground.imageHeight();
         layout();
@@ -52,7 +50,6 @@ public class PanelCropScreen extends Screen {
 
     @Override
     public void tick() {
-
         if (PanelBackground.available()) {
             int now = PanelBackground.imageWidth() * 10000 + PanelBackground.imageHeight();
             if (now != lastKnownSize) {
@@ -120,12 +117,10 @@ public class PanelCropScreen extends Screen {
 
         Identifier tex = PanelBackground.textureId();
         if (tex != null && dispW > 0) {
-
             ColoredTextureRenderer.drawWithAlpha(g, tex, imgX, imgY, dispW, dispH,
                 0f, 0f, PanelBackground.imageWidth(), PanelBackground.imageHeight(),
                 PanelBackground.imageWidth(), PanelBackground.imageHeight(), 1f);
         } else {
-
             String reason = PanelBackground.failed() ? "e33chat.crop.failed"
                 : PanelBackground.loading() ? "e33chat.crop.loading" : "e33chat.crop.no_image";
             String msg = Text.translatable(reason).getString();
@@ -135,7 +130,6 @@ public class PanelCropScreen extends Screen {
 
         int[] sel = selectionScreenRect();
         if (sel != null) {
-
             int dim = 0x99000000;
             g.fill(imgX, imgY, imgX + dispW, sel[1], dim);
             g.fill(imgX, sel[1] + sel[3], imgX + dispW, imgY + dispH, dim);
@@ -193,7 +187,6 @@ public class PanelCropScreen extends Screen {
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
         if (dragging && dispW > 0 && dispH > 0) {
-
             centerX = MathHelper.clamp(centerX + (float) dragX / dispW, 0f, 1f);
             centerY = MathHelper.clamp(centerY + (float) dragY / dispH, 0f, 1f);
             return true;

@@ -7,7 +7,6 @@ import net.minecraft.client.gui.DrawContext;
 //#endif
 
 public final class RoundRectRenderer {
-
     private RoundRectRenderer() {}
 
     private static final float BAND = 0.75f;

@@ -14,7 +14,6 @@ public final class HeadTextureHelper {
     public static final Set<Identifier> BLENDED_HEAD_TEXTURES = new HashSet<>();
 
     public static NativeImage extractBlendedHead(NativeImage skin) {
-
         boolean isLegacy = skin.getWidth() / 2 == skin.getHeight();
         int xScale = skin.getWidth() / 64;
         int yScale = skin.getHeight() / (isLegacy ? 32 : 64);
@@ -92,7 +91,6 @@ public final class HeadTextureHelper {
             //#endif
             BLENDED_HEAD_TEXTURES.add(skinLocation);
         } catch (Exception ignored) {
-
         }
     }
 }

@@ -79,7 +79,6 @@ public class MentionNotificationBanner {
 
         List<OrderedText> msgLines = mc.textRenderer.wrapLines(content, contentMaxW);
         if (msgLines.size() > MAX_MSG_LINES) {
-
             msgLines = mc.textRenderer.wrapLines(truncateStyled(content, contentMaxW * 2 - dotsW, mc.textRenderer, "..."), contentMaxW);
             if (msgLines.size() > MAX_MSG_LINES)
                 msgLines = msgLines.subList(0, MAX_MSG_LINES);
@@ -88,7 +87,6 @@ public class MentionNotificationBanner {
         int textW = mc.textRenderer.getWidth(nameSeq);
         for (var line : msgLines) textW = Math.max(textW, mc.textRenderer.getWidth(line));
         if (!hasAvatar && !msgLines.isEmpty()) {
-
             textW = Math.max(textW, mc.textRenderer.getWidth(nameSeq) + mc.textRenderer.getWidth(msgLines.get(0)));
         }
         int bannerW = textOriginX + textW + 12;
@@ -345,7 +343,6 @@ public class MentionNotificationBanner {
                 g.drawText(mc.textRenderer, drawLines.get(i), textX,
                     msgY + i * mc.textRenderer.fontHeight, msgColor, false);
         } else {
-
             int nameAlpha = (int) ((theme.textPrimary() >>> 24) * alpha);
             nameColor = (nameAlpha << 24) | (theme.textPrimary() & 0x00FFFFFF);
             int msgAlpha = (int) ((theme.textSecondary() >>> 24) * alpha);

@@ -17,7 +17,6 @@ import javax.imageio.ImageWriter;
 import javax.imageio.stream.ImageOutputStream;
 
 public final class LocalImageSource {
-
     public static final int MAX_EDGE = 1280;
 
     public record PreparedImage(byte[] bytes, String fileName, String contentType) {
@@ -27,7 +26,6 @@ public final class LocalImageSource {
     }
 
     public sealed interface Prep {
-
         record Ok(PreparedImage image, boolean animated) implements Prep {}
 
         record Rejected(AnimatedImageLoader.OverBudget reason) implements Prep {}
@@ -117,7 +115,6 @@ public final class LocalImageSource {
 
     private static byte[] toJpeg(BufferedImage img) {
         try {
-
             BufferedImage rgb = new BufferedImage(img.getWidth(), img.getHeight(), BufferedImage.TYPE_INT_RGB);
             Graphics2D g = rgb.createGraphics();
             g.setColor(java.awt.Color.WHITE);

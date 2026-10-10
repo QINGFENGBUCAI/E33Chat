@@ -136,7 +136,6 @@ public final class AnimatedImageLoader {
     public static void tick() {
         long now = System.currentTimeMillis();
         for (Entry entry : CACHE.values()) {
-
             if (now - entry.lastAccessMs > 30_000) continue;
             entry.advance(now);
         }
@@ -179,7 +178,6 @@ public final class AnimatedImageLoader {
                     return;
                 }
             } else {
-
                 URI requestUri = URI.create(URI.create(entry.url).toASCIIString());
                 HttpResponse<byte[]> response = ImageLoader.client().send(
                     HttpRequest.newBuilder(requestUri)
@@ -203,7 +201,6 @@ public final class AnimatedImageLoader {
             entry.sizeBytes = bytes.length;
             Decoded decoded = decode(bytes);
             if (decoded == null || decoded.frames().size() < 2) {
-
                 entry.staticImage = true;
                 return;
             }
@@ -314,7 +311,6 @@ public final class AnimatedImageLoader {
             if (!readers.hasNext()) return null;
             ImageReader reader = readers.next();
             try {
-
                 reader.setInput(input, false, false);
                 int count = Math.min(MAX_FRAMES, reader.getNumImages(true));
                 if (count < 2) return null;
@@ -342,7 +338,6 @@ public final class AnimatedImageLoader {
                         delays[i] = frameDelay(reader.getImageMetadata(i));
                     }
                 } catch (Throwable t) {
-
                     closeFrames(frames);
                     throw t;
                 }

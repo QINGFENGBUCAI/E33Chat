@@ -21,7 +21,6 @@ import java.lang.reflect.Field;
 //$$ @Mixin(MinecraftClient.class)
 //#endif
 public class MinecraftClientMixin {
-
     @Inject(method = "setScreen", at = @At("HEAD"), cancellable = true)
     private void onSetScreen(Screen screen, CallbackInfo ci) {
         var cfg = ChatBubbleClientSetup.config();

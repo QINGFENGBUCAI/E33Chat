@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class E33ChatCommands {
-
     public static void register() {
         //#if MC >= 11900
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {

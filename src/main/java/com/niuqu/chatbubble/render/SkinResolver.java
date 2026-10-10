@@ -168,7 +168,6 @@ public final class SkinResolver {
             }
             RESOLVE_INFLIGHT.put(key, now);
             try {
-
                 GameProfile profile = new GameProfile(id, name);
                 //#if MC >= 12109
 

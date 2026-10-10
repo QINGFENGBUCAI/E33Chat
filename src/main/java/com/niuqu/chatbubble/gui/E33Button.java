@@ -5,7 +5,6 @@ import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.text.Text;
 
 public final class E33Button {
-
     private E33Button() {}
 
     public static Builder builder(Text message, ButtonWidget.PressAction onPress) {

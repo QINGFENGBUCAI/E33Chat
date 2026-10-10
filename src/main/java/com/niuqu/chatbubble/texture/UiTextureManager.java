@@ -5,7 +5,6 @@ import com.niuqu.chatbubble.render.ChatBubbleTheme;
 import net.minecraft.util.Identifier;
 
 public final class UiTextureManager {
-
     private UiTextureManager() {}
 
     public static Identifier rl(UiElement el) {

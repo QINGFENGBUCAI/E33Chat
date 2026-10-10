@@ -9,7 +9,6 @@ import net.minecraft.client.gui.DrawContext;
 //#endif
 
 public class BlurRenderer {
-
     private static boolean disconnecting = false;
 
     public static boolean isDisconnecting() { return disconnecting; }

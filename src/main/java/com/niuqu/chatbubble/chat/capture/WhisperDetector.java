@@ -11,7 +11,6 @@ public final class WhisperDetector {
     private WhisperDetector() {}
 
     public static ChatMessageStore.SenderMeta detectWhisperInSystemMessage(String text, String logTag) {
-
         var self = MinecraftClient.getInstance().player;
         if (self == null) return null;
         var connection = self.networkHandler;

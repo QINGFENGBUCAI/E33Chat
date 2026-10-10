@@ -36,7 +36,6 @@ public final class HistoryStore {
     }
 
     public static File getHistoryFile(String worldKey) {
-
         String safe = worldKey.replaceAll("[\\\\/:*?\"<>|\\p{Cntrl}]", "_");
         return new File(gameDir(),
             "e33chat/history/" + safe + "_" + sha256Short(worldKey) + ".json");
@@ -95,7 +94,6 @@ public final class HistoryStore {
             //$$ // Pre-1.21: Text codecs not available; fall back to plain text
             //#endif
         } catch (Throwable ignored) {
-
         }
         if (senderJson != null) obj.put("senderJson", senderJson);
         else obj.put("sender", msg.senderName().getString());
@@ -205,7 +203,6 @@ static net.minecraft.registry.RegistryWrapper.WrapperLookup registries() {
         try {
             return net.minecraft.registry.BuiltinRegistries.createWrapperLookup();
         } catch (Throwable ignored) {
-
             return new net.minecraft.registry.RegistryWrapper.WrapperLookup() {
                 @Override
                 public java.util.stream.Stream<net.minecraft.registry.RegistryKey<? extends net.minecraft.registry.Registry<?>>> streamAllRegistryKeys() {
@@ -265,7 +262,6 @@ static net.minecraft.registry.RegistryWrapper.WrapperLookup registries() {
                 }
                 Style next = applySectionCode(style, s.charAt(i + 1));
                 if (next == null) {
-
                     buf.append(ch).append(s.charAt(i + 1));
                 } else {
                     style = next;

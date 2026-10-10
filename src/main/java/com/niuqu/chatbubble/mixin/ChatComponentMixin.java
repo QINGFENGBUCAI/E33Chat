@@ -101,7 +101,6 @@ public class ChatComponentMixin {
     //#endif
 
     private void repostToVanilla(Text name, String content, boolean quoting) {
-
         Text tag = (quoting
             ? Text.translatable("e33chat.banner.quote").formatted(Formatting.YELLOW)
             : Text.translatable("e33chat.banner.whisper").formatted(Formatting.LIGHT_PURPLE));
@@ -210,7 +209,6 @@ public class ChatComponentMixin {
             content = meta.rawContent();
         } else if (!rawStr.isBlank()
                 && !BracketCodec.parseOrExtract(meta.rawContent()).images().isEmpty()) {
-
             content = meta.rawContent();
         } else {
             content = finalComponent;
