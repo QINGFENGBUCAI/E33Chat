@@ -73,7 +73,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 public class ChatBubbleScreen extends ChatScreen {
-
     private int panelX, panelW;
     private static final int TITLE_H = 24;
     private int titleY, msgTop, msgBottom, barTop;
@@ -280,7 +279,6 @@ public class ChatBubbleScreen extends ChatScreen {
 
     @Override
     protected void init() {
-
         if (!hudHidden) {
             com.niuqu.chatbubble.render.HudVisibility.push();
             hudHidden = true;
@@ -297,7 +295,6 @@ public class ChatBubbleScreen extends ChatScreen {
         if (sidebarOpen) {
             panelX = SIDEBAR_W;
             sidebarAnimating = false;
-
         } else {
             panelX = 0;
             sidebarAnimating = false;
@@ -630,7 +627,6 @@ public class ChatBubbleScreen extends ChatScreen {
         }
         //#if MC >= 11900
         if (commandSuggestions != null) {
-
             commandSuggestions.setWindowActive(true);
             commandSuggestions.refresh();
         }
@@ -688,7 +684,6 @@ public class ChatBubbleScreen extends ChatScreen {
     //#if MC >= 12002
     @Override
     public void renderBackground(DrawContext g, int mouseX, int mouseY, float delta) {
-
     }
     //#else
     //$$ @Override
@@ -747,7 +742,6 @@ public class ChatBubbleScreen extends ChatScreen {
             render.run();
             g.getMatrices().pop();
         } else if (style == AnimationStyle.SLIDE) {
-
             g.getMatrices().push();
             g.getMatrices().translate(0, (1f - alpha) * 10f, 0);
             render.run();
@@ -854,7 +848,6 @@ public class ChatBubbleScreen extends ChatScreen {
             if (keyCode == 265) { mentionIdx = mentionIdx > 0 ? mentionIdx - 1 : mentionCandidates.size() - 1; mentionNavigated = true; return true; }
             if (keyCode == 264) { mentionIdx = mentionIdx < mentionCandidates.size() - 1 ? mentionIdx + 1 : 0; mentionNavigated = true; return true; }
             if (keyCode == 257 || keyCode == 335) {
-
                 if (mentionNavigated) { insertMention(mentionCandidates.get(mentionIdx)); return true; }
             }
         }
@@ -906,7 +899,6 @@ public class ChatBubbleScreen extends ChatScreen {
         if (nav != null) {
             net.minecraft.client.gui.navigation.GuiNavigationPath path = super.getNavigationPath(nav);
             if (path == null && nav instanceof net.minecraft.client.gui.navigation.GuiNavigation.Tab) {
-
                 //#if MC >= 12100
                 if (this.getFocused() != chatField) {
                     this.blur();
@@ -1132,10 +1124,8 @@ public class ChatBubbleScreen extends ChatScreen {
                 return true;
             }
             if (quickChatPanel.visible) {
-
                 if (ChatQuickChatPanel.isInsideInput((int) mouseX, (int) mouseY, panelX, panelW, barTop,
                         ChatBubbleClientSetup.config().quickChatPhrases().size())) {
-
                     quickChatInput.setVisible(true);
                     setFocused(quickChatInput);
                     chatField.setFocused(false);
@@ -1223,7 +1213,6 @@ public class ChatBubbleScreen extends ChatScreen {
                     Util.getOperatingSystem().open(file); return true;
                 }
                 if (click.getAction() == ClickEvent.Action.OPEN_URL) {
-
                     String clickUrl = StyleCompat.clickValue(click);
                     if (clickUrl != null && (clickUrl.startsWith("http://") || clickUrl.startsWith("https://"))) {
                         handleTextClick(style);
@@ -1513,7 +1502,6 @@ public class ChatBubbleScreen extends ChatScreen {
             } else if (my >= menuY + CTX_ITEM_H * 2 + 4 && my <= menuY + CTX_ITEM_H * 3 + 4) {
                 toggleBlockedPlayer();
             } else if (my >= menuY + CTX_ITEM_H * 3 + 6 && my <= menuY + menuH) {
-
                 client.setScreen(new com.niuqu.chatbubble.ui.PlayerProfileScreen(this, name));
             }
         }
@@ -1660,7 +1648,6 @@ public class ChatBubbleScreen extends ChatScreen {
         //#endif
         g.disableScissor();
         g.getMatrices().pop();
-
     }
 
     private void renderTitleBar(DrawContext g, int mouseX, int mouseY, float panelAlpha) {
@@ -1803,7 +1790,6 @@ public class ChatBubbleScreen extends ChatScreen {
     }
 
     private void renderMessages(DrawContext g, int mouseX, int mouseY) {
-
         long epoch = layoutEpoch();
         int storeSize = ChatMessageStore.getMessages().size();
         boolean storeShrank = storeSize < lastStoreSize;
@@ -1822,7 +1808,6 @@ public class ChatBubbleScreen extends ChatScreen {
         if (whisperPartner != null) {
             messages = ChatMessageStore.getWhisperMessages(whisperPartner);
         } else {
-
             messages = com.niuqu.chatbubble.chat.GroupChannelState.filterMessages(
                 ChatMessageStore.getPublicMessages(),
                 com.niuqu.chatbubble.chat.GroupChannelState.active());
@@ -1978,7 +1963,6 @@ public class ChatBubbleScreen extends ChatScreen {
             g.getMatrices().push();
             g.getMatrices().translate(mDx, mDy, 0);
             if (mScale != 1f) {
-
                 float bs = Appearance.bubbleScale(textRenderer.fontHeight);
                 int zMaxW = panelW - Appearance.avatarSize() - PAD * 2 - BUBBLE_PAD_X * 2 - 16;
                 Integer cachedZW = msgMaxLineWCache.get(msg);
@@ -2234,7 +2218,6 @@ public class ChatBubbleScreen extends ChatScreen {
 
     private BracketCodec.ParseResult parseImages(ChatMessageStore.ChatMessage msg) {
         if (!ChatBubbleClientSetup.config().receiveImages()) {
-
             return new BracketCodec.ParseResult(
                 BracketCodec.toPlaceholderText(msg.content()), java.util.List.of());
         }
@@ -2372,7 +2355,6 @@ public class ChatBubbleScreen extends ChatScreen {
         Style fbP = findRootClickStyle(msg.content());
         int fgA = ChatBubbleTheme.alphaBlend(fg, (int)(255 * alpha));
         for (int li = 0; li < lines.size(); li++) {
-
             int textSX = bubbleX + (int)(BUBBLE_PAD_X * s);
             int textSY = bubbleY + (int)(BUBBLE_PAD_Y * s) + (int)(li * textRenderer.fontHeight * s);
             int beforeText = textSpans.size();
@@ -2715,7 +2697,6 @@ public class ChatBubbleScreen extends ChatScreen {
         }
 
         if (!clickable) {
-
             if (range == null) {
                 g.drawText(textRenderer, line, x, y, color, false);
                 return;
@@ -2804,7 +2785,6 @@ public class ChatBubbleScreen extends ChatScreen {
     }
 
     private Style findRootClickStyle(Text c) {
-
         Style s = c.getStyle();
         return s != null && s.getClickEvent() != null ? s : null;
     }
@@ -3012,7 +2992,6 @@ public class ChatBubbleScreen extends ChatScreen {
             color = (alpha << 24) | 0x00FF5555;
             text = Text.translatable("e33chat.upload.failed").getString();
         } else if (uploadBusyTicks > 0) {
-
             alpha = 200;
             color = (alpha << 24) | (c().toastText() & 0x00FFFFFF);
             text = Text.translatable("e33chat.upload.start").getString();
@@ -3062,7 +3041,6 @@ public class ChatBubbleScreen extends ChatScreen {
         textSelection.clear();
         sidebarScrollOffset = 0;
         sidebarMaxScroll = 0;
-
     }
 
     private void executeMenuAction(int action) {
@@ -3171,14 +3149,12 @@ public class ChatBubbleScreen extends ChatScreen {
     }
 
     static void drawTextureIcon(DrawContext g, Identifier tex, int x, int y, int size) {
-
         //#if MC < 12102
         RenderSystem.setShaderTexture(0, tex);
         RenderSystem.setShader(GameRenderer::getPositionTexProgram);
         RenderSystem.enableBlend();
         //#endif
         if (size < 16) {
-
             g.drawTexture(tex, x, y, size, size, 1.0F, 1.0F, 14, 14, 16, 16);
         } else {
             g.drawTexture(tex, x, y, 0, 0, size, size, size, size);
@@ -3290,7 +3266,6 @@ public class ChatBubbleScreen extends ChatScreen {
         String raw = chatField.getText().trim();
         if (raw.isEmpty()) return;
         if (raw.contains("[[CICode,url=file://")) {
-
             String localPath = extractLocalPath(raw);
             if (localPath == null || !new java.io.File(localPath).isFile()) {
                 ChatMessageStore.debugLog("[e33chat] upload skip | not a live file | raw=" + raw);
@@ -3343,7 +3318,6 @@ public class ChatBubbleScreen extends ChatScreen {
         boolean localBubble = !text.startsWith("/") || whisperTarget != null;
 
         if (replyTargetIndex >= 0) {
-
             if (localBubble || groupTarget != null) {
                 ChatMessageStore.ChatMessage target = ChatMessageStore.getMessageAt(replyTargetIndex);
                 if (target != null) {

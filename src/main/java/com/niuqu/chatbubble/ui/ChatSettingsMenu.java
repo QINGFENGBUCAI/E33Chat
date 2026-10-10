@@ -120,13 +120,11 @@ public class ChatSettingsMenu {
         if (row >= 0 && row < COUNT) {
             if (row == CLEAR_ROW) {
                 if (clearArmed) {
-
                     resetClearArmed();
                     requestClose();
                     return ACTION_CLEAR;
                 }
                 if (hasHistory != null && !hasHistory.getAsBoolean()) {
-
                     return ACTION_CLEAR_EMPTY;
                 }
 

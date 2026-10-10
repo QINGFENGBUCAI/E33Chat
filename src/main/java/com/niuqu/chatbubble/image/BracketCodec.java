@@ -11,7 +11,6 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
 public final class BracketCodec {
-
     private static final Pattern BRACKET = Pattern.compile(
         "\\[\\[(ChatUpgrade|CICode|E33Emote),([^\\]]+)\\]\\]", Pattern.CASE_INSENSITIVE);
 

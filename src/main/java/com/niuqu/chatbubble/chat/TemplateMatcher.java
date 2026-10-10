@@ -9,7 +9,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class TemplateMatcher {
-
     public interface NameResolver { boolean isKnown(String name); }
 
     public record CompiledTemplate(String raw, Pattern pattern, boolean whisper,
@@ -74,7 +73,6 @@ public class TemplateMatcher {
         for (Token t : tokens) {
             if (t.field == null) { regex.append(Pattern.quote(t.literal)); continue; }
             switch (t.field) {
-
                 case CONTENT -> regex.append("(?s:(?<content>.*?))");
 
                 case SEP -> regex.append("(?:\\s*>>\\s*|\\s*[:：»>]\\s*|\\s+)");
@@ -88,7 +86,6 @@ public class TemplateMatcher {
             return CompileResult.ok(new CompiledTemplate(raw, Pattern.compile(regex.toString()), whisper,
                 hasPrefix, hasDisp, hasSender, hasTarget, external, unknown));
         } catch (java.util.regex.PatternSyntaxException e) {
-
             return CompileResult.fail("模板正则编译失败: " + e.getMessage());
         }
     }
@@ -121,7 +118,6 @@ public class TemplateMatcher {
                 return Optional.of(withVerified(r, r.sender()));
             if (r.target() != null && resolver.isKnown(r.target()))
                 return Optional.of(withVerified(r, r.target()));
-
         }
         for (CompiledTemplate t : chatTpls) {
             TemplateResult r = tryMatch(text, t);

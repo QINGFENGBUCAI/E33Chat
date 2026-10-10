@@ -19,7 +19,6 @@ import java.util.UUID;
 
 @Mixin(value = net.minecraft.client.network.message.MessageHandler.class, priority = 500)
 public class ChatListenerMixin {
-
     private static Text extractDecoratedName(Text fullLine, String contentStr,
                                                   String rawName, Text fallback) {
         return com.niuqu.chatbubble.chat.capture.ChatPipeline.extractDecoratedName(fullLine, contentStr, rawName, fallback);

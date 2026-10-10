@@ -244,7 +244,6 @@ public final class GuiCompat {
             //#endif
             //#endif
         } catch (RuntimeException e) {
-
             try {
                 var tr = MinecraftClient.getInstance().textRenderer;
                 StringBuilder sb = new StringBuilder();

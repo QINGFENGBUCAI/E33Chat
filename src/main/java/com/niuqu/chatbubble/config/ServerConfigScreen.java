@@ -205,7 +205,6 @@ public class ServerConfigScreen extends Screen {
     }
 
     private void buildTemplateRows(List<String> list, boolean chat) {
-
         for (int i = 0; i < list.size(); i++) {
             int idx = i;
             Text label = Text.translatable("e33chat.server.template_n", i + 1);
@@ -318,7 +317,6 @@ public class ServerConfigScreen extends Screen {
     private void generateFromMessage() {
         String inferred = TemplateMatcher.inferFromMessage(genText, knownNames()).orElse(null);
         if (inferred == null) {
-
             genError = Text.translatable("e33chat.server.gen_failed").getString()
                 + "  " + Text.translatable("e33chat.server.gen_howto").getString();
             return;
@@ -456,7 +454,6 @@ public class ServerConfigScreen extends Screen {
 
     @Override
     protected void init() {
-
         if (!hudHidden) {
             com.niuqu.chatbubble.render.HudVisibility.push();
             hudHidden = true;
@@ -676,7 +673,6 @@ public class ServerConfigScreen extends Screen {
         int y = viewTop() - rightPane.offset();
         for (Row row : rows) {
             if (row.title()) {
-
                 Text label = row.label();
                 g.drawText(textRenderer, label, optLabelX(), y + 11, c().configLabel(), false);
                 int lineX = optLabelX() + textRenderer.getWidth(label) + 8;
@@ -729,7 +725,6 @@ public class ServerConfigScreen extends Screen {
                 width / 2 + 112, height - 26, c().configLabel(), false);
 
         if (error != null) {
-
             g.drawText(textRenderer, Text.literal(truncate(error, rightAreaW())),
                 optLabelX(), viewBottom() - 12, 0xFFFF4444, false);
         }
@@ -741,7 +736,6 @@ public class ServerConfigScreen extends Screen {
     //#if MC >= 12002
     @Override
     public void renderBackground(DrawContext g, int mouseX, int mouseY, float partialTick) {
-
     }
     //#else
     //$$ @Override

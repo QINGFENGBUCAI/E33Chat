@@ -14,7 +14,6 @@ import java.io.FileInputStream;
 import java.nio.file.Path;
 
 public final class PanelBackground {
-
     private static final Identifier ID = Identifier.of("e33chat", "panel_bg_custom");
 
     private static final Object LOCK = new Object();
@@ -132,7 +131,6 @@ public final class PanelBackground {
     }
 
     public record Crop(float centerX, float centerY, float zoom) {
-
         public static final Crop DEFAULT = new Crop(0.5f, 0.5f, 1f);
     }
 

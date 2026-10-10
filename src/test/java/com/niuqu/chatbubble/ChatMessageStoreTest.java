@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ChatMessageStoreTest {
-
     @BeforeEach
     void resetState() throws Exception {
         var echoes = ChatMessageStore.class.getDeclaredField("pendingEchoes");
@@ -110,7 +109,6 @@ class ChatMessageStoreTest {
     }
 
     @Test void extractWhisper_firstSeparatorNotLast() {
-
         assertEquals("a: b", ChatMessageStore.extractWhisperContent("Steve: a: b", null));
         assertEquals("a：b", ChatMessageStore.extractWhisperContent("Steve：a：b", null));
     }
@@ -186,7 +184,6 @@ class ChatMessageStoreTest {
     }
 
     @Test void whisperName_zhOutgoing() {
-
         var line = net.minecraft.text.Text.literal("你悄悄地对[称号]E33EPUS说：hi");
         assertEquals("E33EPUS", ChatMessageStore.extractWhisperDisplayName(line, net.minecraft.text.Text.literal("E33EPUS")).getString());
     }
@@ -197,7 +194,6 @@ class ChatMessageStoreTest {
     }
 
     @Test void whisperName_enOutgoing() {
-
         var line = net.minecraft.text.Text.literal("You whisper to [VIP]Steve: hi");
         assertEquals("Steve", ChatMessageStore.extractWhisperDisplayName(line, net.minecraft.text.Text.literal("Steve")).getString());
     }
@@ -208,7 +204,6 @@ class ChatMessageStoreTest {
     }
 
     @Test void whisperName_incomingResetsVanillaItalic() {
-
         var line = net.minecraft.text.Text.literal("[称号]E33EPUS悄悄地对你说：hi")
             .fillStyle(net.minecraft.text.Style.EMPTY.withItalic(true));
         var name = ChatMessageStore.extractWhisperDisplayName(line,
@@ -226,7 +221,6 @@ class ChatMessageStoreTest {
     }
 
     @Test void whisperName_zhOutgoingPluginDecoratedSender() {
-
         var line = net.minecraft.text.Text.literal("[称号]E33EPUS悄悄地对Steve说：hi");
         assertEquals("[称号]E33EPUS", ChatMessageStore.extractWhisperDisplayName(line, net.minecraft.text.Text.literal("E33EPUS")).getString());
     }
@@ -237,7 +231,6 @@ class ChatMessageStoreTest {
     }
 
     @Test void whisperName_zhOutgoingVanillaStillFallsBack() {
-
         var line = net.minecraft.text.Text.literal("你悄悄地对[称号]E33EPUS说：hi");
         assertEquals("E33EPUS", ChatMessageStore.extractWhisperDisplayName(line, net.minecraft.text.Text.literal("E33EPUS")).getString());
     }
@@ -351,7 +344,6 @@ class ChatMessageStoreTest {
     }
 
     @Test void jsonl_styledSenderStylePreserved() {
-
         org.junit.jupiter.api.Assumptions.assumeTrue(
             net.minecraft.client.MinecraftClient.getInstance() != null,
             "styled serialization requires a running Minecraft client");
@@ -369,7 +361,6 @@ class ChatMessageStoreTest {
     }
 
     @Test void jsonl_clickPreserved() {
-
         org.junit.jupiter.api.Assumptions.assumeTrue(
             net.minecraft.client.MinecraftClient.getInstance() != null,
             "click/hover serialization requires a running Minecraft client");
@@ -537,7 +528,6 @@ class ChatMessageStoreTest {
     }
 
     @Test void blocked_senderNameFallbackHits() {
-
         var decorated = net.minecraft.text.Text.literal("[VIP]Steve");
         assertTrue(ChatMessageStore.isPlayerBlocked(null, decorated, List.of("[VIP]Steve")));
         assertTrue(ChatMessageStore.isPlayerBlocked("Alex", decorated, List.of("[vip]steve")));

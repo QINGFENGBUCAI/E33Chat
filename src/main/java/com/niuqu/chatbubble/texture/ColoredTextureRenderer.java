@@ -21,7 +21,6 @@ import org.joml.Matrix4f;
 import net.minecraft.util.Identifier;
 
 public final class ColoredTextureRenderer {
-
     private ColoredTextureRenderer() {}
 
     public static void drawWithAlpha(DrawContext g, Identifier tex,

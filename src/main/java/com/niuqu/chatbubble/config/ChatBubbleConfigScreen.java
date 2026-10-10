@@ -490,7 +490,6 @@ public class ChatBubbleConfigScreen extends Screen {
     };
 
     private void buildCats() {
-
         cats = new ArrayList<>();
         for (int i = 0; i < CAT_KEYS.length; i++) {
             List<Opt> opts = new ArrayList<>();
@@ -588,7 +587,6 @@ public class ChatBubbleConfigScreen extends Screen {
 
     @Override
     protected void init() {
-
         var cfgNow = ChatBubbleClientSetup.config();
         panelBgImage = cfgNow.panelBgImage() != null ? cfgNow.panelBgImage() : "";
         panelBgOpacity = cfgNow.panelBgOpacity() != null ? cfgNow.panelBgOpacity() : 100;
@@ -841,7 +839,6 @@ public class ChatBubbleConfigScreen extends Screen {
 
     @Override
     public void render(DrawContext g, int mouseX, int mouseY, float partialTick) {
-
         com.niuqu.chatbubble.texture.ColoredTextureRenderer.drawWithAlpha(g,
             com.niuqu.chatbubble.texture.UiTextureManager.rl(com.niuqu.chatbubble.texture.UiElement.CONFIG_BG, ChatBubbleTheme.DARK),
             0, 0, width, height, 0xC0 / 255f);
@@ -995,7 +992,6 @@ public class ChatBubbleConfigScreen extends Screen {
     //#if MC >= 12002
     @Override
     public void renderBackground(DrawContext g, int mouseX, int mouseY, float partialTick) {
-
     }
     //#else
     //$$ @Override

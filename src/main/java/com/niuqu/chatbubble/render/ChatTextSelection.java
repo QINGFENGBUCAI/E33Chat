@@ -3,7 +3,6 @@ package com.niuqu.chatbubble.render;
 import java.util.List;
 
 public final class ChatTextSelection {
-
     private static final int SELECTION_BG = 0xE02D6FD6;
     private static final int SELECTION_FG = 0xFFFFFFFF;
 

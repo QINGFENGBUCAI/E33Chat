@@ -99,7 +99,6 @@ public record HistoryPayload(List<HistoryPayload.HistoryEntry> entries)
                 if (e != null) rows.add(e);
             }
             if (rows.size() < entries.size()) {
-
                 com.niuqu.chatbubble.E33Log.warn("[e33chat] History packet: dropped {} null row(s) of {}",
                     entries.size() - rows.size(), entries.size());
             }

@@ -85,7 +85,6 @@ public final class MediaClient {
     public static void handleResponse(MediaResponsePayload payload) {
         String id = payload.mediaId();
         if (payload.totalChunks() == 1 && payload.chunk().length == 0) {
-
             failFetch(id, "media not found: " + id);
             return;
         }
@@ -201,7 +200,6 @@ public final class MediaClient {
             E33Log.info("[e33chat] server media fetch {} timed out after {}s", mediaId, TIMEOUT_SECONDS);
             return null;
         } catch (Exception e) {
-
             FETCHES.remove(mediaId, done);
             FETCH_BUFFERS.remove(mediaId);
             FETCH_COUNTS.remove(mediaId);

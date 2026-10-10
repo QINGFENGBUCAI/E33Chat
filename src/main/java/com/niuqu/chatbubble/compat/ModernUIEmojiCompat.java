@@ -9,7 +9,6 @@ import java.util.regex.Pattern;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 
 public final class ModernUIEmojiCompat {
-
     private static final Pattern SHORTCODE_PATTERN = Pattern.compile(":[A-Za-z0-9_+\\-]+:");
 
     private static boolean resolved;
@@ -29,7 +28,6 @@ public final class ModernUIEmojiCompat {
                 Field enabledField = clientClass.getField("sEmojiShortcodes");
                 enabledFlag = enabledField.getBoolean(null);
             } catch (NoSuchFieldException e) {
-
                 enabledFlag = true;
             }
             Class<?> managerClass = Class.forName("icyllis.modernui.mc.FontResourceManager");

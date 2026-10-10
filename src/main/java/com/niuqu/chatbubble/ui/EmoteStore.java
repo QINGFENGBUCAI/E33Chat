@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 
 public final class EmoteStore {
-
     public static final int EMOTE_MAX = 32;
     private static final List<File> emotes = new ArrayList<>();
     private static final Map<File, Identifier> textures = new HashMap<>();
@@ -45,7 +44,6 @@ public final class EmoteStore {
         File d = dir();
         File[] files = d.listFiles();
         if (files != null) {
-
             for (File f : files) {
                 if (isImage(f)) emotes.add(f);
             }

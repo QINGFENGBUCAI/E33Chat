@@ -31,7 +31,6 @@ import java.util.Set;
 import java.util.UUID;
 
 public final class GroupManager {
-
     public static final int MAX_NAME_LEN = 12;
 
     static final long SAY_COOLDOWN_MS = 500;

@@ -95,7 +95,6 @@ public final class ChatClassifier {
             }
             var player = MinecraftClient.getInstance().player;
             if (player != null && args.length >= 2) {
-
                 String partner = argAsComponent(args[0]).getString().replaceAll("§.", "").trim();
                 Text content = argAsComponent(args[1]);
                 String own = player.getName().getString();

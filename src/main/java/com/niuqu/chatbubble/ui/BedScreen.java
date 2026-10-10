@@ -12,7 +12,6 @@ import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.text.Text;
 
 public class BedScreen extends Screen {
-
     private static Screen screenBeforeSleep;
 
     public BedScreen() {

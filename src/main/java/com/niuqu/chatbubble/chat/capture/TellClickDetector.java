@@ -60,7 +60,6 @@ public final class TellClickDetector {
         }
 
         if (sender != null) {
-
             String clicked = clickedText[0].replaceAll("§.", "").trim();
             boolean clickedIsName = false;
             for (String cand : ChatClassifier.nameCandidates(sender)) {

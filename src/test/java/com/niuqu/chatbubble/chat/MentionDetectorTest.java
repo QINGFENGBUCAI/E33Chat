@@ -4,10 +4,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.Test;
 
 public class MentionDetectorTest {
-
     @Test
     public void messageStartingWithPlayerName_requireAtOff_doesNotCrash() {
-
         assertTrue(MentionDetector.isMentioned("Steve hello", "steve", false, null));
     }
 
@@ -18,13 +16,11 @@ public class MentionDetectorTest {
 
     @Test
     public void nameInsideLongerWord_notMentioned() {
-
         assertFalse(MentionDetector.isMentioned("xsteve hello", "steve", false, null));
     }
 
     @Test
     public void nameWithSuffixLetter_notMentioned() {
-
         assertFalse(MentionDetector.isMentioned("stevex hello", "steve", false, null));
     }
 

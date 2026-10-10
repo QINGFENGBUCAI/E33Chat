@@ -10,7 +10,6 @@ import java.time.Duration;
 import java.util.UUID;
 
 public final class ImageUploader {
-
     public static final String DEFAULT_URL = "https://uguu.se/upload";
     public static final String DEFAULT_FIELD = "files[]";
 

@@ -16,7 +16,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 public class ChatMessageStore {
-
     public interface MessageEffectObserver {
         void onMentionOrQuote(Text content, SenderMeta meta, int index, String replySender);
         void onWhisperReceived(UUID senderUUID, Text senderName, Text content, int index);
@@ -288,7 +287,6 @@ public class ChatMessageStore {
         String whisperPartner,
         String group
     ) {
-
         public ChatMessage withSenderName(Text newSenderName) {
             return new ChatMessage(senderUUID, newSenderName, content, time,
                 isOwn, isSystem, replyContent, replySender, messageHash, duplicateCount,
@@ -370,7 +368,6 @@ public class ChatMessageStore {
             ChatMessage last = messages.get(messages.size() - 1);
             if (!last.isSystem() && isSameSender(last, senderName, rawPlayerName)
                 && last.content().getString().equals(content.getString())) {
-
                 EchoTracker.PendingMeta pending = EchoTracker.removePendingMeta(messageHash);
                 if (pending != null && System.currentTimeMillis() - pending.createdAt() > 10_000) {
                     pending = null;
@@ -780,7 +777,6 @@ public class ChatMessageStore {
         if (isRefinement || hasPendingMessages) {
             hasUnreadMentionFlag = false;
             if (ChatBubbleClientSetup.config().chatHistoryEnabled() && isWorldSpecific(currentWorldKey)) {
-
                 List<ChatMessage> early = new ArrayList<>(messages);
 
                 Map<String, Integer> skipKeys = usableSkips(backlogKeys, mergeCountsOf(early));
@@ -870,7 +866,6 @@ public class ChatMessageStore {
         long gen = historyGeneration;
         File f = getHistoryFile(worldKey);
         SAVE_EXECUTOR.execute(() -> {
-
             if (gen != historyGeneration) return;
             f.getParentFile().mkdirs();
 
@@ -976,7 +971,6 @@ public class ChatMessageStore {
     }
 
     private static void loadMessages(String worldKey, Map<String, Integer> skipCounts) {
-
         skipCounts = skipCounts.isEmpty() ? java.util.Collections.<String, Integer>emptyMap()
             : new HashMap<>(skipCounts);
         File f = getHistoryFile(worldKey);
@@ -1153,7 +1147,6 @@ public class ChatMessageStore {
             }
         }
         if (!quoteContent.isEmpty()) {
-
             long cutoff = System.currentTimeMillis() - 10_000;
             EchoTracker.prunePendingMetas(cutoff);
             EchoTracker.putPendingMeta(messageHash, senderUUID, quoteSender, quoteContent, mentionTargets);

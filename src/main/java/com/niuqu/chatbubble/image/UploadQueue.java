@@ -7,12 +7,10 @@ import java.util.ArrayDeque;
 import net.minecraft.client.MinecraftClient;
 
 public final class UploadQueue {
-
     public record UploadJob(File file, byte[] bytes, String fileName,
                             boolean emote, String pendingText) {}
 
     public interface Callbacks {
-
         void onBusyStart();
 
         void onIdle();
@@ -64,7 +62,6 @@ public final class UploadQueue {
                 if (job.file() != null) {
                     LocalImageSource.Prep rep = LocalImageSource.prepare(job.file());
                     if (rep instanceof LocalImageSource.Prep.Rejected rejected) {
-
                         E33Log.info("[e33chat] upload rejected (animated over budget: {}) | file={}",
                             rejected.reason(), job.file().getName());
                         AnimatedImageLoader.OverBudget reason = rejected.reason();
@@ -91,7 +88,6 @@ public final class UploadQueue {
                 }
                 finish(job, prep);
             } catch (Throwable t) {
-
                 E33Log.error("[e33chat] upload worker crashed", t);
                 MinecraftClient.getInstance().execute(() -> {
                     running = false;
@@ -104,7 +100,6 @@ public final class UploadQueue {
     }
 
     private void finish(UploadJob job, LocalImageSource.PreparedImage prep) {
-
         String serverUrl = MediaClient.serverEnabled()
             ? MediaClient.upload(prep.bytes(), prep.contentType())
             : null;
@@ -128,10 +123,8 @@ public final class UploadQueue {
 
             String nameAttr = "name=" + prep.fileName();
             if (job.emote()) {
-
                 cb.onEmoteSent("[[E33Emote,url=" + url + "," + nameAttr + "]]");
             } else if (job.pendingText() != null) {
-
                 String finalText = job.pendingText().replaceFirst(
                     "\\[\\[CICode,url=file://[^]]*]]", "[[CICode,url=" + url + "," + nameAttr + "]]");
                 cb.onSendText(finalText);

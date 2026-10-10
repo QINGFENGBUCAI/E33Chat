@@ -6,7 +6,6 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ImageUploaderTest {
-
     @Test
     void multipartContainsExtraFieldsThenFilePart() {
         byte[] body = ImageUploader.buildMultipart(

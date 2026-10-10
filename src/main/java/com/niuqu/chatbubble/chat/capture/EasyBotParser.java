@@ -40,7 +40,6 @@ public final class EasyBotParser {
 
         Matcher colon = RELAY_COLON_FORMAT.matcher(text);
         if (colon.matches()) {
-
             if (isSystemLikeLabel(colon.group(1))) return null;
             String colonContent = colon.group(3);
             if (colonContent != null && colonContent.stripLeading().startsWith("/")) return null;
@@ -104,7 +103,6 @@ public final class EasyBotParser {
                 }
             }
         } catch (Throwable t) {
-
         }
         UUID seen = ChatMessageStore.findSeenUuid(name);
         return seen != null ? seen : new UUID(0, 0);
@@ -121,7 +119,6 @@ public final class EasyBotParser {
                 }
             }
         } catch (Throwable t) {
-
             return false;
         }
         return false;

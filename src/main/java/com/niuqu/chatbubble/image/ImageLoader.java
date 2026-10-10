@@ -87,7 +87,6 @@ public final class ImageLoader {
             entry = CACHE.computeIfAbsent(url, ImageLoader::startLoad);
         } else if (entry.state() == ImageEntry.State.FAILED
                 && System.currentTimeMillis() - entry.failedAtMillis() > FAILED_RETRY_MS) {
-
             ImageEntry fresh = new ImageEntry(url);
             if (CACHE.replace(url, entry, fresh)) {
                 startLoadInto(url, fresh);
@@ -132,7 +131,6 @@ public final class ImageLoader {
         if (url == null || url.isBlank()) return false;
         String lower = url.toLowerCase();
         if (lower.startsWith("e33chat://")) {
-
             return lower.startsWith("e33chat://media/")
                 && com.niuqu.chatbubble.server.DiskMediaStore.isValidMediaId(
                     url.substring("e33chat://media/".length()));
@@ -173,7 +171,6 @@ public final class ImageLoader {
             synchronized (PENDING) {
                 if (PENDING.size() < QUEUE_CAP) {
                     PENDING.addLast(entry);
-
                 } else {
                     entry.markFailed("rate limited");
                 }
@@ -215,7 +212,6 @@ public final class ImageLoader {
         CompletableFuture.runAsync(() -> fetchAndDecode(url, entry), EXEC)
             .orTimeout(REQUEST_TIMEOUT_SECONDS + 5, TimeUnit.SECONDS)
             .exceptionally(t -> {
-
                 E33Log.info("[e33chat] image fetch {} -> future timeout after {}s (download may still finish)",
                     url, REQUEST_TIMEOUT_SECONDS + 5);
                 return null;

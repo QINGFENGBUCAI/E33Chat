@@ -4,7 +4,6 @@ import com.niuqu.chatbubble.E33Log;
 import java.lang.reflect.Method;
 
 public final class IMBlockerCompat {
-
     private static boolean resolved = false;
     private static boolean available = false;
     private static Method setPreferredEnglishState;

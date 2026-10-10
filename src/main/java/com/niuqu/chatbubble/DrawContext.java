@@ -136,11 +136,9 @@ public class DrawContext extends DrawableHelper {
     }
 
     public void drawHoverEvent(TextRenderer renderer, net.minecraft.text.Style style, int x, int y) {
-
     }
 
     public void setTooltipForNextFrame(net.minecraft.text.Text text, int x, int y) {
-
     }
 }
 //#endif
