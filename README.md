@@ -7,11 +7,11 @@
 </p>
 
 <p align="center">
-  <img alt="MC" src="https://img.shields.io/badge/MC-1.20.1--1.21.1-green">
-  <img alt="Loader" src="https://img.shields.io/badge/Loader-Forge%20%7C%20NeoForge%20%7C%20Fabric-orange">
+  <img alt="MC" src="https://img.shields.io/badge/MC-1.16.5--26.3-green">
+  <img alt="Loader" src="https://img.shields.io/badge/Loader-Fabric-orange">
   <img alt="Side" src="https://img.shields.io/badge/Side-Client%20required,%20server%20optional-blue">
-  <img alt="Java" src="https://img.shields.io/badge/Java-17%2B%20%7C%2021%2B-yellow">
-  <img alt="Version" src="https://img.shields.io/badge/Version-2.3.6-informational">
+  <img alt="Java" src="https://img.shields.io/badge/Java-17%2B%20%7C%2021%2B%20%7C%2025-yellow">
+  <img alt="Version" src="https://img.shields.io/badge/Version-2.4.20-informational">
   <img alt="License" src="https://img.shields.io/badge/License-MIT-brightgreen">
 </p>
 
@@ -49,19 +49,19 @@ E33Chat 是一款聊天增强模组，把原版聊天 HUD 重做成聊天 APP �
 
 | 依赖 | 类型 | 说明 |
 |---|---|---|
-| Minecraft | 必需 | 1.20.1 (Forge) / 1.21.1 (NeoForge / Fabric) |
-| Java | 必需 | 17+ (Forge 1.20.1) / 21+ (1.21.1) |
+| Minecraft | 必需 | 1.16.5 ~ 26.3（22 个 Fabric 目标，按版本下载对应 JAR）|
+| Java | 必需 | 17+（1.16.5~1.20.1）/ 21+（1.21.x）/ 25（26.x）|
 | Forge | 按平台 | 47.0.0+ (1.20.1) |
 | NeoForge | 按平台 | 21.x (1.21.1) |
-| Fabric Loader | 按平台 | 0.16.0+ (1.21.1) |
-| Fabric API | 按平台 | 任意兼容版本 (1.21.1) |
+| Fabric Loader | 必需 | 0.16.0+（26.x 需 0.19.0+）|
+| Fabric API | 必需 | 任意兼容版本 |
 | CustomSkinLoader | 可选 | 显示离线玩家头像 |
 
 ---
 
 ## 安装方法
 
-1. 从 [Releases](https://github.com/E33EPUS/E33Chat/releases) 下载对应平台的 JAR
+1. 从 [Releases](https://github.com/QINGFENGBUCAI/E33Chat/releases) 下载对应平台的 JAR
 2. 放入 `.minecraft/mods/` 目录（与你的加载器匹配，勿混装多平台 JAR）
 3. 启动游戏
 
@@ -260,7 +260,7 @@ E33Chat 重做了聊天 HUD 的「谁说的」判定层，目标是把玩家消�
 
 ## 已知限制
 
-1. 仅支持 Forge 1.20.1、NeoForge 1.21.1、Fabric 1.21.1
+1. 仅支持 Fabric（1.16.5 ~ 26.3 共 22 个版本，各版本 JAR 与 Minecraft 版本一一对应）
 2. 昵称与真名毫无关联、且插件既没挂「点击私聊」也没同步 Tab 名时，消息显示为系统灰字（模板也救不了——名字门槛与守卫共享同一解析源）
 3. 服务器把玩家消息转成与聊天同构的广播格式（如 `系统>>Steve: xxx`）时，纯客户端无法可靠识别
 4. 名字与内容之间纯空格、无任何分隔符的聊天格式，无法识别玩家
@@ -351,7 +351,7 @@ E33Chat 重做了聊天 HUD 的「谁说的」判定层，目标是把玩家消�
 
 1. 确认 Minecraft 版本与模组版本匹配
 2. 确认模组加载器已正确安装
-3. 确认没有混装多个平台的 JAR（如同时装 Forge 版和 Fabric 版）
+3. 确认 JAR 与 Minecraft 版本匹配（不同版本的 JAR 不要混装）
 4. 备份 `config/e33chat-client.toml`，删除测试是否配置损坏
 5. 只保留 E33Chat 排查模组冲突
 6. 检查是否使用了自定义字体或资源包
@@ -362,31 +362,26 @@ E33Chat 重做了聊天 HUD 的「谁说的」判定层，目标是把玩家消�
 
 ## 开发与构建
 
+本仓库用预处理器让 22 个 Fabric 目标（1.16.5 ~ 26.3）共用一份源码（`versions/` 下每个目标一个子项目，26.x 走 Mojang 官方映射）。
+
 ```bash
-git clone https://github.com/E33EPUS/E33Chat.git
-cd E33Chat
-
-# Forge 1.20.1（默认分支）
+# 构建全部 22 个版本
 ./gradlew build
 
-# NeoForge 1.21.1
-git checkout Neoforge-1.21.1
-./gradlew build
-
-# Fabric 1.21.1
-git checkout Fabric-1.21.1
-./gradlew build
+# 只构建某一个版本（产物在各版本的 build/libs/ 下）
+./gradlew :1.21.1-fabric:build
+./gradlew :26.3-fabric:build
 ```
 
-- Forge 1.20.1：Java 17+，支持 `--offline`
-- NeoForge 1.21.1 / Fabric 1.21.1：Java 21+
-- 运行测试：`./gradlew cleanTest test --offline -PrunTests`
+- Java：JDK 25 运行 Gradle（旧版本目标通过 `options.release` 产出对应字节码）
+- 单元测试仅在主版本（1.21.1）上运行：`./gradlew :1.21.1-fabric:test`
+- 接入新版本的流程与注意事项见 [docs/VERSIONING.md](docs/VERSIONING.md)
 
 ---
 
 ## 问题反馈
 
-到 [Issues](https://github.com/E33EPUS/E33Chat/issues) 提交，尽量提供：
+到 [Issues](https://github.com/QINGFENGBUCAI/E33Chat/issues) 提交，尽量提供：
 
 - E33Chat 版本 + Minecraft 版本 + 模组加载器版本
 - 其他聊天相关模组列表

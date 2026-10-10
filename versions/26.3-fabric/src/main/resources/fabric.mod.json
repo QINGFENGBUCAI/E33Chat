@@ -27,6 +27,10 @@
       "environment": "client"
     },
     {
+      "config": "e33chat.client.optional.mixins.json",
+      "environment": "client"
+    },
+    {
       "config": "e33chat.server.mixins.json"
     }
   ],
