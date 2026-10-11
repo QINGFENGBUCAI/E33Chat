@@ -1,5 +1,6 @@
 package com.niuqu.chatbubble.mixin;
 
+//#if MC >= 11900
 import com.niuqu.chatbubble.ChatBubbleMod;
 import com.mojang.brigadier.ParseResults;
 import net.minecraft.server.command.CommandManager;
@@ -22,3 +23,11 @@ public class CommandManagerMixin {
         ChatBubbleMod.consumePrivateMessageQuote(parseResults, command);
     }
 }
+//#else
+//$$ import net.minecraft.server.command.CommandManager;
+//$$ import org.spongepowered.asm.mixin.Mixin;
+//$$
+//$$ @Mixin(CommandManager.class)
+//$$ public class CommandManagerMixin {
+//$$ }
+//#endif

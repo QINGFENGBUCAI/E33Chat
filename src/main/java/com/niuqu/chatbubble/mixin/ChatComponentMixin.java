@@ -52,7 +52,7 @@ public class ChatComponentMixin {
     }
     //#else
     //#if MC >= 12111
-    // 1.21.11: ChatHud.render 加了 TextRenderer 与一个 boolean（7 参）
+
     @Inject(method = "render", at = @At("HEAD"), cancellable = true)
     private void onRender(DrawContext context, TextRenderer textRenderer, int tickDelta, int mouseX, int mouseY,
                           boolean focused, boolean unread, CallbackInfo ci) {
@@ -76,6 +76,8 @@ public class ChatComponentMixin {
         }
     }
     //#else
+    //#if MC >= 12100
+
     @Inject(method = "render", at = @At("HEAD"), cancellable = true)
     private void onRender(DrawContext context, int tickDelta, int mouseX, int mouseY,
                           boolean focused, CallbackInfo ci) {
@@ -98,6 +100,76 @@ public class ChatComponentMixin {
             context.getMatrices().pop();
         }
     }
+    //#else
+    //#if MC >= 12000
+
+    @Inject(method = "render", at = @At("HEAD"), cancellable = true)
+    private void onRender(DrawContext context, int tickDelta, int mouseX, int mouseY, CallbackInfo ci) {
+        e33chat$shifted = false;
+        if (ChatBubbleClientSetup.config().enabled()) {
+            if (MinecraftClient.getInstance().currentScreen instanceof ChatBubbleScreen) {
+                ci.cancel();
+                return;
+            }
+            context.getMatrices().push();
+            context.getMatrices().translate(0, -8, 0);
+            e33chat$shifted = true;
+        }
+    }
+
+    @Inject(method = "render", at = @At("RETURN"))
+    private void onRenderReturn(DrawContext context, int tickDelta, int mouseX, int mouseY, CallbackInfo ci) {
+        if (e33chat$shifted) {
+            context.getMatrices().pop();
+        }
+    }
+    //#else
+
+    //#if MC >= 11903
+    @Inject(method = "render", at = @At("HEAD"), cancellable = true)
+    private void onRender(net.minecraft.client.util.math.MatrixStack matrices, int tickDelta, int mouseX, int mouseY, CallbackInfo ci) {
+        e33chat$shifted = false;
+        if (ChatBubbleClientSetup.config().enabled()) {
+            if (MinecraftClient.getInstance().currentScreen instanceof ChatBubbleScreen) {
+                ci.cancel();
+                return;
+            }
+            matrices.push();
+            matrices.translate(0, -8, 0);
+            e33chat$shifted = true;
+        }
+    }
+
+    @Inject(method = "render", at = @At("RETURN"))
+    private void onRenderReturn(net.minecraft.client.util.math.MatrixStack matrices, int tickDelta, int mouseX, int mouseY, CallbackInfo ci) {
+        if (e33chat$shifted) {
+            matrices.pop();
+        }
+    }
+    //#else
+    @Inject(method = "render", at = @At("HEAD"), cancellable = true)
+    private void onRender(net.minecraft.client.util.math.MatrixStack matrices, int tickDelta, CallbackInfo ci) {
+        e33chat$shifted = false;
+        if (ChatBubbleClientSetup.config().enabled()) {
+            if (MinecraftClient.getInstance().currentScreen instanceof ChatBubbleScreen) {
+                ci.cancel();
+                return;
+            }
+            matrices.push();
+            matrices.translate(0, -8, 0);
+            e33chat$shifted = true;
+        }
+    }
+
+    @Inject(method = "render", at = @At("RETURN"))
+    private void onRenderReturn(net.minecraft.client.util.math.MatrixStack matrices, int tickDelta, CallbackInfo ci) {
+        if (e33chat$shifted) {
+            matrices.pop();
+        }
+    }
+    //#endif
+    //#endif
+    //#endif
     //#endif
     //#endif
 

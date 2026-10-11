@@ -427,6 +427,11 @@ public class ChatMessageStore {
 
         if (!isSystem && senderUUID != null && !senderUUID.equals(new UUID(0, 0)))
             rememberPlayer(senderUUID, rawPlayerName, senderName.getString());
+        // 皮肤预热入队（并发队列，主线程 tick 消费）：面板关闭期间玩家聊天、
+        // 随后下线时皮肤也能进缓存，头像不再退化为默认皮肤
+        if (!isSystem && senderUUID != null && !senderUUID.equals(new UUID(0, 0)))
+            com.niuqu.chatbubble.render.SkinResolver.enqueuePrewarm(senderUUID,
+                rawPlayerName != null && !rawPlayerName.isEmpty() ? rawPlayerName : senderName.getString());
 
         while (messages.size() > MAX)
             messages.remove(0);

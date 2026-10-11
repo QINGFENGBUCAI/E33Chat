@@ -957,8 +957,7 @@ public class ChatBubbleScreen extends ChatScreen {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         //#if MC >= 260300
-        // 26.3 鼠标按钮改 HID 编号（左键=1）：归一成 GLFW 风格，本方法既有的
-        // button == 0 判断原样工作；传回原版 widget 时由 InputCompat 逆换算
+
         button = com.niuqu.chatbubble.compat.InputCompat.glfwButton(button);
         //#endif
 
@@ -2179,6 +2178,17 @@ public class ChatBubbleScreen extends ChatScreen {
         return !MessageGrouping.isSameGroup(prev, msg);
     }
 
+    /**
+     * 系统广播解析出的「系统」发送者（假人/插件广播经启发式归因，UUID 恒为
+     * NIL）：名字重复无信息量，头像只会是 Steve 占位皮。只跳过名字与头像的
+     * 绘制调用，布局高度完全不动——其它消息不受任何影响。
+     */
+    private static boolean isSystemSender(ChatMessageStore.ChatMessage msg) {
+        return !msg.isSystem()
+            && "\u7cfb\u7edf".equals(msg.senderName().getString())
+            && (msg.senderUUID() == null || msg.senderUUID().equals(new UUID(0, 0)));
+    }
+
     private int getMsgHeight(ChatMessageStore.ChatMessage msg) {
         Integer cached = msgHeightCache.get(msg);
         if (cached != null) return cached;
@@ -2321,7 +2331,7 @@ public class ChatBubbleScreen extends ChatScreen {
 
         int nameY = baseY;
 
-        if (showAvatar && !msg.senderName().getString().isEmpty()) {
+        if (showAvatar && !isSystemSender(msg) && !msg.senderName().getString().isEmpty()) {
             int maxNameW = panelW - Appearance.avatarSize() - PAD * 2 - 20;
             Text sn = msg.senderName();
             OrderedText nameSeq;
@@ -2387,7 +2397,7 @@ public class ChatBubbleScreen extends ChatScreen {
         String skinName = (msg.rawPlayerName() != null && !msg.rawPlayerName().isEmpty())
             ? msg.rawPlayerName() : msg.senderName().getString();
 
-        if (showAvatar) {
+        if (showAvatar && !isSystemSender(msg)) {
             boolean offline = !msg.isOwn() && !msg.isSystem()
                 && SkinResolver.isOffline(msg.senderUUID(), skinName);
             SkinResolver.drawAvatar(g, msg.senderUUID(), skinName,
@@ -2449,7 +2459,7 @@ public class ChatBubbleScreen extends ChatScreen {
             boolean own, float alpha, BracketCodec.ParseResult parsed, List<OrderedText> lines, boolean showAvatar) {
         int avatarX = own ? panelX + panelW - PAD - Appearance.avatarSize() : panelX + PAD;
 
-        if (showAvatar && !msg.senderName().getString().isEmpty()) {            int maxNameW = panelW - Appearance.avatarSize() - PAD * 2 - 20;
+        if (showAvatar && !isSystemSender(msg) && !msg.senderName().getString().isEmpty()) {            int maxNameW = panelW - Appearance.avatarSize() - PAD * 2 - 20;
             Text sn = msg.senderName();
             OrderedText nameSeq;
             if (textRenderer.getWidth(sn) > maxNameW) {
@@ -2470,7 +2480,7 @@ public class ChatBubbleScreen extends ChatScreen {
         boolean offline = !msg.isOwn() && !msg.isSystem()
             && SkinResolver.isOffline(msg.senderUUID(), msg.rawPlayerName());
 
-        if (showAvatar) {
+        if (showAvatar && !isSystemSender(msg)) {
             SkinResolver.drawAvatar(g, msg.senderUUID(), msg.rawPlayerName(),
                 avatarX, baseY, Appearance.avatarSize(), Appearance.avatarSize() + 2, alpha, offline);
         }
@@ -2579,7 +2589,7 @@ public class ChatBubbleScreen extends ChatScreen {
         int avatarX = own ? panelX + panelW - PAD - Appearance.avatarSize() : panelX + PAD;
         int nameY = baseY;
 
-        if (showAvatar && !msg.senderName().getString().isEmpty()) {            int maxNameW = panelW - Appearance.avatarSize() - PAD * 2 - 20;
+        if (showAvatar && !isSystemSender(msg) && !msg.senderName().getString().isEmpty()) {            int maxNameW = panelW - Appearance.avatarSize() - PAD * 2 - 20;
             Text sn = msg.senderName();
             OrderedText nameSeq;
             if (textRenderer.getWidth(sn) > maxNameW) {
@@ -2598,7 +2608,7 @@ public class ChatBubbleScreen extends ChatScreen {
 
         boolean offline = !msg.isOwn() && !msg.isSystem()
             && SkinResolver.isOffline(msg.senderUUID(), msg.rawPlayerName());
-        if (showAvatar) {
+        if (showAvatar && !isSystemSender(msg)) {
             SkinResolver.drawAvatar(g, msg.senderUUID(), msg.rawPlayerName(),
                 avatarX, baseY, Appearance.avatarSize(), Appearance.avatarSize() + 2, alpha, offline);
         }

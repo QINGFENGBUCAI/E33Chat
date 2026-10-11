@@ -13,8 +13,7 @@ public interface MouseHandlerAccessor {
 }
 //#else
 //#if MC >= 12109
-// 1.21.9+: the input rework turned Mouse.activeButton into a MouseInput
-// record; the actual held state is the leftButtonClicked flag.
+
 //$$ import net.minecraft.client.Mouse;
 //$$ import org.spongepowered.asm.mixin.Mixin;
 //$$ import org.spongepowered.asm.mixin.gen.Accessor;

@@ -18,7 +18,7 @@ import net.minecraft.client.gui.DrawContext;
 public final class SkinResolver {
     private SkinResolver() {}
 
-    private static final int CACHE_CAP = 256;
+    private static final int CACHE_CAP = 1024;
     private static final UUID NIL_UUID = new UUID(0, 0);
 
     private static final float OFFLINE_LEVEL = 0.45f;
@@ -33,6 +33,41 @@ public final class SkinResolver {
 
     private static final Map<UUID, Identifier> byUuid = newLru();
     private static final Map<String, Identifier> byName = newLru();
+
+    // ==== 下线头像保护：消息到达即预热皮肤缓存 ====
+    // 皮肤缓存只在聊天面板渲染消息时（getSkin）填充。面板关闭期间某玩家聊天、
+    // 随后下线：皮肤从未进缓存，再打开面板时人已离线拿不到皮肤，头像退化为
+    // 默认皮肤。修复：addMessage 把 (uuid, name) 投入并发队列，客户端 tick 在
+    // 主线程消费——玩家在线且皮肤已下载完时入缓存；下载未完则留在队列下帧重试，
+    // 玩家离线（列表条目消失）则放弃。LRU 上限同时 256 → 1024（大服淘汰过快）。
+    private record Prewarm(UUID uuid, String name) {}
+    private static final java.util.Queue<Prewarm> PREWARM_QUEUE =
+        new java.util.concurrent.ConcurrentLinkedQueue<>();
+
+    /** 任意线程可调用（旧版本路径的消息在网络线程到达）。 */
+    public static void enqueuePrewarm(UUID uuid, String name) {
+        if (uuid == null || uuid.equals(NIL_UUID) || name == null || name.isEmpty()) return;
+        PREWARM_QUEUE.offer(new Prewarm(uuid, name));
+    }
+
+    /** 主线程（client tick）：把队列里的在线玩家皮肤刷入缓存。 */
+    public static void tickPrewarm() {
+        if (PREWARM_QUEUE.isEmpty()) return;
+        MinecraftClient client = MinecraftClient.getInstance();
+        int budget = 200;
+        Prewarm p;
+        while ((p = PREWARM_QUEUE.poll()) != null) {
+            if (--budget < 0) { PREWARM_QUEUE.offer(p); return; }
+            if (cached(p.uuid(), p.name()) != null) continue;   // 已缓存
+            if (client.getNetworkHandler() == null) continue;   // 已断线：放弃
+            PlayerListEntry info = client.getNetworkHandler().getPlayerListEntry(p.uuid());
+            if (info == null) continue;                         // 玩家已离线：放弃
+            Identifier tex = entrySkin(info);
+            remember(p.uuid(), p.name(), tex);                  // 占位皮会被 remember 丢弃
+            if (isPlaceholder(tex)) PREWARM_QUEUE.offer(p);     // 皮肤仍在下载：下帧重试
+        }
+    }
+
 
     private static <K> Map<K, Identifier> newLru() {
         return new LinkedHashMap<>(16, 0.75f, true) {

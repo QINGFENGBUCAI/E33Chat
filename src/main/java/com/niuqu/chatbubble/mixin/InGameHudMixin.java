@@ -14,7 +14,11 @@ import net.minecraft.client.gui.Hud;
 import net.minecraft.client.gui.Gui;
 //#else
 import net.minecraft.client.gui.hud.InGameHud;
+//#if MC >= 12100
 import net.minecraft.client.render.RenderTickCounter;
+//#else
+//$$ import net.minecraft.client.render.RenderTickCounter;
+//#endif
 //#endif
 //#endif
 import org.spongepowered.asm.mixin.Mixin;
@@ -40,10 +44,27 @@ public class InGameHudMixin {
         if (HudVisibility.shouldHideHud()) ci.cancel();
     }
     //#else
+    //#if MC >= 12100
     //$$ @Inject(method = "render", at = @At("HEAD"), cancellable = true)
     //$$ private void e33chat$hideHudForTranslucentScreens(DrawContext context, RenderTickCounter tickCounter,
     //$$                                                   CallbackInfo ci) {
     //$$     if (HudVisibility.shouldHideHud()) ci.cancel();
     //$$ }
+    //#else
+    //#if MC >= 12000
+
+    @Inject(method = "render", at = @At("HEAD"), cancellable = true)
+    private void e33chat$hideHudForTranslucentScreens(DrawContext context, float tickDelta, CallbackInfo ci) {
+        if (HudVisibility.shouldHideHud()) ci.cancel();
+    }
+    //#else
+
+    //$$ @Inject(method = "render", at = @At("HEAD"), cancellable = true)
+    //$$ private void e33chat$hideHudForTranslucentScreens(net.minecraft.client.util.math.MatrixStack matrices, float tickDelta,
+    //$$                                                   CallbackInfo ci) {
+    //$$     if (HudVisibility.shouldHideHud()) ci.cancel();
+    //$$ }
+    //#endif
+    //#endif
     //#endif
 }

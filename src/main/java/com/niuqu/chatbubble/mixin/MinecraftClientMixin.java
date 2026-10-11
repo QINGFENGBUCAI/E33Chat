@@ -21,7 +21,12 @@ import java.lang.reflect.Field;
 //$$ @Mixin(MinecraftClient.class)
 //#endif
 public class MinecraftClientMixin {
+    //#if MC >= 11800
     @Inject(method = "setScreen", at = @At("HEAD"), cancellable = true)
+    //#else
+    //$$ // 1.16.5: MinecraftClient 的屏幕切换方法名是 openScreen
+    //$$ @Inject(method = "openScreen", at = @At("HEAD"), cancellable = true)
+    //#endif
     private void onSetScreen(Screen screen, CallbackInfo ci) {
         var cfg = ChatBubbleClientSetup.config();
         if (cfg == null || !cfg.enabled()) return;

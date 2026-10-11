@@ -81,6 +81,29 @@ public class ChatListenerMixin {
         return com.niuqu.chatbubble.chat.capture.TemplateLayer.templateSlice(message, text, from, to);
     }
 
+    //#if MC < 11903
+    //$$ // 1.19.0-1.19.2: onChatMessage 没有 GameProfile 参数（1.19.3 才加入），
+    //$$ // 且 onProfilelessMessage 尚不存在。这里降级：把装饰后的行交给与系统
+    //$$ // 通道同一套文本启发式解析，识别不了的落灰字系统样式。
+    //$$ @Inject(method = "onChatMessage", at = @At("HEAD"))
+    //$$ private void onPlayerChat(SignedMessage message, MessageType.Parameters params, CallbackInfo ci) {
+    //$$     Text raw = message.getContent();
+    //$$     String rawStr = raw.getString();
+    //$$     if (rawStr.startsWith("xaero-waypoint:")
+    //$$             || rawStr.startsWith("xaero_waypoint:")
+    //$$             || rawStr.startsWith("xaero_waypoint_add:")) {
+    //$$         return;
+    //$$     }
+    //$$     var connection = MinecraftClient.getInstance().player != null
+    //$$             ? MinecraftClient.getInstance().player.networkHandler : null;
+    //$$     if (connection != null) {
+    //$$         SenderMeta parsed = com.niuqu.chatbubble.chat.capture.ChatPipeline.tryParsePlayerLine(raw, rawStr, "Signed1192");
+    //$$         if (parsed != null) { ChatMessageStore.setPendingMeta(parsed); return; }
+    //$$     }
+    //$$     ChatMessageStore.setPendingMeta(new SenderMeta(
+    //$$         new UUID(0, 0), Text.translatable("e33chat.sender.system"), raw, true, null, false, null));
+    //$$ }
+    //#else
     @Inject(method = "onChatMessage", at = @At("HEAD"))
     private void onPlayerChat(SignedMessage message, GameProfile gameProfile,
                                MessageType.Parameters params, CallbackInfo ci) {
@@ -160,6 +183,9 @@ public class ChatListenerMixin {
             senderId != null ? senderId : new UUID(0, 0),
             senderName, playerContent, false, name, isWhisper, whisperPartner));
     }
+    //#endif
+
+    //#if MC >= 11903
 
     @Inject(method = "onProfilelessMessage", at = @At("HEAD"))
     private void onDisguisedChat(Text message, MessageType.Parameters params, CallbackInfo ci) {
@@ -236,6 +262,7 @@ public class ChatListenerMixin {
             new UUID(0, 0), Text.translatable("e33chat.sender.system"),
             message, isSystem, null, false, null));
     }
+    //#endif
 
     @Inject(method = "onGameMessage", at = @At("HEAD"))
     private void onSystemChat(Text message, boolean overlay, CallbackInfo ci) {

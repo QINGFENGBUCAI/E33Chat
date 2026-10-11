@@ -106,8 +106,9 @@ for f in "$MIXIN_DIR"/*.java; do
       continue
     fi
 
-    # @Accessor("field") / @Invoker("method") —— 名字出现在字段或方法列表即可
-    for n in $(grep -oE '@(Accessor|Invoker)\("[^"]+"\)' "$f" | sed -E 's/@(Accessor|Invoker)\("//; s/"\)//'); do
+    # @Accessor("field") / @Invoker("method") —— 名字出现在字段或方法列表即可。
+    # 同时覆盖 @Invoker(value = "...", remap = false) 完整形式（取括号内首个带引号串）
+    for n in $(grep -oE '@(Accessor|Invoker)\((value = )?"[^"]+"' "$f" | sed -E 's/.*"([^"]*)".*/\1/'); do
       checked=$((checked+1))
       if grep -qE "(^| )${n}(\(|;)" <<<"$dump"; then
         echo "OK   member ${n} in $cls"

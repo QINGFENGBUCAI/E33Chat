@@ -10,19 +10,16 @@ public interface MessageHandlerAccessor {
 }
 //#else
 //#if MC >= 11900
-import com.niuqu.chatbubble.store.ChatMessageStore.SenderMeta;
-import net.minecraft.client.network.message.MessageHandler;
-import net.minecraft.text.Text;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.gen.Invoker;
-
-@Mixin(MessageHandler.class)
-public interface MessageHandlerAccessor {
-    @Invoker(value = "tryParseAsPlayerMessage", remap = false)
-    static SenderMeta e33chat$invokeTryParseAsPlayerMessage(Text message, String text) {
-        throw new AssertionError();
-    }
-}
+// MessageHandler.tryParseAsPlayerMessage does not exist on any target from
+// 1.19.2 through 1.21.11 (verified per version), and nothing calls this
+// accessor — keep the type registered as an empty mixin so the required
+// config stays valid without a target member.
+//$$ import net.minecraft.client.network.message.MessageHandler;
+//$$ import org.spongepowered.asm.mixin.Mixin;
+//$$
+//$$ @Mixin(MessageHandler.class)
+//$$ public interface MessageHandlerAccessor {
+//$$ }
 //#else
 //$$ public interface MessageHandlerAccessor {
 //$$ }

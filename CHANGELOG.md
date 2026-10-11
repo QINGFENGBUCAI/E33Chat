@@ -1,5 +1,16 @@
 # Changelog
 
+## v2.4.21
+
+**实机验证修复（1.21.9~1.21.11 与全版本映射审计）+ 下线头像保护**
+
+- **1.21.11 启动崩溃（两处）**：`ChatHud.render` 加了 TextRenderer 与 boolean（7 参），mixin 回调仍是旧 5 参 → `MixinApplyError`；`Mouse.activeButton` 在 1.21.9+ 从 int 变成 `MouseInput` 记录，@Accessor 类型失配。逐版本 javap 确认分界（仅 1.21.11 改 7 参；1.21.9+ 改按钮类型），render hooks 六路分支（26.x/1.21.11/1.21/1.20/1.19.3+/1.19.2-），MouseHandlerAccessor 三路（26.x 布尔 / 1.21.9+ 布尔 / 旧版 int）
+- **`MessageHandlerAccessor` 全版本置空**：其 @Invoker 目标 `tryParseAsPlayerMessage` 经逐版本核验在 1.19.2~1.21.11 全部不存在且无调用点——此前 1.19.2~1.21.11 的 jar 均启动即崩（装了 NotEnoughCrashes 时表现为「界面反复收回弹出」而非直接崩溃）
+- **全版本 mixin 审计补齐**：审计脚本扩展到 22 个版本（1.x 用 loom 缓存的 yarn jar 对照），修复三个旧版本的失配——1.16.5 的 `MinecraftClient.openScreen`、1.16.5/1.18.2 的 `CommandManager.execute` 签名不符（该 mixin 置空降级，服务端 /msg 引用在这两版本缺失）、1.19.2 无 `onProfilelessMessage`（hook 挂 1.19.3+，玩家聊天降级走文本启发式）；`ChatHud.render`/`InGameHud.render` 全版本签名普查补齐 1.19.x MatrixStack 与 1.20.x 4 参形态。审计脚本同时补上 `@Invoker(value = ...)` 形式的提取（此前漏检是 MessageHandlerAccessor 逃过审计的原因）。22/22 版本审计 0 失配
+- **下线玩家头像保护**：皮肤缓存此前只在聊天面板渲染消息时填充——面板关闭期间玩家聊天后下线，皮肤从未入缓存，再打开面板头像退化为默认皮肤。现在消息到达即入预热队列（并发安全），客户端 tick 在主线程消费：皮肤下载完成即入缓存、下载中下帧重试、玩家离线放弃；LRU 上限 256→1024（大服不再轻易淘汰）
+- 注释与空行清理收尾（保留预处理器指令与 `//$$` 备用分支）
+- 26.x（26.1/26.2/26.3）经实机验证：启动、聊天收发、面板开关、键盘与鼠标输入全部正常
+
 ## v2.4.20
 
 **修复：26.x 三个版本的 mixin 全部对照实机 jar 逐字段核验并移植（26.3 实机启动崩溃修复）**

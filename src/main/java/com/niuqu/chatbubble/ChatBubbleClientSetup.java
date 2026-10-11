@@ -247,6 +247,8 @@ public class ChatBubbleClientSetup implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             ImageLoader.tick();
             com.niuqu.chatbubble.image.AnimatedImageLoader.tick();
+            // 皮肤预热：消息到达即排队，主线程消费入缓存（下线头像保护）
+            com.niuqu.chatbubble.render.SkinResolver.tickPrewarm();
 
             if (!config.enabled()) return;
 
