@@ -12,6 +12,19 @@ public interface MouseHandlerAccessor {
     void e33chat$setActiveButton(boolean held);
 }
 //#else
+//#if MC >= 12109
+// 1.21.9+: the input rework turned Mouse.activeButton into a MouseInput
+// record; the actual held state is the leftButtonClicked flag.
+//$$ import net.minecraft.client.Mouse;
+//$$ import org.spongepowered.asm.mixin.Mixin;
+//$$ import org.spongepowered.asm.mixin.gen.Accessor;
+//$$
+//$$ @Mixin(Mouse.class)
+//$$ public interface MouseHandlerAccessor {
+//$$     @Accessor("leftButtonClicked")
+//$$     void e33chat$setActiveButton(boolean held);
+//$$ }
+//#else
 //$$ import net.minecraft.client.Mouse;
 //$$ import org.spongepowered.asm.mixin.Mixin;
 //$$ import org.spongepowered.asm.mixin.gen.Accessor;
@@ -22,4 +35,5 @@ public interface MouseHandlerAccessor {
 //$$     @Accessor("activeButton")
 //$$     void e33chat$setActiveButton(int button);
 //$$ }
+//#endif
 //#endif

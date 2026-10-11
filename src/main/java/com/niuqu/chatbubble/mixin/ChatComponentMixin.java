@@ -13,6 +13,9 @@ import net.minecraft.client.gui.DrawContext;
 //#else
 //$$ import com.niuqu.chatbubble.DrawContext;
 //#endif
+//#if MC >= 12111
+import net.minecraft.client.font.TextRenderer;
+//#endif
 import net.minecraft.client.gui.hud.ChatHud;
 //#if MC >= 11900
 //#if MC < 26000
@@ -48,6 +51,31 @@ public class ChatComponentMixin {
         }
     }
     //#else
+    //#if MC >= 12111
+    // 1.21.11: ChatHud.render 加了 TextRenderer 与一个 boolean（7 参）
+    @Inject(method = "render", at = @At("HEAD"), cancellable = true)
+    private void onRender(DrawContext context, TextRenderer textRenderer, int tickDelta, int mouseX, int mouseY,
+                          boolean focused, boolean unread, CallbackInfo ci) {
+        e33chat$shifted = false;
+        if (ChatBubbleClientSetup.config().enabled()) {
+            if (MinecraftClient.getInstance().currentScreen instanceof ChatBubbleScreen) {
+                ci.cancel();
+                return;
+            }
+            context.getMatrices().push();
+            context.getMatrices().translate(0, -8, 0);
+            e33chat$shifted = true;
+        }
+    }
+
+    @Inject(method = "render", at = @At("RETURN"))
+    private void onRenderReturn(DrawContext context, TextRenderer textRenderer, int tickDelta, int mouseX, int mouseY,
+                                boolean focused, boolean unread, CallbackInfo ci) {
+        if (e33chat$shifted) {
+            context.getMatrices().pop();
+        }
+    }
+    //#else
     @Inject(method = "render", at = @At("HEAD"), cancellable = true)
     private void onRender(DrawContext context, int tickDelta, int mouseX, int mouseY,
                           boolean focused, CallbackInfo ci) {
@@ -70,6 +98,7 @@ public class ChatComponentMixin {
             context.getMatrices().pop();
         }
     }
+    //#endif
     //#endif
 
     //#if MC >= 26000

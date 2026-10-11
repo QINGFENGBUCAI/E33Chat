@@ -28,7 +28,11 @@ public final class NativeFileDialog {
         //#if MC >= 26000
         if (mc.mouseHandler != null) ((com.niuqu.chatbubble.mixin.MouseHandlerAccessor) mc.mouseHandler).e33chat$setActiveButton(false);
         //#else
+        //#if MC >= 12109
+        //$$ if (mc.mouse != null) ((com.niuqu.chatbubble.mixin.MouseHandlerAccessor) mc.mouse).e33chat$setActiveButton(false);
+        //#else
         //$$ if (mc.mouse != null) ((com.niuqu.chatbubble.mixin.MouseHandlerAccessor) mc.mouse).e33chat$setActiveButton(0);
+        //#endif
         //#endif
 
         Thread t = new Thread(() -> {
