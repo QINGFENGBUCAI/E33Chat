@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.config;
-
 import com.google.gson.annotations.SerializedName;
 import java.util.List;
 
@@ -54,7 +53,6 @@ public record ChatBubbleConfig(
     String messageAnimStyle,
     Boolean imageRenderEnabled,
     Boolean receiveImages,
-
     String uploadUrl,
     String uploadField,
     String uploadExtra,
@@ -65,10 +63,8 @@ public record ChatBubbleConfig(
     boolean closeChatOnSend,
     Integer bannerOpacity,
     Integer bubbleSize,
-
     @SerializedName("panel_bg_image") String panelBgImage,
     @SerializedName("panel_bg_opacity") Integer panelBgOpacity,
-
     @SerializedName("panel_bg_crop") String panelBgCrop
 ) {
     public static ChatBubbleConfig defaults() {

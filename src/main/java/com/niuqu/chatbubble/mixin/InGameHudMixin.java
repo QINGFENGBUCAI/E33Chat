@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.mixin;
-
 import com.niuqu.chatbubble.render.HudVisibility;
 //#if MC >= 12000
 import net.minecraft.client.gui.DrawContext;
@@ -7,7 +6,6 @@ import net.minecraft.client.gui.DrawContext;
 //$$ import com.niuqu.chatbubble.DrawContext;
 //#endif
 //#if MC >= 260200
-
 import net.minecraft.client.gui.Hud;
 //#else
 //#if MC >= 26000
@@ -37,7 +35,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 //#endif
 public class InGameHudMixin {
     //#if MC >= 26000
-
     @Inject(method = "extractRenderState(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Lnet/minecraft/client/DeltaTracker;)V",
         at = @At("HEAD"), cancellable = true)
     private void e33chat$hideHudForTranslucentScreens(CallbackInfo ci) {
@@ -52,13 +49,11 @@ public class InGameHudMixin {
     //$$ }
     //#else
     //#if MC >= 12000
-
     @Inject(method = "render", at = @At("HEAD"), cancellable = true)
     private void e33chat$hideHudForTranslucentScreens(DrawContext context, float tickDelta, CallbackInfo ci) {
         if (HudVisibility.shouldHideHud()) ci.cancel();
     }
     //#else
-
     //$$ @Inject(method = "render", at = @At("HEAD"), cancellable = true)
     //$$ private void e33chat$hideHudForTranslucentScreens(net.minecraft.client.util.math.MatrixStack matrices, float tickDelta,
     //$$                                                   CallbackInfo ci) {

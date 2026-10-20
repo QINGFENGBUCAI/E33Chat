@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.network;
-
 import net.minecraft.network.PacketByteBuf;
 //#if MC >= 12005
 import net.minecraft.network.codec.PacketCodec;
@@ -13,7 +12,6 @@ public record MediaUploadAckPayload(long uploadId, String mediaId, String error)
 //#else
 //$$ public record MediaUploadAckPayload(long uploadId, String mediaId, String error) {
 //#endif
-
     //#if MC >= 12005
     public static final CustomPayload.Id<MediaUploadAckPayload> ID =
         new CustomPayload.Id<>(
@@ -26,7 +24,6 @@ public record MediaUploadAckPayload(long uploadId, String mediaId, String error)
     //#else
     //$$ public static final Identifier ID = new Identifier("e33chat", "media_upload_ack");
     //#endif
-
     //#if MC >= 12005
     public static final PacketCodec<PacketByteBuf, MediaUploadAckPayload> CODEC = PacketCodec.of(
         //#if MC >= 26000

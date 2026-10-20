@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.network;
-
 import com.niuqu.chatbubble.store.ChatMessageStore;
 import net.minecraft.network.PacketByteBuf;
 //#if MC >= 12005
@@ -13,7 +12,6 @@ public record ConfigSyncPayload(boolean useTpa) implements CustomPayload {
 //#else
 //$$ public record ConfigSyncPayload(boolean useTpa) {
 //#endif
-
     //#if MC >= 12005
     public static final CustomPayload.Id<ConfigSyncPayload> ID =
         new CustomPayload.Id<>(
@@ -26,7 +24,6 @@ public record ConfigSyncPayload(boolean useTpa) implements CustomPayload {
     //#else
     //$$ public static final Identifier ID = new Identifier("e33chat", "config_sync");
     //#endif
-
     //#if MC >= 12005
     public static final PacketCodec<PacketByteBuf, ConfigSyncPayload> CODEC = PacketCodec.of(
         //#if MC >= 26000
@@ -45,7 +42,6 @@ public record ConfigSyncPayload(boolean useTpa) implements CustomPayload {
     //$$     return buf;
     //$$ }
     //#endif
-
     //#if MC >= 12005
     @Override
     public Id<ConfigSyncPayload> getId() { return ID; }

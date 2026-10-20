@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.network;
-
 import net.minecraft.network.PacketByteBuf;
 //#if MC >= 12005
 import net.minecraft.network.codec.PacketCodec;
@@ -32,7 +31,6 @@ public record GroupActionPayload(int action, String groupName) implements Custom
     //#else
     //$$ public static final Identifier ID = new Identifier("e33chat", "group_action");
     //#endif
-
     //#if MC >= 12005
     public static final PacketCodec<PacketByteBuf, GroupActionPayload> CODEC = PacketCodec.of(
         //#if MC >= 26000
@@ -58,7 +56,6 @@ public record GroupActionPayload(int action, String groupName) implements Custom
     //$$     return buf;
     //$$ }
     //#endif
-
     //#if MC >= 12005
     @Override
     public CustomPayload.Id<? extends CustomPayload> getId() {

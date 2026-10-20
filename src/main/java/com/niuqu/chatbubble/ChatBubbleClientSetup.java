@@ -2,7 +2,6 @@ package com.niuqu.chatbubble;
 import com.niuqu.chatbubble.config.ChatBubbleConfigScreen;
 import com.niuqu.chatbubble.render.ChatBubbleHudOverlay;
 import com.niuqu.chatbubble.render.RoundRectRenderer;
-
 import com.niuqu.chatbubble.config.ChatBubbleConfig;
 import com.niuqu.chatbubble.store.ChatMessageStore;
 import com.niuqu.chatbubble.config.ServerConfigScreen;
@@ -31,7 +30,6 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourceType;
 import net.minecraft.util.Identifier;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -52,7 +50,6 @@ public class ChatBubbleClientSetup implements ClientModInitializer {
     public void onInitializeClient() {
         Path configDir = MinecraftClient.getInstance().runDirectory.toPath().resolve("config/e33chat");
         configPath = configDir.resolve("e33chat-client.json");
-
         Path recentDirPath = configDir.resolve("client.json");
         Path legacyPath = MinecraftClient.getInstance().runDirectory.toPath().resolve("config/e33chat-client.json");
         Path oldFlatPath = MinecraftClient.getInstance().runDirectory.toPath().resolve("config/e33chat.json");
@@ -83,7 +80,6 @@ public class ChatBubbleClientSetup implements ClientModInitializer {
                 E33Log.info("[e33chat] Migrated config from config/e33chat.json to config/e33chat/e33chat-client.json");
             }
         }
-
         if (Files.exists(configPath)) {
             config = ConfigManager.load(configPath);
         } else if (Files.exists(recentDirPath)) {
@@ -95,7 +91,6 @@ public class ChatBubbleClientSetup implements ClientModInitializer {
         } else {
             config = ConfigManager.load(configPath);
         }
-
         //#if MC >= 12005
         ClientPlayNetworking.registerGlobalReceiver(ChatMetaPayload.ID, (payload, context) -> {
             context.client().execute(() -> ChatMessageStore.applyChatMeta(
@@ -110,7 +105,6 @@ public class ChatBubbleClientSetup implements ClientModInitializer {
         //$$         payload.quoteSender(), payload.quoteContent(), payload.mentionTargets()));
         //$$ });
         //#endif
-
         //#if MC >= 12005
         ClientPlayNetworking.registerGlobalReceiver(HistoryPayload.ID, (payload, context) -> {
             context.client().execute(() -> ChatMessageStore.addHistoryMessages(payload.entries()));
@@ -121,7 +115,6 @@ public class ChatBubbleClientSetup implements ClientModInitializer {
         //$$     client.execute(() -> ChatMessageStore.addHistoryMessages(payload.entries()));
         //$$ });
         //#endif
-
         //#if MC >= 12005
         ClientPlayNetworking.registerGlobalReceiver(ConfigSyncPayload.ID, (payload, context) -> {
             context.client().execute(() -> ConfigSyncPayload.handle(payload));
@@ -132,7 +125,6 @@ public class ChatBubbleClientSetup implements ClientModInitializer {
         //$$     client.execute(() -> ConfigSyncPayload.handle(payload));
         //$$ });
         //#endif
-
         //#if MC >= 12005
         ClientPlayNetworking.registerGlobalReceiver(ConfigSyncV2Payload.ID, (payload, context) -> {
             context.client().execute(() -> ConfigSyncV2Payload.handle(payload));
@@ -143,7 +135,6 @@ public class ChatBubbleClientSetup implements ClientModInitializer {
         //$$     client.execute(() -> ConfigSyncV2Payload.handle(payload));
         //$$ });
         //#endif
-
         //#if MC >= 12005
         ClientPlayNetworking.registerGlobalReceiver(EasyBotConfigPayload.ID, (payload, context) -> {
             context.client().execute(() -> EasyBotConfigPayload.handle(payload));
@@ -154,7 +145,6 @@ public class ChatBubbleClientSetup implements ClientModInitializer {
         //$$     client.execute(() -> EasyBotConfigPayload.handle(payload));
         //$$ });
         //#endif
-
         //#if MC >= 12005
         ClientPlayNetworking.registerGlobalReceiver(ServerConfigScreenPayload.ID, (payload, context) -> {
             context.client().execute(() -> MinecraftClient.getInstance().setScreen(new ServerConfigScreen(
@@ -175,9 +165,7 @@ public class ChatBubbleClientSetup implements ClientModInitializer {
         //$$         payload.chatTemplates(), payload.whisperTemplates())));
         //$$ });
         //#endif
-
         com.niuqu.chatbubble.image.MediaClient.registerReceivers();
-
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
             com.niuqu.chatbubble.chat.GroupChannelState.reset();
             com.niuqu.chatbubble.render.BlurRenderer.setDisconnecting(false);
@@ -185,11 +173,9 @@ public class ChatBubbleClientSetup implements ClientModInitializer {
         });
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
             com.niuqu.chatbubble.chat.GroupChannelState.reset();
-
             com.niuqu.chatbubble.render.BlurRenderer.setDisconnecting(true);
             com.niuqu.chatbubble.render.BlurRenderer.cleanup();
         });
-
         //#if MC >= 12005
         ClientPlayNetworking.registerGlobalReceiver(com.niuqu.chatbubble.network.GroupChatPayload.ID, (payload, context) -> {
             context.client().execute(() -> com.niuqu.chatbubble.network.GroupChatPayload.handleClient(payload));
@@ -200,7 +186,6 @@ public class ChatBubbleClientSetup implements ClientModInitializer {
         //$$     client.execute(() -> com.niuqu.chatbubble.network.GroupChatPayload.handleClient(payload));
         //$$ });
         //#endif
-
         //#if MC >= 12005
         ClientPlayNetworking.registerGlobalReceiver(com.niuqu.chatbubble.network.GroupListPayload.ID, (payload, context) -> {
             context.client().execute(() -> com.niuqu.chatbubble.network.GroupListPayload.handleClient(payload));
@@ -211,7 +196,6 @@ public class ChatBubbleClientSetup implements ClientModInitializer {
         //$$     client.execute(() -> com.niuqu.chatbubble.network.GroupListPayload.handleClient(payload));
         //$$ });
         //#endif
-
         //#if MC >= 12005
         ClientPlayNetworking.registerGlobalReceiver(MediaCapPayload.ID, (payload, context) -> {
             context.client().execute(() -> MediaCapPayload.handle(payload));
@@ -222,12 +206,9 @@ public class ChatBubbleClientSetup implements ClientModInitializer {
         //$$     client.execute(() -> MediaCapPayload.handle(payload));
         //$$ });
         //#endif
-
         ChatMessageStore.setMessageEffectObserver(
             new com.niuqu.chatbubble.chat.notification.ChatMessageEffects());
-
         //#if MC >= 26000
-
         HudElementRegistry.addLast(Identifier.of("e33chat", "bubble_overlay"), (drawContext, tickDelta) -> {
             if (!config.enabled()) return;
             ChatBubbleHudOverlay.render(drawContext);
@@ -238,20 +219,15 @@ public class ChatBubbleClientSetup implements ClientModInitializer {
             //#if MC >= 12000
             ChatBubbleHudOverlay.render(drawContext);
             //#else
-
             //$$ ChatBubbleHudOverlay.render(new com.niuqu.chatbubble.DrawContext((net.minecraft.client.util.math.MatrixStack) drawContext));
             //#endif
         });
         //#endif
-
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             ImageLoader.tick();
             com.niuqu.chatbubble.image.AnimatedImageLoader.tick();
-            // 皮肤预热：消息到达即排队，主线程消费入缓存（下线头像保护）
             com.niuqu.chatbubble.render.SkinResolver.tickPrewarm();
-
             if (!config.enabled()) return;
-
             String key;
             if (client.world == null || client.player == null) {
                 key = null;
@@ -264,10 +240,8 @@ public class ChatBubbleClientSetup implements ClientModInitializer {
             }
             ChatMessageStore.setCurrentWorld(key);
             ChatMessageStore.maybeAutoSave();
-
             if (client.currentScreen == null) {
                 //#if MC >= 26000
-
                 boolean leftDown = client.mouseHandler.isLeftPressed();
                 //#else
                 //$$ boolean leftDown = org.lwjgl.glfw.GLFW.glfwGetMouseButton(
@@ -285,20 +259,17 @@ public class ChatBubbleClientSetup implements ClientModInitializer {
                 leftWasDown = false;
             }
         });
-
         ScreenEvents.BEFORE_INIT.register((client, screen, width, height) ->
             ScreenEvents.afterRender(screen).register((scr, g, mouseX, mouseY, delta) -> {
                 if (config.enabled()) {
                     //#if MC >= 12000
                     ChatBubbleHudOverlay.renderBannerForScreen(g);
                     //#else
-
                     //$$ ChatBubbleHudOverlay.renderBannerForScreen(new com.niuqu.chatbubble.DrawContext((net.minecraft.client.util.math.MatrixStack) g));
                     //#endif
                 }
             })
         );
-
         ResourceManagerHelper.get(ResourceType.CLIENT_RESOURCES).registerReloadListener(
             new SimpleSynchronousResourceReloadListener() {
                 @Override

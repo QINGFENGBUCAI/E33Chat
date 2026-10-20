@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.image;
-
 import com.niuqu.chatbubble.E33Log;
 import com.niuqu.chatbubble.network.MediaRequestPayload;
 import com.niuqu.chatbubble.network.MediaResponsePayload;
@@ -11,7 +10,6 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 //$$ import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 //#endif
 import net.minecraft.client.MinecraftClient;
-
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -65,7 +63,6 @@ public final class MediaClient {
         //$$     }
         //$$ });
         //#endif
-
         //#if MC >= 12005
         ClientPlayNetworking.registerGlobalReceiver(MediaResponsePayload.ID, (payload, context) ->
             handleResponse(payload));
@@ -88,7 +85,6 @@ public final class MediaClient {
             failFetch(id, "media not found: " + id);
             return;
         }
-
         int totalChunks = payload.totalChunks();
         if (!com.niuqu.chatbubble.server.DiskMediaStore.isValidChunkCount(totalChunks)) {
             failFetch(id, "media chunk count out of range: " + id);
@@ -157,7 +153,6 @@ public final class MediaClient {
         }
         try {
             String mediaId = done.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
-
             if (mediaId != null) rememberOwnUpload(mediaId, bytes);
             return mediaId != null ? "e33chat://media/" + mediaId : null;
         } catch (Exception e) {
@@ -170,10 +165,8 @@ public final class MediaClient {
     public static byte[] fetch(String mediaId) {
         if (!DiskMediaStore.isValidMediaId(mediaId)) return null;
         if (!ClientPlayNetworking.canSend(MediaRequestPayload.ID)) return null;
-
         byte[] own = OWN_UPLOADS.get(mediaId);
         if (own != null) return own;
-
         CompletableFuture<byte[]> done = FETCHES.computeIfAbsent(mediaId, id -> {
             CompletableFuture<byte[]> fresh = new CompletableFuture<>();
             MinecraftClient.getInstance().execute(() -> {

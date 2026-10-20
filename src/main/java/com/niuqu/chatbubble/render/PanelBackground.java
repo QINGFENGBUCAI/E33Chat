@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.render;
-
 import com.niuqu.chatbubble.E33Log;
 import com.niuqu.chatbubble.compat.TextureCompat;
 import net.minecraft.client.texture.NativeImage;
@@ -8,7 +7,6 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.texture.NativeImageBackedTexture;
 import net.minecraft.util.Identifier;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.nio.file.Path;
@@ -46,7 +44,6 @@ public final class PanelBackground {
         String key = raw == null ? "" : raw.trim();
         synchronized (LOCK) {
             if (key.equals(loadedKey)) return;
-
             unloadLocked();
             loadedKey = key;
             failed = false;
@@ -162,13 +159,11 @@ public final class PanelBackground {
         if (texW <= 0 || texH <= 0 || targetW <= 0 || targetH <= 0) return new int[]{0, 0, 1, 1};
         float targetAspect = (float) targetW / targetH;
         float srcW = texW, srcH = texH;
-
         if ((float) texW / texH > targetAspect) {
             srcW = texH * targetAspect;
         } else {
             srcH = texW / targetAspect;
         }
-
         float zoom = Math.max(1f, crop.zoom());
         srcW /= zoom;
         srcH /= zoom;
@@ -179,7 +174,6 @@ public final class PanelBackground {
         }
         int w = Math.max(1, Math.round(srcW));
         int h = Math.max(1, Math.round(srcH));
-
         int u = Math.round(crop.centerX() * texW - w / 2f);
         int v = Math.round(crop.centerY() * texH - h / 2f);
         u = Math.max(0, Math.min(u, texW - w));

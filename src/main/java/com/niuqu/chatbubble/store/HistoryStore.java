@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.store;
-
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.niuqu.chatbubble.E33Log;
@@ -81,7 +80,6 @@ public final class HistoryStore {
 
     public static String toLine(ChatMessageStore.ChatMessage msg) {
         if (isSensitiveCommand(msg.content().getString())) return null;
-
         java.util.Map<String, Object> obj = new java.util.LinkedHashMap<>();
         obj.put("time", msg.time());
         obj.put("uuid", msg.senderUUID() != null ? msg.senderUUID().toString() : "");

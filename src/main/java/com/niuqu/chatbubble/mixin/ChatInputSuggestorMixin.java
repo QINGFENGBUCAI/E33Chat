@@ -18,29 +18,25 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(value = ChatInputSuggestor.class, priority = 500)
 public class ChatInputSuggestorMixin {
     //#if MC >= 26000
-
     @Inject(method = "extractRenderState(Lnet/minecraft/client/gui/GuiGraphicsExtractor;II)V",
-            at = @At("HEAD"), cancellable = true)
+            at = @At("HEAD"))
     private void onRenderMessages(DrawContext context, int mouseX, int mouseY, CallbackInfo ci) {
-        if (MinecraftClient.getInstance().currentScreen instanceof ChatBubbleScreen) {
-            ci.cancel();
-        }
+        repositionForChatBubble();
     }
     //#else
-    //$$ @Inject(method = "renderMessages", at = @At("HEAD"), cancellable = true)
+    //$$ @Inject(method = "renderMessages", at = @At("HEAD"))
     //$$ private void onRenderMessages(DrawContext context, CallbackInfo ci) {
-    //$$     if (MinecraftClient.getInstance().currentScreen instanceof ChatBubbleScreen) {
-    //$$         ci.cancel();
-    //$$     }
+    //$$     repositionForChatBubble();
     //$$ }
     //#endif
-
-    //#if MC >= 26000
-    @Inject(method = "showSuggestions(Z)V", at = @At("TAIL"))
-    private void afterShow(CallbackInfo ci) {
+    private void repositionForChatBubble() {
         if (!(MinecraftClient.getInstance().currentScreen instanceof ChatBubbleScreen)) return;
+        //#if MC >= 26000
         net.minecraft.client.gui.components.CommandSuggestions.SuggestionsList window =
             ((ChatInputSuggestorAccessor) this).getWindow();
+        //#else
+        //$$ ChatInputSuggestor.SuggestionWindow window = ((ChatInputSuggestorAccessor) this).getWindow();
+        //#endif
         if (window == null) return;
         Rect2i area = ((SuggestionWindowAccessor) window).getArea();
         if (area == null) return;
@@ -48,17 +44,16 @@ public class ChatInputSuggestorMixin {
         if (area.getY() != newY) area.setY(newY);
         if (area.getX() < ChatBubbleScreen.getInputX()) area.setX(ChatBubbleScreen.getInputX());
     }
+
+    //#if MC >= 26000
+    @Inject(method = "showSuggestions(Z)V", at = @At("TAIL"))
+    private void afterShow(CallbackInfo ci) {
+        repositionForChatBubble();
+    }
     //#else
     //$$ @Inject(method = "show(Z)V", at = @At("TAIL"))
     //$$ private void afterShow(CallbackInfo ci) {
-    //$$     if (!(MinecraftClient.getInstance().currentScreen instanceof ChatBubbleScreen)) return;
-    //$$     ChatInputSuggestor.SuggestionWindow window = ((ChatInputSuggestorAccessor) this).getWindow();
-    //$$     if (window == null) return;
-    //$$     Rect2i area = ((SuggestionWindowAccessor) window).getArea();
-    //$$     if (area == null) return;
-    //$$     int newY = ChatBubbleScreen.getInputY() - area.getHeight() - 4;
-    //$$     if (area.getY() != newY) area.setY(newY);
-    //$$     if (area.getX() < ChatBubbleScreen.getInputX()) area.setX(ChatBubbleScreen.getInputX());
+    //$$     repositionForChatBubble();
     //$$ }
     //#endif
 }

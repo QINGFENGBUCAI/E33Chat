@@ -1,9 +1,7 @@
 package com.niuqu.chatbubble.config;
-
 import com.niuqu.chatbubble.E33Log;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -24,7 +22,6 @@ public final class ConfigManager {
                 }
             } catch (Exception e) {
                 E33Log.warn("[e33chat] Failed to load config, using defaults", e);
-
                 try {
                     Files.move(path, path.resolveSibling(path.getFileName() + ".bak"),
                         java.nio.file.StandardCopyOption.REPLACE_EXISTING);
@@ -76,7 +73,6 @@ public final class ConfigManager {
             c.popupAnimStyle() != null ? c.popupAnimStyle() : d.popupAnimStyle(),
             c.messageAnimStyle() != null ? c.messageAnimStyle() : d.messageAnimStyle(),
             c.imageRenderEnabled() != null ? c.imageRenderEnabled() : d.imageRenderEnabled(),
-
             c.receiveImages() != null ? c.receiveImages()
                 : (c.imageRenderEnabled() != null ? c.imageRenderEnabled() : d.receiveImages()),
             c.uploadUrl() != null ? c.uploadUrl() : d.uploadUrl(),
@@ -97,7 +93,6 @@ public final class ConfigManager {
     public static void save(Path path, ChatBubbleConfig config) {
         try {
             Files.createDirectories(path.getParent());
-
             Path tmp = path.resolveSibling(path.getFileName() + ".tmp");
             try (Writer w = new OutputStreamWriter(Files.newOutputStream(tmp), StandardCharsets.UTF_8)) {
                 GSON.toJson(config, w);

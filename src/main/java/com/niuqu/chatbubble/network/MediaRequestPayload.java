@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.network;
-
 import net.minecraft.network.PacketByteBuf;
 //#if MC >= 12005
 import net.minecraft.network.codec.PacketCodec;
@@ -12,7 +11,6 @@ public record MediaRequestPayload(String mediaId) implements CustomPayload {
 //#else
 //$$ public record MediaRequestPayload(String mediaId) {
 //#endif
-
     //#if MC >= 12005
     public static final CustomPayload.Id<MediaRequestPayload> ID =
         new CustomPayload.Id<>(
@@ -25,7 +23,6 @@ public record MediaRequestPayload(String mediaId) implements CustomPayload {
     //#else
     //$$ public static final Identifier ID = new Identifier("e33chat", "media_request");
     //#endif
-
     //#if MC >= 12005
     public static final PacketCodec<PacketByteBuf, MediaRequestPayload> CODEC = PacketCodec.of(
         //#if MC >= 26000
@@ -44,7 +41,6 @@ public record MediaRequestPayload(String mediaId) implements CustomPayload {
     //$$     return buf;
     //$$ }
     //#endif
-
     //#if MC >= 12005
     @Override
     public Id<MediaRequestPayload> getId() { return ID; }

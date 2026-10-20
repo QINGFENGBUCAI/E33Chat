@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.network;
-
 import com.niuqu.chatbubble.store.ChatMessageStore;
 import net.minecraft.network.PacketByteBuf;
 //#if MC >= 12005
@@ -7,7 +6,6 @@ import net.minecraft.network.codec.PacketCodec;
 import net.minecraft.network.packet.CustomPayload;
 //#endif
 import net.minecraft.util.Identifier;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,7 +17,6 @@ public record ConfigSyncV2Payload(boolean useTpa, List<String> chatTemplates,
 //$$ public record ConfigSyncV2Payload(boolean useTpa, List<String> chatTemplates,
 //$$                                   List<String> whisperTemplates, boolean templateDebug) {
 //#endif
-
     //#if MC >= 12005
     public static final CustomPayload.Id<ConfigSyncV2Payload> ID =
         new CustomPayload.Id<>(
@@ -32,7 +29,6 @@ public record ConfigSyncV2Payload(boolean useTpa, List<String> chatTemplates,
     //#else
     //$$ public static final Identifier ID = new Identifier("e33chat", "config_sync_v2");
     //#endif
-
     //#if MC >= 12005
     public static final PacketCodec<PacketByteBuf, ConfigSyncV2Payload> CODEC = PacketCodec.of(
         //#if MC >= 26000

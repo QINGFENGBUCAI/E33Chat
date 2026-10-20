@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.chat;
-
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -29,7 +28,6 @@ class WhisperFormatsTest {
             "[Essentials] Steve is trying to teleport to you"));
         assertFalse(MessagePresentation.hasWhisperKeywordBeforeColon(
             "[Essentials] Bob has requested to teleport to you"));
-
         assertTrue(MessagePresentation.hasWhisperKeywordBeforeColon("Steve whispers to you: hi"));
         assertTrue(MessagePresentation.hasWhisperKeywordBeforeColon("Steve PM you: hi"));
     }

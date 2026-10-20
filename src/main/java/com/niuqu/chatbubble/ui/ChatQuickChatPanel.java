@@ -4,7 +4,6 @@ import com.niuqu.chatbubble.texture.UiTextureManager;
 import com.niuqu.chatbubble.texture.ColoredTextureRenderer;
 import com.niuqu.chatbubble.render.ChatBubbleTheme;
 import com.niuqu.chatbubble.config.ChatBubbleConfig;
-
 import net.minecraft.client.font.TextRenderer;
 //#if MC >= 12000
 import net.minecraft.client.gui.DrawContext;
@@ -14,7 +13,6 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.MathHelper;
-
 import java.util.ArrayList;
 import java.util.List;
 import com.niuqu.chatbubble.texture.UiElement;
@@ -45,14 +43,11 @@ public class ChatQuickChatPanel {
         int listH = visiblePhrases * ROW_H;
         int separatorH = visiblePhrases > 0 ? 4 : 0;
         int panelH = 8 + listH + separatorH + 20;
-
         int px = MathHelper.clamp(panelX + panelW / 2 - W / 2, panelX + 2, panelX + panelW - W - 2);
         int py = barTop - panelH - 4;
-
         ColoredTextureRenderer.drawWithAlpha(g, UiTextureManager.rl(UiElement.CONTENT_BG),
             px, py, W, panelH, alpha);
         g.drawBorder(px, py, W, panelH, ChatBubbleTheme.alphaBlend(c.divider(), a255));
-
         int totalPhrases = phrases.size();
         int phraseAreaRight = px + W - 4;
         boolean hasScrollbar = totalPhrases > MAX_VISIBLE;
@@ -63,7 +58,6 @@ public class ChatQuickChatPanel {
             int trackTop = py + 4;
             int trackBottom = py + 4 + listH;
             int trackRgb = c.scrollbar() & 0x00FFFFFF;
-
             com.niuqu.chatbubble.texture.ColoredTextureRenderer.drawTinted(g,
                 com.niuqu.chatbubble.texture.UiTextureManager.rl(com.niuqu.chatbubble.texture.UiElement.QUICK_SCROLLBAR_TRACK),
                 trackX, trackTop, 3, trackBottom - trackTop, (0x30 << 24) | trackRgb);
@@ -76,7 +70,6 @@ public class ChatQuickChatPanel {
                 com.niuqu.chatbubble.texture.UiTextureManager.rl(com.niuqu.chatbubble.texture.UiElement.QUICK_SCROLLBAR_THUMB),
                 trackX, thumbY, 3, thumbH, (0x70 << 24) | thumbRgb);
         }
-
         int listY = py + 4;
         int startIdx = scrollOffset;
         int endIdx = Math.min(startIdx + MAX_VISIBLE, phrases.size());
@@ -100,7 +93,6 @@ public class ChatQuickChatPanel {
                 delX, delY, 12, 12, alpha);
             g.drawText(font, "✕", delX + 6 - font.getWidth("✕") / 2, delY + 2, com.niuqu.chatbubble.render.ChatBubbleTheme.alphaBlend(c.closeText(), a255), false);
         }
-
         int inputY = py + 4 + listH + separatorH + 4;
         int inputX = px + 4;
         int inputW = W - 10;
@@ -115,7 +107,6 @@ public class ChatQuickChatPanel {
         if (input.getText().isEmpty() && !input.isFocused())
             g.drawText(font, Text.translatable("e33chat.quick_chat.placeholder").getString(),
                 inputX + 2, inputY + 3, com.niuqu.chatbubble.render.ChatBubbleTheme.alphaBlend(c.textMuted(), a255), false);
-
         input.setX(inputX + 2);
         input.setWidth(inputW - 4);
         input.setY(inputY + 3);
@@ -147,15 +138,12 @@ public class ChatQuickChatPanel {
         int listH = visiblePhrases * ROW_H;
         int separatorH = visiblePhrases > 0 ? 4 : 0;
         int panelH = 8 + listH + separatorH + 20;
-
         int px = MathHelper.clamp(panelX + panelW / 2 - W / 2, panelX + 2, panelX + panelW - W - 2);
         int py = barTop - panelH - 4;
-
         if (mx < px || mx > px + W || my < py || my > py + panelH) {
             requestClose();
             return -1;
         }
-
         int hoverRight = phrases.size() > MAX_VISIBLE ? px + W - 8 : px + W - 4;
         int listY = py + 4;
         int startIdx = scrollOffset;
@@ -177,7 +165,6 @@ public class ChatQuickChatPanel {
                 return i;
             }
         }
-
         if (input.mouseClicked(mx, my, 0))
             return -2;
         return -1;

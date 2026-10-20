@@ -1,12 +1,10 @@
 package com.niuqu.chatbubble.network;
-
 import net.minecraft.network.PacketByteBuf;
 //#if MC >= 12005
 import net.minecraft.network.codec.PacketCodec;
 import net.minecraft.network.packet.CustomPayload;
 //#endif
 import net.minecraft.util.Identifier;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -17,7 +15,6 @@ public record HistoryPayload(List<HistoryPayload.HistoryEntry> entries)
 //#else
 //$$ public record HistoryPayload(List<HistoryPayload.HistoryEntry> entries) {
 //#endif
-
     //#if MC >= 12005
     public static final CustomPayload.Id<HistoryPayload> ID =
         new CustomPayload.Id<>(

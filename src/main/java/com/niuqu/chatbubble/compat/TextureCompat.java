@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.compat;
-
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.texture.NativeImageBackedTexture;
 

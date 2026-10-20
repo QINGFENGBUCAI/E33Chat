@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.image;
-
 import com.niuqu.chatbubble.E33Log;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
@@ -25,7 +24,6 @@ public final class RasterImageDecoder {
                 if (img == null) return null;
                 return new DecodedImage(img, img.getWidth(), img.getHeight());
             }
-
             try (ImageInputStream in = ImageIO.createImageInputStream(new ByteArrayInputStream(bytes))) {
                 Iterator<ImageReader> readers = ImageIO.getImageReaders(in);
                 if (!readers.hasNext()) return null;
@@ -57,7 +55,6 @@ public final class RasterImageDecoder {
         int w = bi.getWidth();
         int h = bi.getHeight();
         NativeImage out = new NativeImage(NativeImage.Format.RGBA, w, h, false);
-
         int[] argb = bi.getRGB(0, 0, w, h, null, 0, w);
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {

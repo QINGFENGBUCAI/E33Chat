@@ -3,12 +3,10 @@ import com.niuqu.chatbubble.ChatBubbleClientSetup;
 import com.niuqu.chatbubble.E33Log;
 import com.niuqu.chatbubble.GuiCompat;
 import com.niuqu.chatbubble.config.ChatBubbleConfig;
-
 import net.minecraft.util.Formatting;import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.Text;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Style;
-
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalTime;
@@ -292,13 +290,11 @@ public class ChatMessageStore {
                 isOwn, isSystem, replyContent, replySender, messageHash, duplicateCount,
                 rawPlayerName, whisper, whisperPartner, group);
         }
-
         public ChatMessage withMerge(String newReplyContent, String newReplySender, long newTime, int newDupCount) {
             return new ChatMessage(senderUUID, senderName, content, newTime,
                 isOwn, isSystem, newReplyContent, newReplySender, messageHash, newDupCount,
                 rawPlayerName, whisper, whisperPartner, group);
         }
-
         public ChatMessage withReply(String newReplyContent, String newReplySender) {
             return new ChatMessage(senderUUID, senderName, content, time,
                 isOwn, isSystem, newReplyContent, newReplySender, messageHash, duplicateCount,
@@ -348,12 +344,9 @@ public class ChatMessageStore {
 
     public static void addMessage(Text content, UUID senderUUID, Text senderName, boolean isSystem, String rawPlayerName, boolean whisper, String whisperPartner, boolean localSend, String group) {
         String messageHash = String.valueOf(content.getString().hashCode());
-
         if (content.getString().isBlank()) return;
-
         var localPlayer = localPlayerSupplier.get();
         String playerName = localPlayer != null ? localPlayer.getName().getString() : "";
-
         boolean own = localPlayer != null && senderUUID != null
             && senderUUID.equals(localPlayer.getUuid());
         if (!own) {
@@ -361,9 +354,7 @@ public class ChatMessageStore {
                 ? rawPlayerName.equals(playerName)
                 : senderName != null && senderName.getString().equals(playerName);
         }
-
         if (own) cacheOwnDecoratedName(senderName);
-
         if (ChatBubbleClientSetup.config().antiSpam() && !messages.isEmpty()) {
             ChatMessage last = messages.get(messages.size() - 1);
             if (!last.isSystem() && isSameSender(last, senderName, rawPlayerName)
@@ -390,12 +381,10 @@ public class ChatMessageStore {
                 return;
             }
         }
-
         EchoTracker.PendingMeta pending = EchoTracker.removePendingMeta(messageHash);
         if (pending != null && System.currentTimeMillis() - pending.createdAt() > 10_000) {
             pending = null;
         }
-
         String replyContent = null;
         String replySender = null;
         if (own && pendingReplyContent != null) {
@@ -407,7 +396,6 @@ public class ChatMessageStore {
             replyContent = pending.quoteContent();
             replySender = pending.quoteSender();
         }
-
         messages.add(new ChatMessage(
             senderUUID,
             senderName != null ? senderName : Text.literal(""),
@@ -424,25 +412,19 @@ public class ChatMessageStore {
             whisperPartner,
             group
         ));
-
         if (!isSystem && senderUUID != null && !senderUUID.equals(new UUID(0, 0)))
             rememberPlayer(senderUUID, rawPlayerName, senderName.getString());
-        // 皮肤预热入队（并发队列，主线程 tick 消费）：面板关闭期间玩家聊天、
-        // 随后下线时皮肤也能进缓存，头像不再退化为默认皮肤
         if (!isSystem && senderUUID != null && !senderUUID.equals(new UUID(0, 0)))
             com.niuqu.chatbubble.render.SkinResolver.enqueuePrewarm(senderUUID,
                 rawPlayerName != null && !rawPlayerName.isEmpty() ? rawPlayerName : senderName.getString());
-
         while (messages.size() > MAX)
             messages.remove(0);
         bumpListVersion();
         historyDirty = true;
-
         boolean isMentionOrQuote = !isSystem
             && com.niuqu.chatbubble.chat.MentionDetector.isMentioned(
                 content.getString(), playerName,
                 ChatBubbleClientSetup.config().mentionRequireAt(), replySender);
-
         if (isMentionOrQuote) {
             if (!screenOpen) hasUnreadMentionFlag = true;
             effectObserver.onMentionOrQuote(
@@ -450,28 +432,23 @@ public class ChatMessageStore {
                     rawPlayerName, whisper, whisperPartner),
                 messages.size(), replySender);
         }
-
         if (whisper && rawPlayerName != null
             && ChatBubbleClientSetup.config().mentionWhisperBanner()
             && (!localSend || ChatBubbleClientSetup.config().ownWhisperNotify())) {
             effectObserver.onWhisperReceived(
                 senderUUID, senderName, content, messages.size());
         }
-
         if (isSystem && ChatBubbleClientSetup.config().systemBannerEnabled()) {
             effectObserver.onSystemMessage(content, messages.size());
         }
-
         if (!own && localPlayerSupplier.get() != null && !isMentionOrQuote && !whisper
             && (isSystem ? ChatBubbleClientSetup.config().soundSystem()
                          : ChatBubbleClientSetup.config().soundPublic())) {
             effectObserver.onPublicChatSound();
         }
-
         if (!screenOpen) {
             unreadCount++;
         }
-
         if (whisper && whisperPartner != null && !own) {
             markWhisperUnread(whisperPartner);
         }
@@ -532,7 +509,6 @@ public class ChatMessageStore {
                 result.add(msg);
             }
         }
-
         if (whisperCache.size() > 64) whisperCache.clear();
         whisperCache.put(partnerName, result);
         return result;
@@ -666,13 +642,11 @@ public class ChatMessageStore {
 
     public static Text extractWhisperDisplayName(Text fullLine, Text fallback) {
         String fullStr = fullLine.getString();
-
         int qiaoIdx = fullStr.indexOf("悄悄地对你说");
         if (qiaoIdx > 0) {
             Text area = sliceStyled(fullLine, 0, qiaoIdx);
             if (!area.getString().isBlank()) return stripItalic(area);
         }
-
         int duiIdx = fullStr.indexOf("悄悄地对");
         if (duiIdx >= 0) {
             int sayIdx = fullStr.indexOf("说：", duiIdx);
@@ -685,7 +659,6 @@ public class ChatMessageStore {
                 return fallback;
             }
         }
-
         int toIdx = fullStr.indexOf("whisper to ");
         if (toIdx >= 0) {
             int colonIdx = fullStr.indexOf(":", toIdx);
@@ -729,7 +702,6 @@ public class ChatMessageStore {
         if (player != null && player.getScoreboardTeam() != null) {
             var team = player.getScoreboardTeam();
             //#if MC >= 26000
-
             Text pfx = team.getPlayerPrefix();
             Text sfx = team.getPlayerSuffix();
             Formatting col = team.getColor();
@@ -783,7 +755,6 @@ public class ChatMessageStore {
             hasUnreadMentionFlag = false;
             if (ChatBubbleClientSetup.config().chatHistoryEnabled() && isWorldSpecific(currentWorldKey)) {
                 List<ChatMessage> early = new ArrayList<>(messages);
-
                 Map<String, Integer> skipKeys = usableSkips(backlogKeys, mergeCountsOf(early));
                 backlogKeys.clear();
                 messages.clear();
@@ -873,7 +844,6 @@ public class ChatMessageStore {
         SAVE_EXECUTOR.execute(() -> {
             if (gen != historyGeneration) return;
             f.getParentFile().mkdirs();
-
             File tmp = new File(f.getParentFile(), f.getName() + ".tmp");
             try (Writer w = new OutputStreamWriter(new FileOutputStream(tmp), StandardCharsets.UTF_8)) {
                 for (ChatMessage msg : snapshot) {
@@ -887,7 +857,6 @@ public class ChatMessageStore {
                 E33Log.warn("[e33chat] Failed to read/write chat history", e);
                 return;
             }
-
             if (gen != historyGeneration) {
                 tmp.delete();
                 return;
@@ -923,13 +892,11 @@ public class ChatMessageStore {
         unreadWhisperPartners.clear();
         historyDirty = false;
         historyGeneration++;
-
         if (currentWorldKey == null) return;
         File f = getHistoryFile(currentWorldKey);
         File legacy = getLegacyHistoryFile(currentWorldKey);
         if (f.exists()) f.delete();
         if (legacy.exists()) legacy.delete();
-
         final long gen = historyGeneration;
         final File cur = f;
         final File leg = legacy;
@@ -984,7 +951,6 @@ public class ChatMessageStore {
             if (legacy.exists()) f = legacy;
         }
         if (!f.exists()) return;
-
         new File(f.getParentFile(), f.getName() + ".tmp").delete();
         String head;
         try (java.io.BufferedReader br = new java.io.BufferedReader(new java.io.InputStreamReader(
@@ -995,14 +961,11 @@ public class ChatMessageStore {
             return;
         }
         if (head == null) return;
-
         if (head.startsWith("﻿")) head = head.substring(1);
-
         if (head.trim().startsWith("[")) {
             List<ChatMessage> legacy = loadLegacyFile(f);
             for (ChatMessage m : legacy) {
                 if (BlockList.isBlocked(m)) continue;
-
                 if (!skipCounts.isEmpty() && !takeFresh(skipCounts, mergeKeyOf(m))) continue;
                 messages.add(m);
                 if (!m.isSystem() && !m.senderUUID().equals(new UUID(0, 0)))
@@ -1083,7 +1046,6 @@ public class ChatMessageStore {
 
     public static void addHistoryMessages(List<com.niuqu.chatbubble.network.HistoryPayload.HistoryEntry> entries) {
         if (entries == null || entries.isEmpty()) return;
-
         Map<String, Integer> seen = mergeCountsOf(messages);
         List<ChatMessage> fresh = new ArrayList<>();
         for (var e : entries) {
@@ -1127,13 +1089,11 @@ public class ChatMessageStore {
                                       String quoteSender, String quoteContent, List<String> mentionTargets) {
         for (int i = messages.size() - 1; i >= 0; i--) {
             ChatMessage msg = messages.get(i);
-
             boolean nameMatch = senderName != null && !senderName.isEmpty()
                 && msg.rawPlayerName() != null && msg.rawPlayerName().equals(senderName);
             if (msg.messageHash().equals(messageHash)
                 && (msg.senderUUID().equals(senderUUID) || nameMatch)) {
                 if (msg.replyContent() != null) continue;
-
                 if (msg.duplicateCount() > 1) continue;
                 if (System.currentTimeMillis() - msg.time() > 5_000) continue;
                 if (!quoteContent.isEmpty()) {

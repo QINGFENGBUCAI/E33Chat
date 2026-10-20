@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.command;
-
 import com.niuqu.chatbubble.ChatBubbleMod;
 import com.niuqu.chatbubble.chat.TemplateMatcher;
 import com.niuqu.chatbubble.config.ServerConfig;
@@ -20,7 +19,6 @@ import net.minecraft.command.CommandSource;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
-
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,7 +34,6 @@ public class E33ChatCommands {
                 .requires(s -> s.hasPermissionLevel(2));
             tpl.then(net.minecraft.server.command.CommandManager.literal("list")
                 .executes(ctx -> list(ctx.getSource())));
-
             tpl.then(net.minecraft.server.command.CommandManager.literal("set")
                 .then(net.minecraft.server.command.CommandManager.literal("chat")
                     .then(net.minecraft.server.command.CommandManager.argument("template", StringArgumentType.greedyString())
@@ -46,7 +43,6 @@ public class E33ChatCommands {
                     .then(net.minecraft.server.command.CommandManager.argument("template", StringArgumentType.greedyString())
                         .executes(ctx -> set(ctx.getSource(), false,
                             StringArgumentType.getString(ctx, "template"))))));
-
             tpl.then(net.minecraft.server.command.CommandManager.literal("remove")
                 .then(net.minecraft.server.command.CommandManager.literal("chat")
                     .then(net.minecraft.server.command.CommandManager.argument("index", IntegerArgumentType.integer(1))
@@ -56,13 +52,11 @@ public class E33ChatCommands {
                     .then(net.minecraft.server.command.CommandManager.argument("index", IntegerArgumentType.integer(1))
                         .executes(ctx -> remove(ctx.getSource(), false,
                             IntegerArgumentType.getInteger(ctx, "index"))))));
-
             tpl.then(net.minecraft.server.command.CommandManager.literal("clear")
                 .then(net.minecraft.server.command.CommandManager.literal("chat")
                     .executes(ctx -> clear(ctx.getSource(), true)))
                 .then(net.minecraft.server.command.CommandManager.literal("whisper")
                     .executes(ctx -> clear(ctx.getSource(), false))));
-
             tpl.then(net.minecraft.server.command.CommandManager.literal("test")
                 .then(net.minecraft.server.command.CommandManager.literal("chat")
                     .then(net.minecraft.server.command.CommandManager.argument("index", IntegerArgumentType.integer(1))
@@ -76,7 +70,6 @@ public class E33ChatCommands {
                             .executes(ctx -> test(ctx.getSource(), false,
                                 IntegerArgumentType.getInteger(ctx, "index"),
                                 StringArgumentType.getString(ctx, "text")))))));
-
             dispatcher.register(net.minecraft.server.command.CommandManager.literal("e33chat")
                 .then(net.minecraft.server.command.CommandManager.literal("gui")
                     .requires(s -> s.hasPermissionLevel(2))
@@ -309,7 +302,6 @@ public class E33ChatCommands {
     private static void updateTemplates(ServerCommandSource src, boolean chat, List<String> next) {
         if (chat) ChatBubbleMod.setTemplates(new ArrayList<>(next), ChatBubbleMod.whisperTemplates(), ChatBubbleMod.templateDebug());
         else ChatBubbleMod.setTemplates(ChatBubbleMod.chatTemplates(), new ArrayList<>(next), ChatBubbleMod.templateDebug());
-
         var server = src.getServer();
         var path = server.getSavePath(net.minecraft.util.WorldSavePath.ROOT)
             .resolve("serverconfig").resolve("e33chat-server.json");

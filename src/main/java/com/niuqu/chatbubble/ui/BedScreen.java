@@ -52,7 +52,6 @@ public class BedScreen extends Screen {
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         //#if MC >= 26000
-
         if (keyCode == com.mojang.blaze3d.platform.InputConstants.KEY_ESCAPE) {
         //#else
         //$$ if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE) {

@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble;
-
 import com.niuqu.chatbubble.mixin.ScreenAccessor;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
@@ -10,7 +9,6 @@ import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
-
 import com.mojang.authlib.GameProfile;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;

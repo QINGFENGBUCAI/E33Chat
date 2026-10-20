@@ -5,7 +5,6 @@ import net.minecraft.client.gui.DrawContext;
 //#else
 //$$ import com.niuqu.chatbubble.DrawContext;
 //#endif
-
 public final class RoundRectRenderer {
     private RoundRectRenderer() {}
 
@@ -25,12 +24,10 @@ public final class RoundRectRenderer {
             solid(g, x1, y1, x2, y2, argb);
             return;
         }
-
         int cr = (int) Math.ceil(radius + BAND);
         int baseAlpha = (argb >>> 24) & 0xFF;
         int rgb = argb & 0x00FFFFFF;
         int fullColor = (baseAlpha << 24) | rgb;
-
         for (int py = 0; py < h; py++) {
             int rowY = y1 + py;
             if (py >= cr && py < h - cr) {

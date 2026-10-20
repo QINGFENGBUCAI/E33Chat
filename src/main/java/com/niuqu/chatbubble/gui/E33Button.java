@@ -1,6 +1,5 @@
 //#if MC < 11903
 package com.niuqu.chatbubble.gui;
-
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.text.Text;
 
@@ -18,7 +17,6 @@ public final class E33Button {
         private int y;
         private int width;
         private int height;
-
         Builder(Text message, ButtonWidget.PressAction onPress) {
             this.message = message;
             this.onPress = onPress;
@@ -27,7 +25,6 @@ public final class E33Button {
             this.width = 200;
             this.height = 20;
         }
-
         public Builder dimensions(int x, int y, int width, int height) {
             this.x = x;
             this.y = y;
@@ -35,19 +32,16 @@ public final class E33Button {
             this.height = height;
             return this;
         }
-
         public Builder position(int x, int y) {
             this.x = x;
             this.y = y;
             return this;
         }
-
         public Builder size(int width, int height) {
             this.width = width;
             this.height = height;
             return this;
         }
-
         public ButtonWidget build() {
             return new ButtonWidget(x, y, width, height, message, onPress);
         }

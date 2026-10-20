@@ -14,7 +14,6 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-
 import java.util.UUID;
 
 @Mixin(value = net.minecraft.client.network.message.MessageHandler.class, priority = 500)
@@ -109,7 +108,6 @@ public class ChatListenerMixin {
                                MessageType.Parameters params, CallbackInfo ci) {
         UUID senderId = gameProfile.getId();
         //#if MC >= 26000
-
         Text raw = message.decoratedContent();
         //#else
         //$$ Text raw = message.getContent();
@@ -121,7 +119,6 @@ public class ChatListenerMixin {
             return;
         }
         String name = gameProfile.getName();
-
         boolean isWhisper = false;
         boolean isOutgoing = false;
         String whisperPartner = null;
@@ -137,7 +134,23 @@ public class ChatListenerMixin {
         //#else
         //$$ // 1.20.4 and earlier: no MSG_COMMAND_* MessageType, rely on keyword-based whisper detection
         //#endif
-
+        if (!isWhisper && com.niuqu.chatbubble.chat.MessagePresentation.hasWhisperKeywordBeforeColon(rawStr)) {
+            isWhisper = true;
+            var self = MinecraftClient.getInstance().player;
+            if (self != null && rawStr.contains("对你说")) {
+                whisperPartner = name;
+                isOutgoing = false;
+            } else if (rawStr.contains("你悄悄地对")) {
+                int idx = rawStr.indexOf("对");
+                if (idx >= 0) {
+                    int end = rawStr.indexOf("说", idx);
+                    if (end > idx) {
+                        whisperPartner = rawStr.substring(idx + 1, end).trim();
+                        isOutgoing = true;
+                    }
+                }
+            }
+        }
         String pattern = "<" + name + "> ";
         int idx = rawStr.indexOf(pattern);
         int contentStart = idx >= 0 ? idx + pattern.length() : -1;
@@ -162,7 +175,6 @@ public class ChatListenerMixin {
                 displayName, contentComp, false, name, isWhisper, whisperPartner));
             return;
         }
-
         Text playerContent = raw;
         Text senderName = Text.literal(name);
         if (isWhisper) {
@@ -173,7 +185,6 @@ public class ChatListenerMixin {
             Text fullLine = params.applyChatDecoration(raw);
             senderName = extractDecoratedName(fullLine, rawStr, name, senderName);
         }
-
         var self = MinecraftClient.getInstance().player;
         if (senderId != null && self != null && senderId.equals(self.getUuid())) {
             ChatMessageStore.cacheOwnDecoratedName(senderName);
@@ -184,9 +195,7 @@ public class ChatListenerMixin {
             senderName, playerContent, false, name, isWhisper, whisperPartner));
     }
     //#endif
-
     //#if MC >= 11903
-
     @Inject(method = "onProfilelessMessage", at = @At("HEAD"))
     private void onDisguisedChat(Text message, MessageType.Parameters params, CallbackInfo ci) {
         String msgStr = message.getString();
@@ -197,7 +206,6 @@ public class ChatListenerMixin {
         }
         boolean hasSender = params.name() != null
             && !params.name().getString().replaceAll("§.", "").trim().isEmpty();
-
         boolean isWhisper = false;
         boolean isOutgoing = false;
         String whisperPartner = null;
@@ -213,12 +221,10 @@ public class ChatListenerMixin {
         //#else
         //$$ // 1.20.4 and earlier: no MSG_COMMAND_* MessageType, rely on keyword-based whisper detection
         //#endif
-
         if (!isWhisper) {
             SenderMeta wm = detectWhisperInSystemMessage(msgStr, "disguised");
             if (wm != null) { ChatMessageStore.setPendingMeta(wm); return; }
         }
-
         if (hasSender) {
             Text disContent = message;
             Text disSender = params.name();
@@ -236,28 +242,24 @@ public class ChatListenerMixin {
                 params.name().getString(), isWhisper, whisperPartner));
             return;
         }
-
         if (!isOutgoing
             && (!ChatMessageStore.serverChatTemplates().isEmpty()
                 || !ChatMessageStore.serverWhisperTemplates().isEmpty())) {
             SenderMeta tpl = matchByTemplate(message, msgStr, "Disguised");
             if (tpl != null) { ChatMessageStore.setPendingMeta(tpl); return; }
         }
-
         var connection = MinecraftClient.getInstance().player != null
             ? MinecraftClient.getInstance().player.networkHandler : null;
-
         SenderMeta tc = detectByTellClick(message, msgStr);
         if (tc != null) { ChatMessageStore.setPendingMeta(tc); return; }
-
         if (connection != null && !isWhisper) {
             SenderMeta parsed = com.niuqu.chatbubble.chat.capture.ChatPipeline.tryParsePlayerLine(message, msgStr, "Disguised");
             if (parsed != null) { ChatMessageStore.setPendingMeta(parsed); return; }
         }
-
         ChatMessageStore.debugLog(() -> "[e33chat] Disguised(guard fallback -> gray) | text='" + msgStr + "'");
         var cfg = ChatBubbleClientSetup.config();
         boolean isSystem = cfg == null || !cfg.systemChatAsBubble();
+        ChatMessageStore.debugLog(() -> "[e33chat] systemChatAsBubble config=" + (cfg != null ? cfg.systemChatAsBubble() : "null") + " | isSystem=" + isSystem);
         ChatMessageStore.setPendingMeta(new SenderMeta(
             new UUID(0, 0), Text.translatable("e33chat.sender.system"),
             message, isSystem, null, false, null));
@@ -267,23 +269,18 @@ public class ChatListenerMixin {
     @Inject(method = "onGameMessage", at = @At("HEAD"))
     private void onSystemChat(Text message, boolean overlay, CallbackInfo ci) {
         if (overlay) return;
-
         if (classifyByKey(message)) return;
-
         String sysText = message.getString();
         if (com.niuqu.chatbubble.chat.capture.EchoSuppressor.trySuppressOutgoingEcho(sysText)) return;
         ChatMessageStore.debugLog(() -> "[e33chat] System | text='" + sysText + "' | overlay=" + overlay);
-
         String text = message.getString();
         var connection = MinecraftClient.getInstance().player != null
             ? MinecraftClient.getInstance().player.networkHandler : null;
-
         if ((!ChatMessageStore.serverChatTemplates().isEmpty()
                 || !ChatMessageStore.serverWhisperTemplates().isEmpty()) && connection != null) {
             SenderMeta tpl = matchByTemplate(message, text);
             if (tpl != null) { ChatMessageStore.setPendingMeta(tpl); return; }
         }
-
         if (ChatMessageStore.isEasyBotCompat()) {
             SenderMeta eb = com.niuqu.chatbubble.chat.capture.EasyBotParser.tryParse(message, text);
             if (eb != null) {
@@ -292,27 +289,23 @@ public class ChatListenerMixin {
                 ChatMessageStore.setPendingMeta(eb);
                 return;
             }
-
             int open = text.indexOf('<');
             if (open >= 0 && text.indexOf('>', open) > open) {
                 ChatMessageStore.debugLog(() -> "[e33chat] System(EasyBot miss) | text='" + text + "'");
             }
         }
-
         SenderMeta wm = detectWhisperInSystemMessage(text, "whisper");
         if (wm != null) { ChatMessageStore.setPendingMeta(wm); return; }
-
         SenderMeta tc = detectByTellClick(message, text);
         if (tc != null) { ChatMessageStore.setPendingMeta(tc); return; }
-
         if (connection != null) {
             SenderMeta parsed = com.niuqu.chatbubble.chat.capture.ChatPipeline.tryParsePlayerLine(message, text, "System");
             if (parsed != null) { ChatMessageStore.setPendingMeta(parsed); return; }
         }
-
         ChatMessageStore.debugLog(() -> "[e33chat] System(guard fallback -> gray) | text='" + text + "'");
         var cfg = ChatBubbleClientSetup.config();
         boolean isSystem = cfg == null || !cfg.systemChatAsBubble();
+        ChatMessageStore.debugLog(() -> "[e33chat] systemChatAsBubble config=" + (cfg != null ? cfg.systemChatAsBubble() : "null") + " | isSystem=" + isSystem);
         ChatMessageStore.setPendingMeta(new SenderMeta(
             new UUID(0, 0), Text.translatable("e33chat.sender.system"),
             message, isSystem, null, false, null));

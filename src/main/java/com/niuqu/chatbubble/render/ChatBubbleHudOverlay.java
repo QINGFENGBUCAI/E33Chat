@@ -6,7 +6,6 @@ import com.niuqu.chatbubble.ChatBubbleMod;
 import com.niuqu.chatbubble.config.ChatBubbleConfig;
 import com.niuqu.chatbubble.render.ChatBubbleTheme;
 import com.niuqu.chatbubble.render.Appearance;
-
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.niuqu.chatbubble.chat.notification.MentionNotificationBanner;
 import com.niuqu.chatbubble.config.ChatBubbleConfig;
@@ -43,47 +42,38 @@ public class ChatBubbleHudOverlay {
     public static void render(DrawContext g) {
         MinecraftClient mc = MinecraftClient.getInstance();
         if (mc.player == null || mc.options == null) return;
-
         //#if MC >= 12100
         //#if MC < 26000
         if (mc.inGameHud.getDebugHud().shouldShowDebugHud()) return;
         //#endif
         //#endif
-
         g.getMatrices().push();
         g.getMatrices().translate(0, 0, 300);
-
         MentionNotificationBanner.INSTANCE.tick();
         if (mc.currentScreen == null) {
             MentionNotificationBanner.INSTANCE.render(g,
                 mc.getWindow().getScaledWidth(),
                 mc.getWindow().getScaledHeight());
         }
-
         if (mc.currentScreen != null) { g.getMatrices().pop(); return; }
-
         String keyName = mc.options.chatKey.getBoundKeyLocalizedText().getString();
         int screenH = mc.getWindow().getScaledHeight();
         int x = cfg().hudIconX();
         int iconY = screenH - ICON_S - cfg().hudIconY();
         int textY = iconY + ICON_S + 1;
-
         if (!cfg().hideChatIcon()) {
             drawIcon(g, x, iconY);
-
             if (cfg().redDotEnabled() && ChatMessageStore.getUnreadCount() > 0) {
                 double wave = Math.abs(Math.sin(System.currentTimeMillis() / 300.0)) * 3;
                 int tipX = x + ICON_S - TIP_DISP / 2;
                 int tipY = iconY - TIP_DISP / 2 + (int) wave;
                 drawScaledTip(g, tipX, tipY, TIP_DISP);
             }
-
             String keyDisplay = "[" + keyName + "]";
             int keyW = mc.textRenderer.getWidth(keyDisplay);
             int keyX = keyW > ICON_S ? x : x + (ICON_S - keyW) / 2;
             g.drawText(mc.textRenderer, keyDisplay, keyX, textY, 0xFFFFFFFF, false);
         }
-
         g.getMatrices().pop();
     }
 

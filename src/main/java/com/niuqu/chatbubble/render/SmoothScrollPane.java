@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.render;
-
 import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
 

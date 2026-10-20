@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.chat.capture;
-
 import com.niuqu.chatbubble.GuiCompat;
 import com.niuqu.chatbubble.chat.TemplateMatcher;
 import com.niuqu.chatbubble.store.ChatMessageStore;
@@ -26,7 +25,6 @@ public final class TemplateLayer {
         }
         if (++templateMissBurst > 5) return;
         String s = text.length() <= 100 ? text : text.substring(0, 100) + "…";
-
         StringBuilder tpl = new StringBuilder();
         for (var t : ChatMessageStore.serverChatTemplates()) tpl.append("\n  chat: ").append(t.raw());
         for (var t : ChatMessageStore.serverWhisperTemplates()) tpl.append("\n  whisper: ").append(t.raw());
@@ -67,7 +65,6 @@ public final class TemplateLayer {
                 ChatMessageStore.debugLog(() -> "[e33chat] " + logTag + "(template outgoing whisper) | text='" + text + "'");
                 return null;
             }
-
             ChatMessageStore.cacheOwnDecoratedName(
                 templateSlice(message, text, tpl.nameStart(), tpl.nameEnd()));
             ChatMessageStore.debugLog(() -> "[e33chat] " + logTag + "(template own line) | text='" + text + "'");

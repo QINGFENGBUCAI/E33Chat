@@ -1,11 +1,8 @@
 package com.niuqu.chatbubble.chat;
-
 import org.junit.jupiter.api.Test;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 class TemplateMatcherTest {
@@ -259,11 +256,9 @@ class TemplateMatcherTest {
 
     @Test void whisperWithUnresolvableNamesFallsBackToChat() {
         TemplateMatcher.NameResolver nobody = name -> false;
-
         assertTrue(TemplateMatcher.match("Alex → Bob: hi",
             List.of(chat("{display_name}: {content}")),
             List.of(whisper("{sender} → {target}: {content}")), nobody).isEmpty());
-
         TemplateMatcher.NameResolver alex = name -> name.equals("Alex → Bob");
         var r = TemplateMatcher.match("Alex → Bob: hi",
             List.of(chat("{display_name}: {content}")),

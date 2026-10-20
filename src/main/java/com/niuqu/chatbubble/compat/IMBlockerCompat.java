@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.compat;
-
 import com.niuqu.chatbubble.E33Log;
 import java.lang.reflect.Method;
 

@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.image;
-
 import com.niuqu.chatbubble.E33Log;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
@@ -27,7 +26,6 @@ public final class LocalImageSource {
 
     public sealed interface Prep {
         record Ok(PreparedImage image, boolean animated) implements Prep {}
-
         record Rejected(AnimatedImageLoader.OverBudget reason) implements Prep {}
     }
 
@@ -82,7 +80,6 @@ public final class LocalImageSource {
         int w = src.getWidth();
         int h = src.getHeight();
         if (w <= 0 || h <= 0) return null;
-
         double scale = Math.min(1.0, (double) MAX_EDGE / Math.max(w, h));
         BufferedImage img = src;
         if (scale < 1.0) {

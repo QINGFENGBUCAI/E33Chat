@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.ui;
-
 import com.niuqu.chatbubble.render.Appearance;
 import com.niuqu.chatbubble.ChatBubbleClientSetup;
 import com.niuqu.chatbubble.render.ChatBubbleTheme;
@@ -54,7 +53,6 @@ public class PanelCropScreen extends Screen {
             int now = PanelBackground.imageWidth() * 10000 + PanelBackground.imageHeight();
             if (now != lastKnownSize) {
                 lastKnownSize = now;
-
                 clearChildren();
                 init();
             }
@@ -72,7 +70,6 @@ public class PanelCropScreen extends Screen {
             imgX = imgY = 0;
         } else {
             float scale = Math.min((float) availW / texW, (float) availH / texH);
-
             scale = Math.min(scale, 1f);
             dispW = Math.max(1, Math.round(texW * scale));
             dispH = Math.max(1, Math.round(texH * scale));
@@ -89,7 +86,6 @@ public class PanelCropScreen extends Screen {
         int texH = PanelBackground.imageHeight();
         if (texW <= 0 || texH <= 0 || dispW <= 0) return null;
         float aspect = PanelBackground.lastTargetAspect();
-
         int targetW = Math.max(1, Math.round(aspect * 10000f));
         int targetH = 10000;
         int[] src = PanelBackground.sourceRect(texW, texH, targetW, targetH,
@@ -105,7 +101,6 @@ public class PanelCropScreen extends Screen {
     @Override
     public void render(DrawContext g, int mouseX, int mouseY, float partialTick) {
         //#if MC >= 26000
-
         //#else
         //#if MC >= 12002
         renderBackground(g, mouseX, mouseY, partialTick);
@@ -114,7 +109,6 @@ public class PanelCropScreen extends Screen {
         //#endif
         //#endif
         ChatBubbleTheme.Colors c = Appearance.snapshot();
-
         Identifier tex = PanelBackground.textureId();
         if (tex != null && dispW > 0) {
             ColoredTextureRenderer.drawWithAlpha(g, tex, imgX, imgY, dispW, dispH,
@@ -127,7 +121,6 @@ public class PanelCropScreen extends Screen {
             g.drawText(textRenderer, msg, (width - textRenderer.getWidth(msg)) / 2, height / 2,
                 PanelBackground.failed() ? 0xFFFF6666 : c.textSecondary(), false);
         }
-
         int[] sel = selectionScreenRect();
         if (sel != null) {
             int dim = 0x99000000;
@@ -135,17 +128,14 @@ public class PanelCropScreen extends Screen {
             g.fill(imgX, sel[1] + sel[3], imgX + dispW, imgY + dispH, dim);
             g.fill(imgX, sel[1], sel[0], sel[1] + sel[3], dim);
             g.fill(sel[0] + sel[2], sel[1], imgX + dispW, sel[1] + sel[3], dim);
-
             int border = 0xFFFFFFFF;
             g.fill(sel[0], sel[1], sel[0] + sel[2], sel[1] + 1, border);
             g.fill(sel[0], sel[1] + sel[3] - 1, sel[0] + sel[2], sel[1] + sel[3], border);
             g.fill(sel[0], sel[1], sel[0] + 1, sel[1] + sel[3], border);
             g.fill(sel[0] + sel[2] - 1, sel[1], sel[0] + sel[2], sel[1] + sel[3], border);
         }
-
         String hint = Text.translatable("e33chat.crop.hint").getString();
         g.drawText(textRenderer, hint, PAD, btnY + 6, c.textSecondary(), false);
-
         boolean hoverCancel = over(mouseX, mouseY, btnCancelX, btnY, BTN_W, BTN_H);
         boolean hoverConfirm = over(mouseX, mouseY, btnConfirmX, btnY, BTN_W, BTN_H);
         RoundRectRenderer.fill(g, btnCancelX, btnY, btnCancelX + BTN_W, btnY + BTN_H, 4,

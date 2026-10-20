@@ -1,8 +1,3 @@
-// 共享构建脚本 - 所有版本子项目共用 (MasaGadget 风格)
-// 版本特定配置在各自 gradle.properties 中定义
-// 26.x 版本自动启用 Yarn→Mojang 映射转换
-
-// 使用 buildscript + apply plugin 方式支持动态 Loom 版本
 buildscript {
     repositories {
         maven { url = "https://maven.fabricmc.net/" }
@@ -19,20 +14,16 @@ apply plugin: "java"
 apply plugin: "fabric-loom"
 apply plugin: "maven-publish"
 
-// 从 root gradle.properties 设置 group 和 version
 group = rootProject.maven_group
 version = rootProject.mod_version
 
-// 使用 project properties 直接配置 (MasaGadget 风格)
 println "Building: ${project.name} (MC ${project.minecraft_version}) - loom ${project.loom_version}"
 def targetJavaVersion = (project.findProperty('java_version') ?: '21') as Integer
 def modmenuVersion = project.findProperty('modmenu_version') ?: '11.0.3'
 
 final int mcVersion = project.mcVersion.toString().toInteger()
-// MC 26.x 取消了混淆，使用 Mojang 官方名称，无需 Yarn mappings
 def isMinecraft26x = mcVersion >= 26000
 
-// 输出文件名
 base.archivesName = project.archives_base_name
 
 repositories {
@@ -60,6 +51,7 @@ dependencies {
     }
     testImplementation platform('org.junit:junit-bom:5.11.4')
     testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 processResources {
@@ -71,13 +63,8 @@ processResources {
 }
 
 java {
-    // 预处理器模式下 sourcesJar 重映射会失败，由主项目单独构建 sourcesJar
-    // CI 统一使用 Java 25 运行 Gradle；旧版本通过 options.release 保持目标字节码，
-    // 避免 fresh runner 额外寻找 Java 17/21 toolchain 导致构建失败。
 }
 
-// 预处理器子项目禁用 sourcesJar 重映射（预处理指令导致 remapper 崩溃）
-// 26.x 无 mappings 时 remapSourcesJar 可能不存在，使用 matching 安全跳过
 tasks.matching { it.name == 'remapSourcesJar' }.configureEach {
     enabled = false
 }
@@ -91,10 +78,8 @@ tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
 
-// 读取主项目名称
 def mainProjectName = file("${rootProject.projectDir}/versions/mainProject").text.trim()
 
-// 共享源码目录（含预处理指令）
 def sharedSrcDir = file("${rootProject.projectDir}/src/main/java")
 def sharedResDir = file("${rootProject.projectDir}/src/main/resources")
 def versionJavaDir = file("${project.projectDir}/src/main/java")
@@ -102,12 +87,8 @@ def versionResDir = file("${project.projectDir}/src/main/resources")
 def preprocessedDir = file("${buildDir}/preprocessed/main/java")
 def sharedTestDir = file("${rootProject.projectDir}/src/test/java")
 def stubOnlySources = (project.findProperty('stub_only_sources') ?: 'false').toString().toBoolean()
-// 测试仅在主版本上编译运行（测试文件引用 Minecraft API，旧版本可能不兼容）
 def isMainProject = project.name == mainProjectName
 
-// 生成预处理代码的任务：按当前子项目 mcVersion 处理 //#if / //#else / //#endif，
-// 并在选中旧版本分支时把 //$$ 代码行恢复为真实 Java 代码。
-// MC 26.x 额外执行 Yarn→Mojang 名称映射转换。
 abstract class PreprocessTask extends DefaultTask {
     @InputDirectory
     @PathSensitive(PathSensitivity.RELATIVE)
@@ -1255,6 +1236,9 @@ sourceSets {
     test {
         java {
             setSrcDirs([])
+            if (isMainProject) {
+                srcDir(sharedTestDir)
+            }
         }
     }
 }
@@ -1266,11 +1250,12 @@ tasks.named('compileJava').configure {
 }
 
 tasks.named('compileTestJava').configure {
-    enabled = false
+    enabled = isMainProject
 }
 
 tasks.withType(Test).configureEach {
-    enabled = false
+    enabled = isMainProject
+    useJUnitPlatform()
 }
 
 // 本项目已经使用自定义 preprocessJava 处理 Java 源码，并通过 sourceSets 合并资源；

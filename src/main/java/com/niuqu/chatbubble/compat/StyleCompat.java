@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.compat;
-
 import net.minecraft.text.ClickEvent;
 import net.minecraft.text.HoverEvent;
 import net.minecraft.text.Text;

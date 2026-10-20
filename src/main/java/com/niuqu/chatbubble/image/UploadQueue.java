@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.image;
-
 import com.niuqu.chatbubble.ChatBubbleClientSetup;
 import com.niuqu.chatbubble.E33Log;
 import java.io.File;
@@ -12,19 +11,12 @@ public final class UploadQueue {
 
     public interface Callbacks {
         void onBusyStart();
-
         void onIdle();
-
         void onFailure();
-
         void onRejected(AnimatedImageLoader.OverBudget reason);
-
         void onEmoteSent(String url);
-
         void onSendText(String text);
-
         void onInputImage(String code);
-
         void onRestoreInput(String text);
     }
 
@@ -103,7 +95,6 @@ public final class UploadQueue {
         String serverUrl = MediaClient.serverEnabled()
             ? MediaClient.upload(prep.bytes(), prep.contentType())
             : null;
-
         var cfg = ChatBubbleClientSetup.config();
         final String url = serverUrl != null
             ? serverUrl
@@ -114,13 +105,11 @@ public final class UploadQueue {
             running = false;
             if (url == null) {
                 cb.onFailure();
-
                 if (job.pendingText() != null) cb.onRestoreInput(job.pendingText());
                 drain();
                 return;
             }
             cb.onIdle();
-
             String nameAttr = "name=" + prep.fileName();
             if (job.emote()) {
                 cb.onEmoteSent("[[E33Emote,url=" + url + "," + nameAttr + "]]");

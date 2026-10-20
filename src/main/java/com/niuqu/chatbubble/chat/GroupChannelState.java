@@ -1,7 +1,5 @@
 package com.niuqu.chatbubble.chat;
-
 import com.niuqu.chatbubble.store.ChatMessageStore.ChatMessage;
-
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -41,7 +39,6 @@ public final class GroupChannelState {
         if (names != null) knownGroups.addAll(names);
         myGroups.clear();
         if (mine != null) myGroups.addAll(mine);
-
         if (active != null && !isPseudoTab(active) && !knownGroups.contains(active)) {
             active = TAB_ALL;
         }

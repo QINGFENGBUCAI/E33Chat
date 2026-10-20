@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.store;
-
 import java.util.List;
 import net.minecraft.text.Text;
 
@@ -8,7 +7,6 @@ public final class BlockList {
 
     public static boolean matchesBlocked(String name, List<? extends String> blocked) {
         if (name == null || name.isEmpty() || blocked == null || blocked.isEmpty()) return false;
-
         String stripped = name.replaceAll("§.", "").trim();
         for (String b : blocked) {
             if (b == null || b.isBlank()) continue;

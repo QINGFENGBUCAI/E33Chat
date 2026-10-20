@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.chat.capture;
-
 import com.niuqu.chatbubble.GuiCompat;
 import com.niuqu.chatbubble.config.ChatBubbleConfig;
 import com.niuqu.chatbubble.store.ChatMessageStore;
@@ -55,7 +54,6 @@ public final class ChatClassifier {
                 if (cand.equals(displayName)) return info;
             }
         }
-
         PlayerListEntry best = null;
         int bestLen = 0;
         for (var info : online) {
@@ -73,7 +71,6 @@ public final class ChatClassifier {
         if (!(message.getContent() instanceof net.minecraft.text.TranslatableTextContent tc)) return false;
         String key = tc.getKey();
         Object[] args = tc.getArgs();
-
         if (key.equals("commands.message.display.incoming") && args.length >= 2) {
             Text name = argAsComponent(args[0]);
             Text content = argAsComponent(args[1]);
@@ -85,7 +82,6 @@ public final class ChatClassifier {
             ChatMessageStore.setPendingMeta(new ChatMessageStore.SenderMeta(uuid, name, content, false, profile, true, profile));
             return true;
         }
-
         if (key.equals("commands.message.display.outgoing")) {
             if (ChatMessageStore.hasPendingWhisperEcho()) {
                 ChatMessageStore.consumeWhisperEcho();
@@ -105,12 +101,10 @@ public final class ChatClassifier {
             }
             return false;
         }
-
         if (key.equals("chat.type.text") && args.length >= 2) {
             Text name = argAsComponent(args[0]);
             Text content = argAsComponent(args[1]);
             String contentStr = content.getString();
-
             if (contentStr.startsWith("xaero-waypoint:")
                 || contentStr.startsWith("xaero_waypoint:")
                 || contentStr.startsWith("xaero_waypoint_add:")) {
@@ -140,7 +134,6 @@ public final class ChatClassifier {
             ChatMessageStore.setPendingMeta(new ChatMessageStore.SenderMeta(uuid, name, content, false, profile, false, null));
             return true;
         }
-
         if (isVanillaBroadcast(message)) {
             boolean isSystem = com.niuqu.chatbubble.ChatBubbleClientSetup.config() == null || !com.niuqu.chatbubble.ChatBubbleClientSetup.config().systemChatAsBubble();
             ChatMessageStore.debugLog(() -> "[e33chat] Key(broadcast) | key=" + key);
@@ -148,7 +141,6 @@ public final class ChatClassifier {
                 Text.translatable("e33chat.sender.system"), message, isSystem, null, false, null));
             return true;
         }
-
         return false;
     }
 }

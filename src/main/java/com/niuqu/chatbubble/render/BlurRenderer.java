@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.render;
-
 import net.minecraft.client.MinecraftClient;
 import org.lwjgl.opengl.GL30;
 //#if MC >= 12000
@@ -7,7 +6,6 @@ import net.minecraft.client.gui.DrawContext;
 //#else
 //$$ import com.niuqu.chatbubble.DrawContext;
 //#endif
-
 public class BlurRenderer {
     private static boolean disconnecting = false;
 
@@ -33,7 +31,6 @@ public class BlurRenderer {
         GL30.glTexParameteri(GL30.GL_TEXTURE_2D, GL30.GL_TEXTURE_MAG_FILTER, GL30.GL_LINEAR);
         GL30.glTexParameteri(GL30.GL_TEXTURE_2D, GL30.GL_TEXTURE_WRAP_S, GL30.GL_CLAMP_TO_EDGE);
         GL30.glTexParameteri(GL30.GL_TEXTURE_2D, GL30.GL_TEXTURE_WRAP_T, GL30.GL_CLAMP_TO_EDGE);
-
         GL30.glTexImage2D(GL30.GL_TEXTURE_2D, 0, GL30.GL_RGBA8, w, h, 0,
             GL30.GL_RGBA, GL30.GL_UNSIGNED_BYTE, (java.nio.ByteBuffer) null);
         GL30.glBindFramebuffer(GL30.GL_FRAMEBUFFER, fbo);
@@ -82,10 +79,8 @@ public class BlurRenderer {
 
     public static void blurPanel(DrawContext g, int x, int y, int w, int h) {
         //#if MC >= 12111
-
         if (g != null) {
             //#if MC >= 26000
-
             g.blurBeforeThisStratum();
             //#else
             g.applyBlur();
@@ -95,7 +90,6 @@ public class BlurRenderer {
         //#endif
         var mc = MinecraftClient.getInstance();
         if (disconnecting || mc == null || mc.world == null || mc.player == null) return;
-
         int oldFb = GL30.glGetInteger(GL30.GL_FRAMEBUFFER_BINDING);
         int[] vp = new int[4];
         GL30.glGetIntegerv(GL30.GL_VIEWPORT, vp);
@@ -113,51 +107,42 @@ public class BlurRenderer {
 
     private static void blurRegion(MinecraftClient mc, int x, int y, int w, int h) {
         //#if MC >= 12105
-
         int mainFb = GL30.glGetInteger(GL30.GL_FRAMEBUFFER_BINDING);
         //#else
         //$$ int mainFb = mc.getFramebuffer().fbo;
         //#endif
         //#if MC >= 26000
-
         int fbH = mc.getWindow().getHeight();
         //#else
         int fbH = mc.getFramebuffer().textureHeight;
         //#endif
         if (w <= 0 || h <= 0) return;
-
         double s = mc.getWindow().getScaleFactor();
         x = (int) Math.round(x * s);
         y = (int) Math.round(y * s);
         w = (int) Math.round(w * s);
         h = (int) Math.round(h * s);
-
         int y2 = Math.min(y + h, fbH);
         if (y2 <= y) return;
         h = y2 - y;
         ensure(w, h);
         int glY0 = fbH - (y + h);
         int glY1 = fbH - y;
-
         GL30.glDisable(GL30.GL_SCISSOR_TEST);
-
         boolean full = nextFull || recreated;
         nextFull = !full;
         if (full) {
             blit(mainFb, x, glY0, x + w, glY1, fbo0, 0, 0, w, h);
-
             blit(fbo0, 0, 0, w, h,    fbo1, 0, 0, w / 2, h / 2);
             blit(fbo1, 0, 0, w / 2, h / 2, fbo2, 0, 0, w / 4, h / 4);
             blit(fbo2, 0, 0, w / 4, h / 4, fbo3, 0, 0, w / 8, h / 8);
             blit(fbo3, 0, 0, w / 8, h / 8, fbo4, 0, 0, w / 16, h / 16);
-
             blit(fbo4, 0, 0, w / 16, h / 16, fbo3, 0, 0, w / 8, h / 8);
             blit(fbo3, 0, 0, w / 8, h / 8, fbo2, 0, 0, w / 4, h / 4);
             blit(fbo2, 0, 0, w / 4, h / 4, fbo1, 0, 0, w / 2, h / 2);
             blit(fbo1, 0, 0, w / 2, h / 2, fbo0, 0, 0, w, h);
             recreated = false;
         }
-
         blit(fbo0, 0, 0, w, h, mainFb, x, glY0, w, h);
     }
 }

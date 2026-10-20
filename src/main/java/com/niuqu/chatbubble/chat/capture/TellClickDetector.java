@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.chat.capture;
-
 import com.niuqu.chatbubble.GuiCompat;
 import com.niuqu.chatbubble.chat.MessagePresentation;
 import com.niuqu.chatbubble.store.ChatMessageStore;
@@ -44,7 +43,6 @@ public final class TellClickDetector {
         }, net.minecraft.text.Style.EMPTY);
         int nameRangeLimit = Math.max(32, text.length() / 3);
         if (tellName[0] == null || range[0] > nameRangeLimit) return null;
-
         net.minecraft.client.network.PlayerListEntry sender = null;
         for (var info : player.networkHandler.getPlayerList()) {
             String profile = GuiCompat.profileName(info.getProfile());
@@ -58,7 +56,6 @@ public final class TellClickDetector {
             cachedId = ChatMessageStore.findSeenUuid(tellName[0]);
             if (cachedId == null) return null;
         }
-
         if (sender != null) {
             String clicked = clickedText[0].replaceAll("§.", "").trim();
             boolean clickedIsName = false;
@@ -67,12 +64,10 @@ public final class TellClickDetector {
             }
             if (!clickedIsName) return null;
         }
-
         int b = range[1];
         if (b < text.length() && text.charAt(b) == '>') b++;
         int contentStart = MessagePresentation.skipSeparators(text, b);
         if (contentStart >= text.length()) return null;
-
         String profile = sender != null ? GuiCompat.profileName(sender.getProfile()) : tellName[0];
         UUID id = sender != null ? GuiCompat.profileId(sender.getProfile()) : cachedId;
         Text displayName = ChatPipeline.cleanNameArea(message, 0, b, tellName[0], Text.literal(profile));

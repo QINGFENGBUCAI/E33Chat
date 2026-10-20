@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.compat;
-
 import net.minecraft.text.Text;
 
 public final class TextJsonCompat {

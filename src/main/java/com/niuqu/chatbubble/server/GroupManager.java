@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.server;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.niuqu.chatbubble.ChatBubbleMod;
@@ -15,7 +14,6 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.WorldSavePath;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -40,7 +38,6 @@ public final class GroupManager {
     public static final class Group {
         public UUID owner;
         public LinkedHashSet<UUID> members = new LinkedHashSet<>();
-
         Group(UUID owner, LinkedHashSet<UUID> members) {
             this.owner = owner;
             this.members = members;
@@ -181,7 +178,6 @@ public final class GroupManager {
         if (text.isEmpty()) { fail(sender, "e33chat.group.empty"); return; }
         if (text.length() > MAX_CONTENT) text = text.substring(0, MAX_CONTENT);
         lastSay.put(sender.getUuid(), now);
-
         String senderName = sender.getName().getString();
         ChatBubbleMod.QuotePending quote = ChatBubbleMod.consumeQuote(sender.getUuid());
         GroupChatPayload packet = new GroupChatPayload(
@@ -189,7 +185,6 @@ public final class GroupManager {
             quote != null ? quote.quotedSenderName() : null,
             quote != null ? quote.quotedContent() : null);
         String vanillaLine = "[" + name + "] <" + senderName + "> " + text;
-
         List<ServerPlayerEntity> players = server.getPlayerManager().getPlayerList();
         for (ServerPlayerEntity p : players) {
             if (!g.members.contains(p.getUuid())) continue;

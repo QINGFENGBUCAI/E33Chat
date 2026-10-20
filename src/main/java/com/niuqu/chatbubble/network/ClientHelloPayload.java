@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.network;
-
 import net.minecraft.network.PacketByteBuf;
 //#if MC >= 12005
 import net.minecraft.network.codec.PacketCodec;
@@ -13,7 +12,6 @@ public record ClientHelloPayload() implements CustomPayload {
 //#else
 //$$ public record ClientHelloPayload() {
 //#endif
-
     //#if MC >= 12005
     public static final CustomPayload.Id<ClientHelloPayload> ID =
         new CustomPayload.Id<>(
@@ -26,7 +24,6 @@ public record ClientHelloPayload() implements CustomPayload {
     //#else
     //$$ public static final Identifier ID = new Identifier("e33chat", "client_hello");
     //#endif
-
     //#if MC >= 12005
     public static final PacketCodec<PacketByteBuf, ClientHelloPayload> CODEC = PacketCodec.of(
         //#if MC >= 26000
@@ -44,7 +41,6 @@ public record ClientHelloPayload() implements CustomPayload {
     //$$     return buf;
     //$$ }
     //#endif
-
     //#if MC >= 12005
     @Override
     public CustomPayload.Id<? extends CustomPayload> getId() {

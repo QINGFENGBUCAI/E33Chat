@@ -1,7 +1,6 @@
 package com.niuqu.chatbubble.mixin;
 import com.niuqu.chatbubble.store.EchoTracker;
 import com.niuqu.chatbubble.store.BlockList;
-
 import com.niuqu.chatbubble.ChatBubbleClientSetup;
 import com.niuqu.chatbubble.ChatBubbleScreen;
 import com.niuqu.chatbubble.store.ChatMessageStore;
@@ -29,7 +28,6 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-
 import java.util.UUID;
 
 @Mixin(value = ChatHud.class, priority = 500)
@@ -41,7 +39,6 @@ public class ChatComponentMixin {
     private long lastRepostTime;
 
     //#if MC >= 26000
-
     @Inject(method = "extractRenderState(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Lnet/minecraft/client/gui/Font;IIILnet/minecraft/client/gui/components/ChatComponent$DisplayMode;Z)V",
             at = @At("HEAD"), cancellable = true)
     private void onRender(CallbackInfo ci) {
@@ -52,7 +49,6 @@ public class ChatComponentMixin {
     }
     //#else
     //#if MC >= 12111
-
     @Inject(method = "render", at = @At("HEAD"), cancellable = true)
     private void onRender(DrawContext context, TextRenderer textRenderer, int tickDelta, int mouseX, int mouseY,
                           boolean focused, boolean unread, CallbackInfo ci) {
@@ -77,7 +73,6 @@ public class ChatComponentMixin {
     }
     //#else
     //#if MC >= 12100
-
     @Inject(method = "render", at = @At("HEAD"), cancellable = true)
     private void onRender(DrawContext context, int tickDelta, int mouseX, int mouseY,
                           boolean focused, CallbackInfo ci) {
@@ -102,7 +97,6 @@ public class ChatComponentMixin {
     }
     //#else
     //#if MC >= 12000
-
     @Inject(method = "render", at = @At("HEAD"), cancellable = true)
     private void onRender(DrawContext context, int tickDelta, int mouseX, int mouseY, CallbackInfo ci) {
         e33chat$shifted = false;
@@ -124,7 +118,6 @@ public class ChatComponentMixin {
         }
     }
     //#else
-
     //#if MC >= 11903
     @Inject(method = "render", at = @At("HEAD"), cancellable = true)
     private void onRender(net.minecraft.client.util.math.MatrixStack matrices, int tickDelta, int mouseX, int mouseY, CallbackInfo ci) {
@@ -172,9 +165,7 @@ public class ChatComponentMixin {
     //#endif
     //#endif
     //#endif
-
     //#if MC >= 26000
-
     @Inject(method = "addMessage(Lnet/minecraft/network/chat/Component;Lnet/minecraft/network/chat/MessageSignature;Lnet/minecraft/client/multiplayer/chat/GuiMessageSource;Lnet/minecraft/client/multiplayer/chat/GuiMessageTag;)V",
             at = @At("HEAD"), cancellable = true)
     private void onAddMessage(Text message, net.minecraft.network.chat.MessageSignature signature,
@@ -189,7 +180,6 @@ public class ChatComponentMixin {
         captureMessage(message, ci);
     }
     //#endif
-
     //#if MC >= 11900
     //#if MC < 26000
     @Inject(method = "addMessage(Lnet/minecraft/text/Text;Lnet/minecraft/network/message/MessageSignatureData;Lnet/minecraft/client/gui/hud/MessageIndicator;)V",
@@ -210,7 +200,6 @@ public class ChatComponentMixin {
             .append(Text.literal(content));
         String repostStr = reformatted.getString();
         long nowMs = System.currentTimeMillis();
-
         if (ChatMessageStore.isRepostDuplicate(lastRepostText, lastRepostTime, repostStr, nowMs)) {
             ChatMessageStore.debugLog(() -> "[e33chat] Repost deduped | '" + repostStr + "'");
             return;
@@ -219,7 +208,6 @@ public class ChatComponentMixin {
         lastRepostTime = nowMs;
         ChatMessageStore.debugLog(() -> "[e33chat] Repost to vanilla | '" + repostStr + "' | quoting=" + quoting);
         e33chat$reposting = true;
-
         //#if MC >= 11900
         ((ChatHud) (Object) this).addMessage(reformatted, null, null);
         //#else
@@ -244,24 +232,19 @@ public class ChatComponentMixin {
     private void captureMessage(Text finalComponent, CallbackInfo ci) {
         if (!ChatBubbleClientSetup.config().enabled()) return;
         if (e33chat$reposting) return;
-
         if (finalComponent == lastComponent) return;
         lastComponent = finalComponent;
         String text = finalComponent.getString();
-
         if (ChatMessageStore.consumeSuppressCapture()) {
             ci.cancel();
-
             Text name = ChatMessageStore.extractWhisperDisplayName(finalComponent,
                 ChatMessageStore.ownDisplayName());
-
             ChatMessageStore.cacheOwnDecoratedName(name);
             ChatMessageStore.updateLatestOwnSenderName(name);
             repostToVanilla(name, ChatMessageStore.extractWhisperContent(text, null),
                 ChatMessageStore.consumeSuppressQuoted());
             return;
         }
-
         SenderMeta meta = ChatMessageStore.consumePendingMeta();
         if (meta == null) {
             if (ChatMessageStore.isRecentDuplicate(text)) return;
@@ -274,7 +257,17 @@ public class ChatComponentMixin {
                 false, null
             );
         }
-
+        if (!meta.whisper() && !meta.isSystem()) {
+            String sn = meta.senderName().getString();
+            int wi = sn.indexOf("悄悄地对你说");
+            if (wi > 0) {
+                String partner = sn.substring(0, wi).trim();
+                if (!partner.isEmpty()) {
+                    meta = new SenderMeta(meta.senderUUID(), Text.literal(partner),
+                        meta.rawContent(), meta.isSystem(), partner, true, partner);
+                }
+            }
+        }
         if (BlockList.isPlayerBlocked(meta.rawPlayerName(), meta.senderName(),
                 ChatBubbleClientSetup.config().blockedPlayers())) {
             final String blockedName = meta.senderName().getString();
@@ -282,7 +275,6 @@ public class ChatComponentMixin {
             ChatMessageStore.debugLog(() -> "[e33chat] Blocked message dropped | sender='" + blockedName + "'");
             return;
         }
-
         EchoTracker.EchoMatch echo = ChatMessageStore.consumeEchoIfSenderMatches(meta.senderUUID(), meta.senderName(), text);
         if (echo.matched()) {
             if (meta.whisper() || echo.quoted()) {
@@ -297,12 +289,10 @@ public class ChatComponentMixin {
             rewriteVanillaImageCode(finalComponent, ci);
             return;
         }
-
         if (meta.whisper()) {
             ci.cancel();
             repostToVanilla(meta.senderName(), ChatMessageStore.extractWhisperContent(text, meta), false);
         }
-
         String rawStr = meta.rawContent().getString();
         String finalStr = finalComponent.getString();
         Text content;
@@ -314,7 +304,6 @@ public class ChatComponentMixin {
         } else {
             content = finalComponent;
         }
-
         Text logComp = finalComponent, logContent = content;
         SenderMeta logMeta = meta;
         ChatMessageStore.debugLog(() -> "[e33chat] Capture | final='" + logComp.getString() + "' | content='" + logContent.getString() + "' | whisper=" + logMeta.whisper() + " | partner=" + logMeta.whisperPartner() + " | isSystem=" + logMeta.isSystem());

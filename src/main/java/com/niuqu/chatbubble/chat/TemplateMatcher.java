@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.chat;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -42,21 +41,16 @@ public class TemplateMatcher {
         List<Token> tokens = new ArrayList<>();
         List<String> unknown = new ArrayList<>();
         parse(raw, tokens, unknown);
-
         List<String> fields = new ArrayList<>();
         for (Token t : tokens) if (t.field != null) fields.add(t.field);
         if (fields.isEmpty()) return CompileResult.fail("模板必须包含至少一个字段占位符");
-
         long contentCount = fields.stream().filter(CONTENT::equals).count();
         if (contentCount == 0) return CompileResult.fail("模板必须包含 {content}（消息正文）");
         if (contentCount > 1) return CompileResult.fail("模板只能包含一个 {content}");
-
         if (fields.contains(DISP) && fields.contains(NAME))
             return CompileResult.fail("不能同时使用 {display_name} 和 {name}，请二选一");
-
         if (fields.contains(EXTERNAL) && (fields.contains(DISP) || fields.contains(NAME)))
             return CompileResult.fail("{external} 不能与 {display_name}/{name} 同时使用");
-
         for (String f : fields) {
             if (f.equals(CONTENT) || f.equals(SEP)) continue;
             if (java.util.Collections.frequency(fields, f) > 1)
@@ -67,14 +61,12 @@ public class TemplateMatcher {
             return CompileResult.fail("私聊模板不能使用 {external}");
         if (!whisper && !fields.contains(DISP) && !fields.contains(NAME) && !fields.contains(EXTERNAL))
             return CompileResult.fail("聊天模板必须包含 {display_name}、{name} 或 {external}");
-
         StringBuilder regex = new StringBuilder();
         boolean hasPrefix = false, hasDisp = false, hasSender = false, hasTarget = false, external = false;
         for (Token t : tokens) {
             if (t.field == null) { regex.append(Pattern.quote(t.literal)); continue; }
             switch (t.field) {
                 case CONTENT -> regex.append("(?s:(?<content>.*?))");
-
                 case SEP -> regex.append("(?:\\s*>>\\s*|\\s*[:：»>]\\s*|\\s+)");
                 case PREFIX -> { regex.append("(?s:(?<prefix>.*?))"); hasPrefix = true; }
                 case DISP, NAME, EXTERNAL -> { regex.append("(?<disp>.+?)"); hasDisp = true; external |= t.field.equals(EXTERNAL); }
@@ -123,7 +115,6 @@ public class TemplateMatcher {
             TemplateResult r = tryMatch(text, t);
             if (r == null) continue;
             if (r.displayName() == null) continue;
-
             if (t.external() || resolver.isKnown(r.displayName()))
                 return Optional.of(withVerified(r, r.displayName()));
         }
@@ -135,7 +126,6 @@ public class TemplateMatcher {
         var parsed = MessagePresentation.parseDecoratedPlayerLine(text, knownNames);
         if (parsed.isEmpty()) return Optional.empty();
         var pl = parsed.orElseThrow();
-
         int nameIdx = pl.nameStart();
         if (nameIdx < 0) return Optional.empty();
         int nameEnd = pl.nameEnd();

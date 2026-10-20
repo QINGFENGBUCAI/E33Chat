@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.image;
-
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.util.Identifier;
 

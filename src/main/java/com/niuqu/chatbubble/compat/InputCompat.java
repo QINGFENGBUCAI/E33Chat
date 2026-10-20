@@ -5,14 +5,13 @@ public final class InputCompat {
 
     //#if MC >= 12109
     //#if MC >= 26000
-
     public static net.minecraft.client.gui.Click click(double x, double y, int button) {
         return new net.minecraft.client.gui.Click(x, y,
             new net.minecraft.client.input.MouseInput(rawButton(button), 0));
     }
 
     public static net.minecraft.client.input.KeyInput key(int keyCode, int scanCode, int modifiers) {
-        return new net.minecraft.client.input.KeyInput(keyCode, scanCode, modifiers);
+        return new net.minecraft.client.input.KeyInput(rawKey(keyCode), scanCode, modifiers);
     }
 
     public static boolean mouseClicked(net.minecraft.client.gui.widget.ClickableWidget widget,
@@ -36,7 +35,20 @@ public final class InputCompat {
         if (k == com.mojang.blaze3d.platform.InputConstants.KEY_UP) return 265;
         if (k == com.mojang.blaze3d.platform.InputConstants.KEY_DOWN) return 264;
         if (k == com.mojang.blaze3d.platform.InputConstants.KEY_TAB) return 258;
+        if (k == com.mojang.blaze3d.platform.InputConstants.KEY_LEFT) return 263;
+        if (k == com.mojang.blaze3d.platform.InputConstants.KEY_RIGHT) return 262;
+        if (k == 6) return 67;
+        if (k == 25) return 86;
         return k;
+    }
+
+    public static int rawKey(int keyCode) {
+        if (keyCode == 256) return com.mojang.blaze3d.platform.InputConstants.KEY_ESCAPE;
+        if (keyCode == 257) return 40;
+        if (keyCode == 265) return com.mojang.blaze3d.platform.InputConstants.KEY_UP;
+        if (keyCode == 264) return com.mojang.blaze3d.platform.InputConstants.KEY_DOWN;
+        if (keyCode == 258) return com.mojang.blaze3d.platform.InputConstants.KEY_TAB;
+        return keyCode;
     }
 
     public static boolean hasControl(int modifiers) {
@@ -45,16 +57,19 @@ public final class InputCompat {
 
     //#if MC >= 260300
     public static int glfwButton(int button) {
-        if (button == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT) return 0;
-        if (button == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_MIDDLE) return 1;
-        if (button == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_RIGHT) return 2;
+        // 26.3 uses SDL/HID button values (1=left, 2=middle, 3=right)
+        // Convert to GLFW-style values (0=left, 1=middle, 2=right)
+        if (button == 1) return 0;
+        if (button == 2) return 1;
+        if (button == 3) return 2;
         return button;
     }
 
     public static int rawButton(int button) {
-        if (button == 0) return com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT;
-        if (button == 1) return com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_MIDDLE;
-        if (button == 2) return com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_RIGHT;
+        // Convert GLFW-style values (0=left, 1=middle, 2=right) to SDL/HID (1=left, 2=middle, 3=right)
+        if (button == 0) return 1;
+        if (button == 1) return 2;
+        if (button == 2) return 3;
         return button;
     }
     //#else
@@ -93,6 +108,10 @@ public final class InputCompat {
         return net.minecraft.client.util.InputUtil.isKeyPressed(
             net.minecraft.client.MinecraftClient.getInstance().getWindow(),
             net.minecraft.client.util.InputUtil.GLFW_KEY_LEFT_SHIFT);
+    }
+
+    public static boolean hasControl(int modifiers) {
+        return (modifiers & 0x2) != 0;
     }
     //#endif
     //#endif

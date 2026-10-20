@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble;
-
 import com.niuqu.chatbubble.config.ServerConfig;
 import com.niuqu.chatbubble.config.ServerConfigManager;
 import com.niuqu.chatbubble.network.ChatMetaPayload;
@@ -40,7 +39,6 @@ import net.minecraft.util.Formatting;
 //$$ import net.minecraft.network.PacketByteBuf;
 //$$ import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 //#endif
-
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -119,13 +117,11 @@ public class ChatBubbleMod implements ModInitializer {
         PayloadTypeRegistry.playS2C().register(MediaResponsePayload.ID, MediaResponsePayload.CODEC);
         PayloadTypeRegistry.playS2C().register(MediaCapPayload.ID, MediaCapPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(EasyBotConfigPayload.ID, EasyBotConfigPayload.CODEC);
-
         PayloadTypeRegistry.playC2S().register(ClientHelloPayload.ID, ClientHelloPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(GroupChatPayload.ID, GroupChatPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(GroupListPayload.ID, GroupListPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(GroupActionPayload.ID, GroupActionPayload.CODEC);
         //#endif
-
         //#if MC >= 12005
         ServerPlayNetworking.registerGlobalReceiver(MediaUploadPayload.ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();
@@ -143,7 +139,6 @@ public class ChatBubbleMod implements ModInitializer {
         //$$         payload.totalBytes(), payload.contentType(), payload.chunk()));
         //$$ });
         //#endif
-
         //#if MC >= 12005
         ServerPlayNetworking.registerGlobalReceiver(MediaRequestPayload.ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();
@@ -157,7 +152,6 @@ public class ChatBubbleMod implements ModInitializer {
         //$$         player, mediaStore(server), payload.mediaId()));
         //$$ });
         //#endif
-
         //#if MC >= 12005
         ServerPlayNetworking.registerGlobalReceiver(QuoteSyncPayload.ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();
@@ -179,7 +173,6 @@ public class ChatBubbleMod implements ModInitializer {
         //$$     });
         //$$ });
         //#endif
-
         //#if MC >= 12005
         ServerPlayNetworking.registerGlobalReceiver(ClientHelloPayload.ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();
@@ -191,7 +184,6 @@ public class ChatBubbleMod implements ModInitializer {
         //$$     server.execute(() -> ClientHelloPayload.handleServer(payload, player));
         //$$ });
         //#endif
-
         //#if MC >= 12005
         ServerPlayNetworking.registerGlobalReceiver(GroupActionPayload.ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();
@@ -205,7 +197,6 @@ public class ChatBubbleMod implements ModInitializer {
         //$$         com.niuqu.chatbubble.server.GroupManager.handleAction(player, payload.action(), payload.groupName()));
         //$$ });
         //#endif
-
         //#if MC >= 12005
         ServerPlayNetworking.registerGlobalReceiver(ServerConfigSavePayload.ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();
@@ -243,19 +234,16 @@ public class ChatBubbleMod implements ModInitializer {
         //$$     });
         //$$ });
         //#endif
-
         //#if MC >= 11900
         ServerMessageEvents.CHAT_MESSAGE.register((message, sender, params) -> {
             String rawText = message.getContent().getString();
             int playerCount = sender.getServer() != null
                 ? sender.getServer().getPlayerManager().getPlayerList().size() : 1;
             List<String> mentions = extractMentions(rawText, playerCount);
-
             QuotePending quote = takeQuote(sender.getUuid());
             String messageHash = quote != null ? quote.messageHash() : String.valueOf(rawText.hashCode());
             String quoteSender = quote != null ? quote.quotedSenderName() : "";
             String quoteContent = quote != null ? quote.quotedContent() : "";
-
             if (quote != null || !mentions.isEmpty()) {
                 ChatMetaPayload meta = new ChatMetaPayload(
                     sender.getUuid(), sender.getName().getString(), messageHash,
@@ -268,7 +256,6 @@ public class ChatBubbleMod implements ModInitializer {
                     //#endif
                 }
             }
-
             addToHistory(new HistoryPayload.HistoryEntry(
                 sender.getUuid(), sender.getName().getString(), rawText,
                 System.currentTimeMillis(), false,
@@ -277,7 +264,6 @@ public class ChatBubbleMod implements ModInitializer {
                 null));
         });
         //#endif
-
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             if (!configLoaded) {
                 configLoaded = true;
@@ -287,10 +273,8 @@ public class ChatBubbleMod implements ModInitializer {
                 loadConfig(config);
                 if (mediaAutoClean) mediaStore(server).cleanupExpired();
             }
-
             sendServerConfigTripleTo(handler.player);
             com.niuqu.chatbubble.server.GroupManager.sendGroupList(handler.player);
-
             if (!historyEnabled) return;
             try {
                 List<HistoryPayload.HistoryEntry> snapshot = snapshotHistory();
@@ -307,22 +291,18 @@ public class ChatBubbleMod implements ModInitializer {
                     handler.player.getName().getString(), e);
             }
         });
-
         com.niuqu.chatbubble.command.E33ChatCommands.register();
-
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
             DiskMediaStore s = mediaStore;
             if (s != null) s.discardAllUploads();
             mediaStore = null;
             com.niuqu.chatbubble.server.GroupManager.onServerStopping(server);
-
             configLoaded = false;
             pendingQuotes.clear();
             synchronized (HISTORY_LOCK) {
                 historyBuffer.clear();
             }
         });
-
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             DiskMediaStore s = mediaStore;
             if (s != null) s.discardUploadsFor(handler.player.getName().getString());
@@ -423,7 +403,6 @@ public class ChatBubbleMod implements ModInitializer {
         if (entry == null) return;
         synchronized (HISTORY_LOCK) {
             historyBuffer.addLast(entry);
-
             while (historyBuffer.size() > HISTORY_MAX && historyBuffer.pollFirst() != null)
                 ;
         }

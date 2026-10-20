@@ -1,8 +1,6 @@
 package com.niuqu.chatbubble.compat;
-
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.text.Text;
-
 import java.util.ArrayList;
 import java.util.List;
 

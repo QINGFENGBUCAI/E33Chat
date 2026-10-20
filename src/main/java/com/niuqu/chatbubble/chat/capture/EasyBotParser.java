@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.chat.capture;
-
 import com.niuqu.chatbubble.store.ChatMessageStore;
 import java.util.Set;
 import java.util.UUID;
@@ -37,7 +36,6 @@ public final class EasyBotParser {
         if (text == null || text.isEmpty()) return null;
         Matcher angle = RELAY_FORMAT.matcher(text);
         if (angle.matches()) return build(message, angle, true);
-
         Matcher colon = RELAY_COLON_FORMAT.matcher(text);
         if (colon.matches()) {
             if (isSystemLikeLabel(colon.group(1))) return null;
@@ -54,14 +52,12 @@ public final class EasyBotParser {
         String content = m.group(3);
         if (nameArea.isEmpty() || content == null || content.isBlank()) return null;
         if (nameArea.length() > MAX_NAME || nameArea.indexOf('\n') >= 0) return null;
-
         String nick = null;
         String qq = null;
         Matcher qm = QQ_AT_END.matcher(nameArea);
         if (qm.find()) {
             qq = qm.group(1);
             String before = nameArea.substring(0, qm.start()).trim();
-
             int paren = before.lastIndexOf('(');
             if (paren < 0) paren = before.lastIndexOf('（');
             if (paren >= 0) before = before.substring(0, paren).trim();
@@ -71,19 +67,13 @@ public final class EasyBotParser {
         } else {
             nick = nameArea;
         }
-
         String displayName = (nick != null && !nick.isEmpty()) ? nick : qq;
         if (displayName == null || displayName.isEmpty()) return null;
-
         if (qq == null && (isBroadcastLabel(groupName) || isBroadcastLabel(displayName))) return null;
-
         if (allowStepAside && isKnownPlayer(displayName)) return null;
-
         UUID uuid = allowStepAside ? new UUID(0, 0) : resolveUuid(displayName);
         String rawPlayerName = qq != null ? qq : displayName;
-
         Text contentComp = ChatMessageStore.sliceStyled(message, m.start(3), m.end(3));
-
         Text nameComp = (uuid != null && !uuid.equals(new UUID(0, 0)))
             ? ChatPipeline.extractDecoratedName(message, content, displayName, Text.literal(displayName))
             : Text.literal(displayName);

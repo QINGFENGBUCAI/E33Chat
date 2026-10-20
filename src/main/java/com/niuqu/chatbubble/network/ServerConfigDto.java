@@ -1,7 +1,5 @@
 package com.niuqu.chatbubble.network;
-
 import net.minecraft.network.PacketByteBuf;
-
 import java.util.List;
 
 public record ServerConfigDto(boolean useTpa, boolean historyEnabled, boolean templateDebug,

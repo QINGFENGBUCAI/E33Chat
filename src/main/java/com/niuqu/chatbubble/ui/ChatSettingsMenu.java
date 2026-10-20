@@ -3,7 +3,6 @@ import com.niuqu.chatbubble.texture.UiTextureManager;
 import com.niuqu.chatbubble.texture.ColoredTextureRenderer;
 import com.niuqu.chatbubble.render.ChatBubbleTheme;
 import com.niuqu.chatbubble.ChatBubbleScreen;
-
 import net.minecraft.client.font.TextRenderer;
 //#if MC >= 12000
 import net.minecraft.client.gui.DrawContext;
@@ -12,7 +11,6 @@ import net.minecraft.client.gui.DrawContext;
 //#endif
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
-
 import java.util.function.Function;
 
 public class ChatSettingsMenu {
@@ -60,12 +58,10 @@ public class ChatSettingsMenu {
         int menuH = COUNT * ROW_H + 4;
         int px = gearX;
         int py = barTop - menuH - 4;
-
         com.niuqu.chatbubble.texture.ColoredTextureRenderer.drawWithAlpha(g,
             com.niuqu.chatbubble.texture.UiTextureManager.rl(com.niuqu.chatbubble.texture.UiElement.CONTENT_BG),
             px, py, W, menuH, alpha);
         g.drawBorder(px, py, W, menuH, ChatBubbleTheme.alphaBlend(c.divider(), a255));
-
         Identifier[] icons = {
             iconTex.apply("search"), iconTex.apply("quick_chat"),
             iconTex.apply("theme"), iconTex.apply("settings"), iconTex.apply("trash")
@@ -78,7 +74,6 @@ public class ChatSettingsMenu {
             Text.translatable(clearArmed
                 ? "e33chat.menu.clear_confirm" : "e33chat.menu.clear_history").getString()
         };
-
         for (int i = 0; i < COUNT; i++) {
             int ry = py + 2 + i * ROW_H;
             boolean hover = mouseX >= px && mouseX <= px + W
@@ -105,17 +100,14 @@ public class ChatSettingsMenu {
             requestClose();
             return -1;
         }
-
         int menuH = COUNT * ROW_H + 4;
         int px = gearX;
         int py = barTop - menuH - 4;
-
         if (mx < px || mx > px + W || my < py || my > py + menuH) {
             resetClearArmed();
             requestClose();
             return -1;
         }
-
         int row = (my - py - 2) / ROW_H;
         if (row >= 0 && row < COUNT) {
             if (row == CLEAR_ROW) {
@@ -127,7 +119,6 @@ public class ChatSettingsMenu {
                 if (hasHistory != null && !hasHistory.getAsBoolean()) {
                     return ACTION_CLEAR_EMPTY;
                 }
-
                 clearArmed = true;
                 clearArmedAt = System.currentTimeMillis();
                 return -1;

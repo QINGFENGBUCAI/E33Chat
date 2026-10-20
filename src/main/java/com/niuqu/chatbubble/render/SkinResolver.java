@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.render;
-
 import com.mojang.authlib.GameProfile;
 import com.niuqu.chatbubble.texture.ColoredTextureRenderer;
 import java.util.LinkedHashMap;
@@ -14,7 +13,6 @@ import net.minecraft.client.gui.DrawContext;
 //#else
 //$$ import com.niuqu.chatbubble.DrawContext;
 //#endif
-
 public final class SkinResolver {
     private SkinResolver() {}
 
@@ -34,23 +32,15 @@ public final class SkinResolver {
     private static final Map<UUID, Identifier> byUuid = newLru();
     private static final Map<String, Identifier> byName = newLru();
 
-    // ==== 下线头像保护：消息到达即预热皮肤缓存 ====
-    // 皮肤缓存只在聊天面板渲染消息时（getSkin）填充。面板关闭期间某玩家聊天、
-    // 随后下线：皮肤从未进缓存，再打开面板时人已离线拿不到皮肤，头像退化为
-    // 默认皮肤。修复：addMessage 把 (uuid, name) 投入并发队列，客户端 tick 在
-    // 主线程消费——玩家在线且皮肤已下载完时入缓存；下载未完则留在队列下帧重试，
-    // 玩家离线（列表条目消失）则放弃。LRU 上限同时 256 → 1024（大服淘汰过快）。
     private record Prewarm(UUID uuid, String name) {}
     private static final java.util.Queue<Prewarm> PREWARM_QUEUE =
         new java.util.concurrent.ConcurrentLinkedQueue<>();
 
-    /** 任意线程可调用（旧版本路径的消息在网络线程到达）。 */
     public static void enqueuePrewarm(UUID uuid, String name) {
         if (uuid == null || uuid.equals(NIL_UUID) || name == null || name.isEmpty()) return;
         PREWARM_QUEUE.offer(new Prewarm(uuid, name));
     }
 
-    /** 主线程（client tick）：把队列里的在线玩家皮肤刷入缓存。 */
     public static void tickPrewarm() {
         if (PREWARM_QUEUE.isEmpty()) return;
         MinecraftClient client = MinecraftClient.getInstance();
@@ -58,16 +48,15 @@ public final class SkinResolver {
         Prewarm p;
         while ((p = PREWARM_QUEUE.poll()) != null) {
             if (--budget < 0) { PREWARM_QUEUE.offer(p); return; }
-            if (cached(p.uuid(), p.name()) != null) continue;   // 已缓存
-            if (client.getNetworkHandler() == null) continue;   // 已断线：放弃
+            if (cached(p.uuid(), p.name()) != null) continue;
+            if (client.getNetworkHandler() == null) continue;
             PlayerListEntry info = client.getNetworkHandler().getPlayerListEntry(p.uuid());
-            if (info == null) continue;                         // 玩家已离线：放弃
+            if (info == null) continue;
             Identifier tex = entrySkin(info);
-            remember(p.uuid(), p.name(), tex);                  // 占位皮会被 remember 丢弃
-            if (isPlaceholder(tex)) PREWARM_QUEUE.offer(p);     // 皮肤仍在下载：下帧重试
+            remember(p.uuid(), p.name(), tex);
+            if (isPlaceholder(tex)) PREWARM_QUEUE.offer(p);
         }
     }
-
 
     private static <K> Map<K, Identifier> newLru() {
         return new LinkedHashMap<>(16, 0.75f, true) {
@@ -132,7 +121,6 @@ public final class SkinResolver {
 
     public static Identifier getSkin(UUID uuid, String name) {
         MinecraftClient client = MinecraftClient.getInstance();
-
         if (client.getNetworkHandler() != null && uuid != null && !uuid.equals(NIL_UUID)) {
             PlayerListEntry info = client.getNetworkHandler().getPlayerListEntry(uuid);
             if (info != null) {
@@ -145,10 +133,8 @@ public final class SkinResolver {
                 return hit != null ? hit : tex;
             }
         }
-
         Identifier hit = cached(uuid, name);
         if (hit != null) return hit;
-
         Identifier resolved = resolveSkin(uuid, name);
         remember(uuid, name, resolved);
         return resolved;
@@ -187,7 +173,6 @@ public final class SkinResolver {
     //$$ // 1.16.5 的 getTextures 可能同步查 session 服务器（阻塞调用线程）：20s 限频
     //$$ private static final long RESOLVE_RETRY_MS = 20_000L;
     //#else
-
     private static final long RESOLVE_RETRY_MS = 1_000L;
     //#endif
 
@@ -205,7 +190,6 @@ public final class SkinResolver {
             try {
                 GameProfile profile = new GameProfile(id, name);
                 //#if MC >= 12109
-
                 Identifier tex = client.getSkinProvider().supplySkinTextures(profile, false).get().body().texturePath();
                 RESOLVE_INFLIGHT.remove(key);
                 return tex;

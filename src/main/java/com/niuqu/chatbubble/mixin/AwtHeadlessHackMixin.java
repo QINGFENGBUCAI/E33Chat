@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.mixin;
-
 import net.minecraft.client.main.Main;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;

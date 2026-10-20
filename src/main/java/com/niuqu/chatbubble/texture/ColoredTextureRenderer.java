@@ -27,7 +27,6 @@ public final class ColoredTextureRenderer {
                                      int x, int y, int w, int h, float alpha) {
         if (w <= 0 || h <= 0 || alpha <= 0.003f) return;
         //#if MC >= 12105
-
         DrawHelper.drawTexture(g, tex, x, y, w, h, 0f, 0f, 1, 1, 1, 1, pack(1f, 1f, 1f, alpha));
         //#else
         //$$ g.draw();

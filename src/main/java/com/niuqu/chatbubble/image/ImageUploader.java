@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.image;
-
 import com.niuqu.chatbubble.E33Log;
 import com.google.gson.JsonParser;
 import java.net.URI;
@@ -30,12 +29,10 @@ public final class ImageUploader {
         String endpoint = (url == null || url.isBlank()) ? DEFAULT_URL : url.trim();
         String fld = (field == null || field.isBlank()) ? DEFAULT_FIELD : field.trim();
         String extraFields = (extra == null || extra.isBlank()) ? DEFAULT_EXTRA : extra;
-
         if (endpoint.contains("litterbox.catbox.moe") && !extraFields.contains("reqtype")) {
             extraFields = "reqtype=fileupload," + extraFields;
         }
         String mode = (responseMode == null || responseMode.isBlank()) ? DEFAULT_RESPONSE : responseMode.trim();
-
         try {
             String boundary = "----e33chat" + UUID.randomUUID().toString().replace("-", "");
             byte[] body = buildMultipart(bytes, fileName, fld, extraFields, boundary);
@@ -94,7 +91,6 @@ public final class ImageUploader {
         if (responseBody == null) return null;
         String body = responseBody.trim();
         if (body.isEmpty()) return null;
-
         String mode = (responseMode == null || responseMode.isBlank()) ? "text" : responseMode.trim();
         if (mode.startsWith("json:")) {
             String path = mode.substring(5).trim();
@@ -106,7 +102,6 @@ public final class ImageUploader {
                 return null;
             }
         }
-
         return isHttpUrl(body) ? body : null;
     }
 
@@ -116,7 +111,6 @@ public final class ImageUploader {
         com.google.gson.JsonElement cur = el;
         for (String seg : segments) {
             if (seg.isEmpty()) return null;
-
             int bi = seg.indexOf('[');
             String name = bi >= 0 ? seg.substring(0, bi) : seg;
             Integer idx = null;

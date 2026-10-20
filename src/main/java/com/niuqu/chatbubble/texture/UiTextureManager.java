@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.texture;
-
 import com.niuqu.chatbubble.ChatBubbleClientSetup;
 import com.niuqu.chatbubble.render.ChatBubbleTheme;
 import net.minecraft.util.Identifier;

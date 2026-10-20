@@ -1,8 +1,6 @@
 package com.niuqu.chatbubble.image;
-
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 class ImageUploaderTest {
@@ -12,13 +10,10 @@ class ImageUploaderTest {
             new byte[]{1, 2, 3}, "a b.png", "fileToUpload", "time=72h", "BOUND");
         String s = new String(body, StandardCharsets.UTF_8);
         assertTrue(s.contains("--BOUND\r\n"));
-
         int timeIdx = s.indexOf("name=\"time\"");
         int fileIdx = s.indexOf("name=\"fileToUpload\"");
         assertTrue(timeIdx > 0 && fileIdx > timeIdx, "extra fields must precede the file part");
-
         assertTrue(s.contains("filename=\"a_b.png\""), s);
-
         int fileHeadEnd = s.indexOf("\r\n\r\n", fileIdx) + 4;
         assertArrayEquals(new byte[]{1, 2, 3},
             java.util.Arrays.copyOfRange(body, fileHeadEnd, fileHeadEnd + 3));
@@ -80,12 +75,11 @@ class ImageUploaderTest {
         assertNotNull(p);
         assertTrue(p.fileName().endsWith(".png"), p.fileName());
         assertTrue(p.bytes().length > 0);
-
         try {
             java.awt.image.BufferedImage decoded = javax.imageio.ImageIO.read(new java.io.ByteArrayInputStream(p.bytes()));
             assertNotNull(decoded);
-            assertEquals(2048, decoded.getWidth());
-            assertEquals(512, decoded.getHeight());
+            assertEquals(1280, decoded.getWidth());
+            assertEquals(320, decoded.getHeight());
         } catch (Exception e) {
             fail(e);
         }

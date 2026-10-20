@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.image;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -27,12 +26,10 @@ public final class BracketCodec {
         String plain = text.getString();
         Matcher m = BRACKET.matcher(plain);
         if (!m.find()) return new ParseResult(text, List.of());
-
         List<ImageRef> images = new ArrayList<>();
         MutableText out = Text.empty();
         boolean[] hasText = {false};
         int[] segIndex = {0};
-
         text.visit((style, part) -> {
             int partStart = 0;
             Matcher local = BRACKET.matcher(part);
@@ -53,7 +50,6 @@ public final class BracketCodec {
             }
             return Optional.empty();
         }, Style.EMPTY);
-
         if (images.isEmpty() && !hasText[0]) {
             String stripped = m.replaceAll("");
             return new ParseResult(Text.literal(stripped).setStyle(text.getStyle()), List.of());
@@ -122,9 +118,7 @@ public final class BracketCodec {
             }
         }
         if (url == null || url.isBlank()) return null;
-
         if (type != null && !type.equalsIgnoreCase("image")) return null;
-
         return new ImageRef(url, name, tag.equalsIgnoreCase("E33Emote"));
     }
 
@@ -190,7 +184,6 @@ public final class BracketCodec {
     private static boolean isChatImageHover(net.minecraft.text.HoverEvent hover) {
         try {
             if (String.valueOf(hover.getAction()).toLowerCase(java.util.Locale.ROOT).contains("chatimage")) return true;
-
             Object value = com.niuqu.chatbubble.compat.StyleCompat.hoverValue(hover);
             return value != null
                 && value.getClass().getName().toLowerCase(java.util.Locale.ROOT).contains("chatimage");
@@ -202,7 +195,6 @@ public final class BracketCodec {
     private static String readUrlFromHover(net.minecraft.text.HoverEvent hover) {
         try {
             Object value = com.niuqu.chatbubble.compat.StyleCompat.hoverValue(hover);
-
             if (value instanceof com.google.gson.JsonElement je) {
                 if (je.isJsonObject() && je.getAsJsonObject().has("url")
                         && je.getAsJsonObject().get("url").isJsonPrimitive()) {

@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.network;
-
 import com.niuqu.chatbubble.store.ChatMessageStore;
 import net.minecraft.network.PacketByteBuf;
 //#if MC >= 12005
@@ -13,7 +12,6 @@ public record EasyBotConfigPayload(boolean easyBotCompat) implements CustomPaylo
 //#else
 //$$ public record EasyBotConfigPayload(boolean easyBotCompat) {
 //#endif
-
     //#if MC >= 12005
     public static final CustomPayload.Id<EasyBotConfigPayload> ID =
         new CustomPayload.Id<>(
@@ -26,7 +24,6 @@ public record EasyBotConfigPayload(boolean easyBotCompat) implements CustomPaylo
     //#else
     //$$ public static final Identifier ID = new Identifier("e33chat", "config_sync_easybot");
     //#endif
-
     //#if MC >= 12005
     public static final PacketCodec<PacketByteBuf, EasyBotConfigPayload> CODEC = PacketCodec.of(
         //#if MC >= 26000
@@ -45,7 +42,6 @@ public record EasyBotConfigPayload(boolean easyBotCompat) implements CustomPaylo
     //$$     return buf;
     //$$ }
     //#endif
-
     //#if MC >= 12005
     @Override
     public Id<EasyBotConfigPayload> getId() { return ID; }

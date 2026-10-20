@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble;
-
 import net.minecraft.client.MinecraftClient;
 //#if MC >= 12000
 import net.minecraft.client.gui.DrawContext;
@@ -72,7 +71,6 @@ public final class RenderHelper {
                                    int width, int height, int textureWidth, int textureHeight) {
         //#if MC >= 12000
         //#if MC >= 12102
-
         DrawHelper.drawTexture((DrawContext) ctx, texture, x, y, u, v, width, height, textureWidth, textureHeight, 0xFFFFFFFF);
         //#else
         //$$ DrawHelper.drawTexture((DrawContext) ctx, texture, x, y, u, v, width, height, textureWidth, textureHeight);

@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.chat.capture;
-
 import com.niuqu.chatbubble.GuiCompat;
 import com.niuqu.chatbubble.chat.MessagePresentation;
 import com.niuqu.chatbubble.store.ChatMessageStore;
@@ -15,7 +14,6 @@ public final class WhisperDetector {
         if (self == null) return null;
         var connection = self.networkHandler;
         if (connection == null) return null;
-
         String clean = text.replaceAll("§.", "");
         for (var info : connection.getPlayerList()) {
             String profile = GuiCompat.profileName(info.getProfile());
@@ -38,7 +36,6 @@ public final class WhisperDetector {
                 }
             }
         }
-
         for (var sp : ChatMessageStore.knownNameVariants()) {
             int idx = clean.indexOf(sp);
             if (idx >= 0 && idx < 30) {

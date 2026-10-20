@@ -3,7 +3,6 @@ import com.niuqu.chatbubble.texture.UiTextureManager;
 import com.niuqu.chatbubble.texture.ColoredTextureRenderer;
 import com.niuqu.chatbubble.render.ChatBubbleTheme;
 import com.niuqu.chatbubble.ChatBubbleScreen;
-
 import net.minecraft.client.font.TextRenderer;
 //#if MC >= 12000
 import net.minecraft.client.gui.DrawContext;
@@ -98,7 +97,6 @@ public class ChatEmojiPanel {
         if (!visible) return;
         int a255 = (int) (255 * alpha);
         int sendX = panelX + panelW - pad - iconS + 2;
-
         boolean isKaomoji = tab == 1;
         boolean isCustom = tab == 2;
         int natural = isKaomoji ? KAO_COLS * KAO_COL_W + 8
@@ -106,7 +104,6 @@ public class ChatEmojiPanel {
         int pw = fitWidth(natural, panelW);
         int px = clampX(sendX + iconS / 2 - pw / 2, pw, panelX, panelW);
         int py = Math.max(2, barTop - PANEL_H - 4);
-
         String[] tabLabels = {
             Text.translatable("e33chat.emoji.tab_emoji").getString(),
             Text.translatable("e33chat.emoji.tab_kaomoji").getString(),
@@ -130,14 +127,12 @@ public class ChatEmojiPanel {
         com.niuqu.chatbubble.texture.ColoredTextureRenderer.drawWithAlpha(g,
             com.niuqu.chatbubble.texture.UiTextureManager.rl(com.niuqu.chatbubble.texture.UiElement.DIVIDER),
             px, py + TAB_H, pw, 1, alpha);
-
         int cy = py + TAB_H + 1;
         int ch = PANEL_H - TAB_H - 1;
         com.niuqu.chatbubble.texture.ColoredTextureRenderer.drawWithAlpha(g,
             com.niuqu.chatbubble.texture.UiTextureManager.rl(com.niuqu.chatbubble.texture.UiElement.CONTENT_BG),
             px, cy, pw, py + PANEL_H - cy, alpha);
         g.drawBorder(px, py, pw, PANEL_H, ChatBubbleTheme.alphaBlend(c.divider(), a255));
-
         if (isKaomoji) {
             renderKaomojiList(g, mouseX, mouseY, font, c, px, cy, pw, ch, alpha);
         } else if (isCustom) {
@@ -158,7 +153,6 @@ public class ChatEmojiPanel {
         int totalH = rows * EMOTE_SLOT + 4;
         int maxScroll = Math.max(0, totalH - ch + 4);
         scroll = MathHelper.clamp(scroll, 0, maxScroll);
-
         g.enableScissor(px + 1, cy + 1, px + pw - 1, cy + ch - 1);
         int sy = cy + 2 - scroll;
         for (int i = 0; i < n; i++) {
@@ -175,7 +169,6 @@ public class ChatEmojiPanel {
                     ex, ey, EMOTE_SLOT - 1, EMOTE_SLOT - 1, alpha);
             if (i < emotes.size()) {
                 java.io.File f = emotes.get(i);
-
                 net.minecraft.util.Identifier tex = EmoteStore.texture(f);
                 if (tex != null)
                     com.niuqu.chatbubble.texture.ColoredTextureRenderer.drawWithAlpha(g, tex,
@@ -184,7 +177,6 @@ public class ChatEmojiPanel {
                     g.drawText(font, "?", ex + EMOTE_SLOT / 2 - 3,
                         ey + (EMOTE_SLOT - font.fontHeight) / 2,
                         com.niuqu.chatbubble.render.ChatBubbleTheme.alphaBlend(c.textMuted(), a255), false);
-
                 if (isAnimatedEmote(f)) {
                     String dot = "GIF";
                     int dw = font.getWidth(dot);
@@ -218,7 +210,6 @@ public class ChatEmojiPanel {
         int totalH = rows * SLOT + 4;
         int maxScroll = Math.max(0, totalH - ch + 4);
         scroll = MathHelper.clamp(scroll, 0, maxScroll);
-
         g.enableScissor(px + 1, cy + 1, px + pw - 1, cy + ch - 1);
         int sy = cy + 2 - scroll;
         for (int i = 0; i < EMOTES.length; i++) {
@@ -249,7 +240,6 @@ public class ChatEmojiPanel {
         int totalH = ((KAO.length + kCols - 1) / kCols) * KAO_ITEM_H + 4;
         int maxScroll = Math.max(0, totalH - ch + 4);
         scroll = MathHelper.clamp(scroll, 0, maxScroll);
-
         g.enableScissor(px + 1, cy + 1, px + pw - 1, cy + ch - 1);
         int sy = cy + 2 - scroll;
         for (int i = 0; i < KAO.length; i++) {
@@ -274,14 +264,12 @@ public class ChatEmojiPanel {
             int panelX, int panelW, int barTop, int iconS, int pad) {
         if (!visible) return null;
         int sendX = panelX + panelW - pad - iconS + 2;
-
         int iconY = barTop + (ChatBubbleScreen.BAR_H - iconS) / 2;
         int emojiIconX = sendX - iconS - 6;
         if (mx >= emojiIconX && mx <= emojiIconX + iconS && my >= iconY && my <= iconY + iconS) {
             requestClose();
             return "";
         }
-
         boolean isKaomoji = tab == 1;
         boolean isCustom = tab == 2;
         int natural = isKaomoji ? KAO_COLS * KAO_COL_W + 8
@@ -289,19 +277,16 @@ public class ChatEmojiPanel {
         int pw = fitWidth(natural, panelW);
         int px = clampX(sendX + iconS / 2 - pw / 2, pw, panelX, panelW);
         int py = Math.max(2, barTop - PANEL_H - 4);
-
         if (mx < px || mx > px + pw || my < py || my > py + PANEL_H) {
             requestClose();
             return null;
         }
-
         if (my < py + TAB_H) {
             int tabW = pw / 3;
             int t = (mx - px) / tabW;
             if (t >= 0 && t <= 2) { tab = t; scroll = 0; }
             return "";
         }
-
         int cy = py + TAB_H + 1;
         if (isKaomoji) {
             int cw = (pw - 8) / KAO_COLS;

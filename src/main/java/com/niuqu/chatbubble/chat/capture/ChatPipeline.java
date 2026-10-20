@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.chat.capture;
-
 import com.niuqu.chatbubble.GuiCompat;
 import com.niuqu.chatbubble.chat.MessagePresentation;
 import com.niuqu.chatbubble.store.ChatMessageStore;
@@ -44,7 +43,6 @@ public final class ChatPipeline {
                 if (tail < ns.length()) out.append(ChatMessageStore.sliceStyled(nameArea, tail, ns.length()));
                 return out;
             }
-
             if (ns.length() > 2 && ns.charAt(0) == '<' && ns.charAt(ns.length() - 1) == '>') {
                 return ChatMessageStore.sliceStyled(nameArea, 1, ns.length() - 1);
             }
@@ -71,11 +69,9 @@ public final class ChatPipeline {
             ChatMessageStore.debugLog(() -> "[e33chat] " + logTag + "(blank display) | text='" + text + "'");
             return null;
         }
-
         int nameIdx = pl.nameStart();
         int nameEnd = pl.nameEnd();
         int contentStart = pl.contentStart();
-
         if (MessagePresentation.isWhitespaceOnlyGap(text, nameEnd, contentStart)) {
             ChatMessageStore.debugLog(() -> "[e33chat] " + logTag + "(line skip: broadcast sentence) | text='" + text + "'");
             return null;

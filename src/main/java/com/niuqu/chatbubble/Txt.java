@@ -1,5 +1,5 @@
 package com.niuqu.chatbubble;
-
+import java.util.Optional;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
@@ -8,7 +8,6 @@ import net.minecraft.util.Formatting;
 //$$ import net.minecraft.text.LiteralText;
 //$$ import net.minecraft.text.TranslatableText;
 //#endif
-
 public final class Txt {
     private Txt() {}
 
@@ -62,5 +61,38 @@ public final class Txt {
             case 'r': return Style.EMPTY;
             default: return style;
         }
+    }
+
+    public static boolean isFormatCode(char c) {
+        return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')
+            || (c >= 'k' && c <= 'o') || (c >= 'A' && c <= 'F')
+            || (c >= 'K' && c <= 'O') || c == 'r' || c == 'R';
+    }
+
+    public static Text applyAmpersandCodes(Text src) {
+        if (src == null) return src;
+        String plain = src.getString();
+        if (plain.indexOf('&') < 0) return src;
+        MutableText out = empty();
+        src.visit((style, text) -> {
+            Style st = style;
+            StringBuilder run = new StringBuilder();
+            for (int i = 0; i < text.length(); i++) {
+                char c = text.charAt(i);
+                if (c == '&' && i + 1 < text.length() && isFormatCode(text.charAt(i + 1))) {
+                    if (run.length() > 0) {
+                        out.append(literal(run.toString()).fillStyle(st));
+                        run.setLength(0);
+                    }
+                    st = applyFormattingCode(st, text.charAt(i + 1));
+                    i++;
+                } else {
+                    run.append(c);
+                }
+            }
+            if (run.length() > 0) out.append(literal(run.toString()).fillStyle(st));
+            return Optional.empty();
+        }, Style.EMPTY);
+        return out;
     }
 }

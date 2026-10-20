@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.network;
-
 import com.niuqu.chatbubble.config.ServerConfig;
 import com.niuqu.chatbubble.config.ServerConfigManager;
 import com.niuqu.chatbubble.chat.TemplateMatcher;
@@ -12,7 +11,6 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,7 +26,6 @@ public record ServerConfigSavePayload(boolean useTpa, boolean historyEnabled, bo
 //$$                                       boolean groupsEnabled,
 //$$                                       List<String> chatTemplates, List<String> whisperTemplates) {
 //#endif
-
     //#if MC >= 12005
     public static final CustomPayload.Id<ServerConfigSavePayload> ID =
         new CustomPayload.Id<>(
@@ -41,7 +38,6 @@ public record ServerConfigSavePayload(boolean useTpa, boolean historyEnabled, bo
     //#else
     //$$ public static final Identifier ID = new Identifier("e33chat", "server_config_save");
     //#endif
-
     //#if MC >= 12005
     public static final PacketCodec<PacketByteBuf, ServerConfigSavePayload> CODEC = PacketCodec.of(
         //#if MC >= 26000
@@ -74,7 +70,6 @@ public record ServerConfigSavePayload(boolean useTpa, boolean historyEnabled, bo
     //$$     return buf;
     //$$ }
     //#endif
-
     //#if MC >= 12005
     @Override
     public Id<ServerConfigSavePayload> getId() { return ID; }

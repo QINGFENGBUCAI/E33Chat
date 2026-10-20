@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.server;
-
 import com.niuqu.chatbubble.network.MediaResponsePayload;
 import com.niuqu.chatbubble.network.MediaUploadAckPayload;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;

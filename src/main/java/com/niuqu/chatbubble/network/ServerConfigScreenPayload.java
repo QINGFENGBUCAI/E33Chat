@@ -1,12 +1,10 @@
 package com.niuqu.chatbubble.network;
-
 import net.minecraft.network.PacketByteBuf;
 //#if MC >= 12005
 import net.minecraft.network.codec.PacketCodec;
 import net.minecraft.network.packet.CustomPayload;
 //#endif
 import net.minecraft.util.Identifier;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,7 +20,6 @@ public record ServerConfigScreenPayload(boolean useTpa, boolean historyEnabled, 
 //$$                                          boolean groupsEnabled,
 //$$                                          List<String> chatTemplates, List<String> whisperTemplates) {
 //#endif
-
     //#if MC >= 12005
     public static final CustomPayload.Id<ServerConfigScreenPayload> ID =
         new CustomPayload.Id<>(
@@ -35,7 +32,6 @@ public record ServerConfigScreenPayload(boolean useTpa, boolean historyEnabled, 
     //#else
     //$$ public static final Identifier ID = new Identifier("e33chat", "server_config_screen");
     //#endif
-
     //#if MC >= 12005
     public static final PacketCodec<PacketByteBuf, ServerConfigScreenPayload> CODEC = PacketCodec.of(
         //#if MC >= 26000
@@ -68,7 +64,6 @@ public record ServerConfigScreenPayload(boolean useTpa, boolean historyEnabled, 
     //$$     return buf;
     //$$ }
     //#endif
-
     //#if MC >= 12005
     @Override
     public Id<ServerConfigScreenPayload> getId() { return ID; }

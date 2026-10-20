@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.compat;
-
 import net.minecraft.client.network.ClientPlayerEntity;
 
 public final class ChatSender {

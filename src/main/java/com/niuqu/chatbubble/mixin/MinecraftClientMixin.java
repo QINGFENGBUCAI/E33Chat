@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.mixin;
-
 import com.niuqu.chatbubble.ui.BedScreen;
 import com.niuqu.chatbubble.ChatBubbleClientSetup;
 import com.niuqu.chatbubble.ChatBubbleScreen;
@@ -11,11 +10,9 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-
 import java.lang.reflect.Field;
 
 //#if MC >= 260200
-
 @Mixin(net.minecraft.client.gui.Gui.class)
 //#else
 //$$ @Mixin(MinecraftClient.class)
@@ -30,7 +27,6 @@ public class MinecraftClientMixin {
     private void onSetScreen(Screen screen, CallbackInfo ci) {
         var cfg = ChatBubbleClientSetup.config();
         if (cfg == null || !cfg.enabled()) return;
-
         if (screen instanceof SleepingChatScreen) {
             ci.cancel();
             BedScreen.setScreenBeforeSleep(MinecraftClient.getInstance().currentScreen);

@@ -1,11 +1,9 @@
 package com.niuqu.chatbubble.chat.notification;
-
 import com.niuqu.chatbubble.ChatBubbleClientSetup;
 import com.niuqu.chatbubble.store.ChatMessageStore;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
-
 import java.util.UUID;
 
 public class ChatMessageEffects implements ChatMessageStore.MessageEffectObserver {
@@ -38,8 +36,22 @@ public class ChatMessageEffects implements ChatMessageStore.MessageEffectObserve
     private static void playChime() {
         NotificationSoundGate.tryPlay(() -> {
             var player = MinecraftClient.getInstance().player;
-            if (player != null)
-                player.playSound(SoundEvents.BLOCK_NOTE_BLOCK_CHIME.value(), 0.6F * ChatBubbleClientSetup.config().soundVolume() / 100f, 1.0F);
+            if (player != null) {
+                //#if MC >= 26000
+                // MC 26.x: SoundEvents may use different API
+                try {
+                    net.minecraft.sound.SoundEvent sound = SoundEvents.BLOCK_NOTE_BLOCK_CHIME.value();
+                    if (sound != null) {
+                        player.playSound(sound, 0.6F * ChatBubbleClientSetup.config().soundVolume() / 100f, 1.0F);
+                    }
+                } catch (Exception e) {
+                    // Fallback to older API if needed
+                    ChatMessageStore.debugLog(() -> "[e33chat] Sound play failed: " + e.getMessage());
+                }
+                //#else
+                //$$ player.playSound(SoundEvents.BLOCK_NOTE_BLOCK_CHIME.value(), 0.6F * ChatBubbleClientSetup.config().soundVolume() / 100f, 1.0F);
+                //#endif
+            }
         });
     }
 }

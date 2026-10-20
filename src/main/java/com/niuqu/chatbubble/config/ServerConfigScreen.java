@@ -1,6 +1,5 @@
 package com.niuqu.chatbubble.config;
 import com.niuqu.chatbubble.store.ChatMessageStore;
-
 import com.niuqu.chatbubble.chat.TemplateMatcher;
 import com.niuqu.chatbubble.network.ServerConfigSavePayload;
 import com.niuqu.chatbubble.render.ChatBubbleTheme;
@@ -26,7 +25,6 @@ import net.minecraft.screen.ScreenTexts;
 import net.minecraft.text.Text;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
-
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -212,7 +210,6 @@ public class ServerConfigScreen extends Screen {
             box.setText(list.get(idx));
             box.setChangedListener(s -> {
                 if (idx < list.size()) list.set(idx, s);
-
                 var r = TemplateMatcher.compile(s);
                 if (r.template() == null) boxErrors.put(box, r.error());
                 else boxErrors.remove(box);
@@ -222,7 +219,6 @@ public class ServerConfigScreen extends Screen {
             rows.add(new Row(label, List.of(reg(rm), reg(box)), null, ROW_H,
                 "e33chat.server.template_n", false));
         }
-
         ButtonWidget add = ButtonWidget.builder(Text.translatable("e33chat.server.add"), b -> { list.add(""); rebuild(); })
             .dimensions(btnLeft(), 0, BUTTON_W, 20).build();
         if (chat) {
@@ -243,7 +239,6 @@ public class ServerConfigScreen extends Screen {
         } else {
             rows.add(row(Text.translatable("e33chat.server.actions"), List.of(add), null, "e33chat.server.actions"));
         }
-
         String[] presets = chat ? CHAT_PRESETS : WHISPER_PRESETS;
         rows.add(titleRow(Text.translatable("e33chat.server.preset_section")));
         for (String p : presets) {
@@ -253,7 +248,6 @@ public class ServerConfigScreen extends Screen {
             Text label = Text.literal(truncate(p, inputX() - optLabelX() - 8));
             rows.add(new Row(label, List.of(reg(pb)), null, ROW_H, null, false));
         }
-
         TextFieldWidget preview = mkBox(inputX(), INPUT_W);
         preview.setChangedListener(s -> {
             if (chat) previewChatResult = runPreview(s, chatV, false);
@@ -324,7 +318,6 @@ public class ServerConfigScreen extends Screen {
         chatV.add(inferred);
         genVisible = false;
         genError = null;
-
         pendingPreviewText = genText;
         genText = "";
         rebuild();
@@ -461,14 +454,12 @@ public class ServerConfigScreen extends Screen {
         buildRows();
         rightPane.setOffset(MathHelper.clamp(rightPane.offset(), 0, calcMaxScroll()));
         treePane.setOffset(MathHelper.clamp(treePane.offset(), 0, calcTreeMaxScroll()));
-
         doneBtn = addDrawableChild(ButtonWidget.builder(ScreenTexts.DONE, b -> doClose())
             .dimensions(width / 2 - 100, height - 32, 200, 20).build());
         exitBtn = addDrawableChild(ButtonWidget.builder(Text.translatable("e33chat.config.exit"), b -> doClose())
             .dimensions(width / 2 - 104, height - 32, 100, 20).build());
         saveBtn = addDrawableChild(ButtonWidget.builder(Text.translatable("e33chat.server.save"), b -> save())
             .dimensions(width / 2 + 4, height - 32, 100, 20).build());
-
         relayoutWidgets();
     }
 
@@ -645,9 +636,7 @@ public class ServerConfigScreen extends Screen {
             0, 0, width, height, 0f, 0f, 16, 16, 16, 16);
         tickAnims();
         g.drawText(textRenderer, title, width / 2 - textRenderer.getWidth(title) / 2, 14, c().configTitle(), false);
-
         String tooltipKey = null;
-
         g.enableScissor(CAT_X, START_Y, dividerX(), viewBottom());
         int ly = START_Y - treePane.offset();
         for (int i = 0; i < CAT_KEYS.length; i++) {
@@ -665,10 +654,8 @@ public class ServerConfigScreen extends Screen {
         g.disableScissor();
         drawBar(g, tTrackX(), START_Y, viewBottom(), tTotalH(), treePane.offset(), calcTreeMaxScroll(),
             mouseX, mouseY, treePane.dragging());
-
         g.drawTexture(UiTextureManager.rl(UiElement.DIVIDER, ChatBubbleTheme.DARK),
             dividerX(), START_Y - 6, 1, viewBottom() - (START_Y - 6), 0f, 0f, 16, 16, 16, 16);
-
         g.enableScissor(optLabelX() - 4, viewTop(), width, viewBottom());
         int y = viewTop() - rightPane.offset();
         for (Row row : rows) {
@@ -694,7 +681,6 @@ public class ServerConfigScreen extends Screen {
                 g.drawText(textRenderer, Text.literal(truncate(row.extraText(), rightAreaW())),
                     optLabelX(), y + 21, c().textSecondary(), false);
             }
-
             for (Element w : row.widgets()) {
                 if (w instanceof TextFieldWidget eb && boxErrors.containsKey(eb)) {
                     g.drawText(textRenderer, Text.literal(truncate(boxErrors.get(eb), rightAreaW())),
@@ -702,7 +688,6 @@ public class ServerConfigScreen extends Screen {
                     break;
                 }
             }
-
             if (genError != null && row == genInputRow) {
                 g.drawText(textRenderer, Text.literal(truncate(genError, rightAreaW())),
                     optLabelX(), y + 22, 0xFFFF4444, false);
@@ -712,23 +697,18 @@ public class ServerConfigScreen extends Screen {
         g.disableScissor();
         drawBar(g, rTrackX(), viewTop(), viewBottom(), rTotalH(), rightPane.offset(), calcMaxScroll(),
             mouseX, mouseY, rightPane.dragging());
-
         int changed = changeCount();
         doneBtn.visible = changed == 0;
         exitBtn.visible = changed > 0;
         saveBtn.visible = changed > 0;
-
         super.render(g, mouseX, mouseY, partialTick);
-
         if (changed > 0)
             g.drawText(textRenderer, Text.translatable("e33chat.config.changed", changed),
                 width / 2 + 112, height - 26, c().configLabel(), false);
-
         if (error != null) {
             g.drawText(textRenderer, Text.literal(truncate(error, rightAreaW())),
                 optLabelX(), viewBottom() - 12, 0xFFFF4444, false);
         }
-
         if (tooltipKey != null)
             g.drawTooltip(textRenderer, Text.translatable(tooltipKey + ".desc"), mouseX, mouseY);
     }

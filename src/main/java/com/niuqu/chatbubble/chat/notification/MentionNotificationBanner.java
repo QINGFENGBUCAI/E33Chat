@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.chat.notification;
-
 import com.niuqu.chatbubble.render.Animation;
 import com.niuqu.chatbubble.render.AnimationStyle;
 import com.niuqu.chatbubble.render.Appearance;
@@ -17,7 +16,6 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
-
 import java.util.*;
 
 public class MentionNotificationBanner {
@@ -50,7 +48,6 @@ public class MentionNotificationBanner {
     public void enqueue(UUID senderUUID, Text senderName, Text content,
                         int messageIndex, NotificationType type) {
         MinecraftClient mc = MinecraftClient.getInstance();
-
         String prefix = switch (type) {
             case MENTION -> Text.translatable("e33chat.banner.mention").getString();
             case QUOTE -> Text.translatable("e33chat.banner.quote").getString();
@@ -58,13 +55,11 @@ public class MentionNotificationBanner {
             case SYSTEM -> Text.translatable("e33chat.banner.system").getString();
         };
         Text labeledName = Text.literal(prefix).append(senderName);
-
         boolean hasAvatar = type != NotificationType.SYSTEM;
         int textOriginX = hasAvatar ? TEXT_X : TEXT_X_PLAIN;
         int maxTextW = Math.min(MAX_TEXT_W, mc.getWindow().getScaledWidth() - textOriginX - 12);
         int dotsW = mc.textRenderer.getWidth("...");
         int contentMaxW = hasAvatar ? maxTextW : Math.max(40, maxTextW - mc.textRenderer.getWidth(prefix));
-
         List<OrderedText> nameLines = mc.textRenderer.wrapLines(labeledName, maxTextW);
         OrderedText nameSeq;
         if (nameLines.isEmpty()) {
@@ -76,24 +71,20 @@ public class MentionNotificationBanner {
         } else {
             nameSeq = nameLines.get(0);
         }
-
         List<OrderedText> msgLines = mc.textRenderer.wrapLines(content, contentMaxW);
         if (msgLines.size() > MAX_MSG_LINES) {
             msgLines = mc.textRenderer.wrapLines(truncateStyled(content, contentMaxW * 2 - dotsW, mc.textRenderer, "..."), contentMaxW);
             if (msgLines.size() > MAX_MSG_LINES)
                 msgLines = msgLines.subList(0, MAX_MSG_LINES);
         }
-
         int textW = mc.textRenderer.getWidth(nameSeq);
         for (var line : msgLines) textW = Math.max(textW, mc.textRenderer.getWidth(line));
         if (!hasAvatar && !msgLines.isEmpty()) {
             textW = Math.max(textW, mc.textRenderer.getWidth(nameSeq) + mc.textRenderer.getWidth(msgLines.get(0)));
         }
         int bannerW = textOriginX + textW + 12;
-
         int bannerH = hasAvatar ? BANNER_H
             : mc.textRenderer.fontHeight * msgLines.size() + 10;
-
         PendingBanner pb = new PendingBanner(senderUUID, senderName, content, messageIndex,
             type, hasAvatar, nameSeq, msgLines, textW, bannerW, bannerH);
         addBanner(pb);
@@ -102,8 +93,17 @@ public class MentionNotificationBanner {
     public int pendingCount() { return banners.size() + exiting.size(); }
 
     public void tick() {
+        MinecraftClient mc = MinecraftClient.getInstance();
+        // Auto-clear banners when window loses focus
+        if (!mc.getWindow().isFocused()) {
+            if (!banners.isEmpty() || !exiting.isEmpty()) {
+                ChatMessageStore.debugLog(() -> "[e33chat] Window lost focus, clearing banners");
+                banners.clear();
+                exiting.clear();
+            }
+            return;
+        }
         long now = System.currentTimeMillis();
-
         List<ActiveBanner> expired = new ArrayList<>();
         for (ActiveBanner b : banners) {
             if (now >= b.totalVisibleMs) expired.add(b);
@@ -124,9 +124,7 @@ public class MentionNotificationBanner {
                 b.pushStartMs = now;
             }
         }
-
         exiting.removeIf(e -> now - e.startMs >= EXIT_MS);
-
         if (!banners.isEmpty() || !exiting.isEmpty()) {
             ChatMessageStore.debugLog(() -> "[e33chat] Banner stack | visible=" + banners.size()
                 + " | exiting=" + exiting.size());
@@ -136,10 +134,8 @@ public class MentionNotificationBanner {
     public void render(DrawContext g, int screenW, int screenH) {
         if (!ChatBubbleClientSetup.config().mentionBannerEnabled()) return;
         if (banners.isEmpty() && exiting.isEmpty()) return;
-
         MinecraftClient mc = MinecraftClient.getInstance();
         long now = System.currentTimeMillis();
-
         AnimationStyle exitStyle = AnimationStyle.parse(ChatBubbleClientSetup.config().bannerAnimStyle());
         for (ExitingBanner e : exiting) {
             float t = Math.min(1f, (float) (now - e.startMs) / EXIT_MS);
@@ -160,7 +156,6 @@ public class MentionNotificationBanner {
             }
             renderBanner(g, e.data, screenW, y, scale, alpha);
         }
-
         for (int i = banners.size() - 1; i >= 0; i--) {
             ActiveBanner b = banners.get(i);
             float y = currentY(b, now);
@@ -177,23 +172,18 @@ public class MentionNotificationBanner {
     private void addBanner(PendingBanner pb) {
         long now = System.currentTimeMillis();
         int maxStack = maxStack();
-
         exiting.clear();
-
         for (ActiveBanner b : banners) {
             b.fromY = currentY(b, now);
             b.fromScale = currentScale(b, now);
         }
-
         if (banners.size() >= maxStack && !banners.isEmpty()) {
             ActiveBanner oldest = banners.get(banners.size() - 1);
             exiting.add(new ExitingBanner(oldest.data, now, oldest.fromY, oldest.fromScale));
             banners.remove(banners.size() - 1);
         }
-
         ActiveBanner nb = new ActiveBanner(pb, now, now + visibleDurationMs(), now);
         banners.add(0, nb);
-
         for (ActiveBanner b : banners) {
             if (b != nb) {
                 b.enterStartMs = -1;
@@ -292,36 +282,28 @@ public class MentionNotificationBanner {
                               float y, float scale, float alpha) {
         if (alpha <= 0.003f) return;
         MinecraftClient mc = MinecraftClient.getInstance();
-
         float bgAlphaMul = alpha * (ChatBubbleClientSetup.config().bannerOpacity() / 100f);
-
         var theme = Appearance.snapshot();
         int bg = theme.bannerBg();
         int cornerRadius = ChatBubbleClientSetup.config().bannerCornerRadius();
-
         int bannerW = b.bannerW;
         int bannerH = b.bannerH;
         int x = (screenW - bannerW) / 2 + ChatBubbleClientSetup.config().bannerOffsetX();
         int iy = (int) y;
-
         if (scale != 1f) {
             g.getMatrices().push();
             g.getMatrices().translate(x + bannerW / 2f, y + bannerH / 2f, 0);
             g.getMatrices().scale(scale, scale, 1f);
             g.getMatrices().translate(-(x + bannerW / 2f), -(y + bannerH / 2f), 0);
         }
-
         int shadowAlpha = (int) (UiTokens.SHADOW_ALPHA_PANEL * bgAlphaMul);
         int shadowColor = (shadowAlpha << 24);
         RoundRectRenderer.fill(g, x + SHADOW_OFF, iy + SHADOW_OFF,
             x + bannerW + SHADOW_OFF, iy + bannerH + SHADOW_OFF, cornerRadius, shadowColor);
-
         int bgAlpha = (int) ((bg >>> 24) * bgAlphaMul);
         RoundRectRenderer.fill(g, x, iy, x + bannerW, iy + bannerH, cornerRadius,
             (bgAlpha << 24) | (bg & 0x00FFFFFF));
-
         int textX = x + (b.hasAvatar ? TEXT_X : TEXT_X_PLAIN);
-
         List<OrderedText> drawLines = scale < 1f && b.msgLines.size() > 1
             ? b.msgLines.subList(0, 1) : b.msgLines;
         int nameColor, msgColor;
@@ -330,12 +312,10 @@ public class MentionNotificationBanner {
             String senderName = b.senderName.getString();
             SkinResolver.drawAvatar(g, b.senderUUID, senderName, x + AVATAR_X, avatarY,
                 AVATAR, AVATAR_HAT, alpha, SkinResolver.isOffline(b.senderUUID, senderName));
-
             int nameY = iy + 6;
             int nameAlpha = (int) ((theme.textPrimary() >>> 24) * alpha);
             nameColor = (nameAlpha << 24) | (theme.textPrimary() & 0x00FFFFFF);
             g.drawText(mc.textRenderer, b.nameSeq, textX, nameY, nameColor, false);
-
             int msgAlpha = (int) ((theme.textSecondary() >>> 24) * alpha);
             msgColor = (msgAlpha << 24) | (theme.textSecondary() & 0x00FFFFFF);
             int msgY = nameY + mc.textRenderer.fontHeight + 2;
@@ -357,7 +337,6 @@ public class MentionNotificationBanner {
                 g.drawText(mc.textRenderer, drawLines.get(i), textX,
                     textY + i * lineH, msgColor, false);
         }
-
         if (scale != 1f) g.getMatrices().pop();
     }
 
@@ -394,7 +373,6 @@ public class MentionNotificationBanner {
         long pushStartMs = -1;
         float fromY;
         float fromScale;
-
         ActiveBanner(PendingBanner data, long bornMs, long totalVisibleMs, long enterStartMs) {
             this.data = data;
             this.bornMs = bornMs;
@@ -408,7 +386,6 @@ public class MentionNotificationBanner {
         final long startMs;
         final float y;
         final float scale;
-
         ExitingBanner(PendingBanner data, long startMs, float y, float scale) {
             this.data = data;
             this.startMs = startMs;

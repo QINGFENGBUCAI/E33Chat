@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble;
-
 import com.niuqu.chatbubble.image.BracketCodec;
 import com.niuqu.chatbubble.image.BracketCodec.ImageRef;
 import com.niuqu.chatbubble.image.BracketCodec.ParseResult;
@@ -9,7 +8,6 @@ import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 class BracketCodecTest {
@@ -54,7 +52,6 @@ class BracketCodecTest {
         ParseResult r = BracketCodec.parse(input);
         assertEquals(1, r.images().size());
         assertEquals("plain code  tail", r.textWithoutImages().getString());
-
         boolean[] redSeen = {false};
         r.textWithoutImages().visit((style, part) -> {
             if (part.contains("code") && style.getColor() != null
@@ -108,7 +105,6 @@ class BracketCodecTest {
         Text input = Text.literal("hi [[CICode,url=https://a.com/x.png]] there");
         Text out = BracketCodec.toPlaceholderText(input);
         String s = out.getString();
-
         assertFalse(s.contains("CICode"), s);
         assertFalse(s.contains("https://"), s);
         assertTrue(s.contains("hi"), s);

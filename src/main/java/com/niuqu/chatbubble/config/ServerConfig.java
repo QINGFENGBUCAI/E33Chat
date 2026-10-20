@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.config;
-
 import java.util.List;
 
 public class ServerConfig {

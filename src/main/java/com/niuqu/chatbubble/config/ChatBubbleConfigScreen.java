@@ -1,6 +1,5 @@
 package com.niuqu.chatbubble.config;
 import com.niuqu.chatbubble.ChatBubbleClientSetup;
-
 import com.niuqu.chatbubble.config.ChatBubbleConfig;
 import com.niuqu.chatbubble.store.ChatMessageStore;
 import com.niuqu.chatbubble.render.ChatBubbleTheme;
@@ -159,7 +158,6 @@ public class ChatBubbleConfigScreen extends Screen {
                     Ref r = d.ref();
                     tracked.add(track(r.getter(), r.setter()));
                 }
-
         tracked.add(track(() -> new ArrayList<>(blockedPlayers), v -> blockedPlayers = new ArrayList<>(v)));
     }
 
@@ -301,7 +299,6 @@ public class ChatBubbleConfigScreen extends Screen {
         for (Opt opt : visibleOpts()) {
             if (opt.isHeader()) { y += HEADER_H; continue; }
             int count = opt.multiFactory() != null ? opt.multiFactory().create(0).size() : 1;
-
             if (opt.multiFactory() != null) {
                 for (int k = 0; k < count; k++) {
                     if (wi < scrollWidgets.size()) {
@@ -386,7 +383,6 @@ public class ChatBubbleConfigScreen extends Screen {
         static OptionDef timeSep(String key, Ref<Integer> r) {
             return new OptionDef(key, Kind.TIME_SEP, r, 0, 0, 0, null);
         }
-
         static OptionDef bgImage(String key, Ref<String> r) {
             return new OptionDef(key, Kind.BG_IMAGE, r, 0, 0, 0, null);
         }
@@ -452,7 +448,6 @@ public class ChatBubbleConfigScreen extends Screen {
             OptionDef.intBox("e33chat.config.banner_max_stack", Ref.i(() -> bannerMaxStack, v -> bannerMaxStack = v), 1, 5, 2),
             OptionDef.intBox("e33chat.config.banner_corner_radius", Ref.i(() -> bannerCornerRadius, v -> bannerCornerRadius = v), 0, 10, 2),
             OptionDef.intBox("e33chat.config.banner_opacity", Ref.i(() -> bannerOpacity, v -> bannerOpacity = v), 0, 100, 3),
-
             OptionDef.intBox("e33chat.config.banner_offset_x", Ref.i(() -> bannerOffsetX, v -> bannerOffsetX = v), -500, 500, 2),
             OptionDef.intBox("e33chat.config.banner_offset_y", Ref.i(() -> bannerOffsetY, v -> bannerOffsetY = v), -500, 500, 2),
             OptionDef.enumCycle("e33chat.config.banner_anim_style", Ref.s(() -> bannerAnimStyle, v -> bannerAnimStyle = v))),
@@ -591,22 +586,18 @@ public class ChatBubbleConfigScreen extends Screen {
         panelBgImage = cfgNow.panelBgImage() != null ? cfgNow.panelBgImage() : "";
         panelBgOpacity = cfgNow.panelBgOpacity() != null ? cfgNow.panelBgOpacity() : 100;
         panelBgCrop = cfgNow.panelBgCrop() != null ? cfgNow.panelBgCrop() : "";
-
         if (!hudHidden) {
             com.niuqu.chatbubble.render.HudVisibility.push();
             hudHidden = true;
         }
         buildCats();
         scrollWidgets.clear();
-
         dividerX = CAT_X + CAT_W + 12;
         optLabelX = dividerX + 14;
         previewX = width - 26;
         inputX = previewX - 8 - INPUT_W;
-
         rightPane.setOffset(MathHelper.clamp(rightPane.offset(), 0, calcMaxScroll()));
         treePane.setOffset(MathHelper.clamp(treePane.offset(), 0, calcTreeMaxScroll()));
-
         int y = viewTop() - rightPane.offset();
         for (Opt opt : visibleOpts()) {
             if (opt.isHeader()) { y += HEADER_H; continue; }
@@ -623,7 +614,6 @@ public class ChatBubbleConfigScreen extends Screen {
             scrollWidgets.add(addDrawableChild(w));
             y += ROW_H;
         }
-
         doneBtn = addDrawableChild(ButtonWidget.builder(ScreenTexts.DONE, btn -> doClose())
             .position(width / 2 - 100, height - 32).size(200, 20).build());
         exitBtn = addDrawableChild(ButtonWidget.builder(Text.translatable("e33chat.config.exit"), btn -> doExit())
@@ -721,7 +711,6 @@ public class ChatBubbleConfigScreen extends Screen {
         private final java.util.function.IntSupplier getter;
         private final java.util.function.IntConsumer setter;
         private final int min, max;
-
         IntSlider(int x, int y, int w, int h, java.util.function.IntSupplier getter, java.util.function.IntConsumer setter, int min, int max) {
             super(x, y, w, h, Text.literal(String.valueOf(getter.getAsInt())),
                 (getter.getAsInt() - min) / (double) (max - min));
@@ -730,12 +719,10 @@ public class ChatBubbleConfigScreen extends Screen {
             this.min = min;
             this.max = max;
         }
-
         @Override
         protected void applyValue() {
             setter.accept((int) Math.round(min + value * (max - min)));
         }
-
         @Override
         protected void updateMessage() {
             setMessage(Text.literal(String.valueOf(getter.getAsInt())));
@@ -770,7 +757,6 @@ public class ChatBubbleConfigScreen extends Screen {
                 com.niuqu.chatbubble.compat.NativeFileDialog.pickImage(f -> {
                     if (f == null || !f.isFile()) return;
                     ref.setter().accept(f.getAbsolutePath());
-
                     var cfg = ChatBubbleClientSetup.config();
                     ChatBubbleClientSetup.saveConfig(cfg.withPanelBg(f.getAbsolutePath(), cfg.panelBgOpacity(), null));
                     client.setScreen(new com.niuqu.chatbubble.ui.PanelCropScreen(this));
@@ -783,7 +769,6 @@ public class ChatBubbleConfigScreen extends Screen {
             .dimensions(inputX, y, half, 20).build());
         out.add(ButtonWidget.builder(Text.translatable("e33chat.config.panel_bg_clear"), b -> {
             ref.setter().accept("");
-
             panelBgCrop = "";
             var cfg = ChatBubbleClientSetup.config();
             ChatBubbleClientSetup.saveConfig(cfg.withPanelBg("", cfg.panelBgOpacity(), null));
@@ -844,9 +829,7 @@ public class ChatBubbleConfigScreen extends Screen {
             0, 0, width, height, 0xC0 / 255f);
         tickAnims();
         g.drawText(textRenderer, title, width / 2 - textRenderer.getWidth(title) / 2, 14, c().configTitle(), false);
-
         String tooltipKey = null;
-
         g.enableScissor(CAT_X, START_Y, dividerX, viewBottom());
         int ly = START_Y - treePane.offset();
         for (int i = 0; i < cats.size(); i++) {
@@ -882,12 +865,9 @@ public class ChatBubbleConfigScreen extends Screen {
         }
         g.disableScissor();
         drawBar(g, tTrackX(), START_Y, viewBottom(), tTotalH(), treePane.offset(), calcTreeMaxScroll(), mouseX, mouseY, treePane.dragging());
-
         g.drawTexture(com.niuqu.chatbubble.texture.UiTextureManager.rl(com.niuqu.chatbubble.texture.UiElement.DIVIDER, ChatBubbleTheme.DARK),
             dividerX, START_Y - 6, 1, viewBottom() - (START_Y - 6), 0f, 0f, 16, 16, 16, 16);
-
         if (showPreview()) drawBubblePreview(g);
-
         g.enableScissor(optLabelX - 4, viewTop(), width, viewBottom());
         int y = viewTop() - rightPane.offset();
         for (Opt opt : visibleOpts()) {
@@ -919,20 +899,15 @@ public class ChatBubbleConfigScreen extends Screen {
         }
         g.disableScissor();
         drawBar(g, rTrackX(), viewTop(), viewBottom(), rTotalH(), rightPane.offset(), calcMaxScroll(), mouseX, mouseY, rightPane.dragging());
-
         int changed = changeCount();
         doneBtn.visible = changed == 0;
         exitBtn.visible = changed > 0;
         saveBtn.visible = changed > 0;
-
         super.render(g, mouseX, mouseY, partialTick);
-
         if (changed > 0)
             g.drawText(textRenderer, Text.translatable("e33chat.config.changed", changed),
                 width / 2 + 112, height - 26, c().configLabel(), false);
-
         if (tooltipKey != null)
-
             //#if MC >= 12106
             g.drawOrderedTooltip(textRenderer,
                 textRenderer.wrapLines(Text.translatable(tooltipKey), 190),
@@ -1051,7 +1026,6 @@ public class ChatBubbleConfigScreen extends Screen {
                     }
                 }
             }
-
             int px = paletteX();
             if (mouseX >= px && mouseX < px + PALETTE_W) {
                 int y = viewTop() - rightPane.offset();
@@ -1121,7 +1095,6 @@ public class ChatBubbleConfigScreen extends Screen {
 
     private void doClose() {
         saveAll();
-
         client.setScreen(lastScreen);
     }
 

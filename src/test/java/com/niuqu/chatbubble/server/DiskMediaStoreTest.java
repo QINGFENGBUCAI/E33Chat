@@ -1,14 +1,11 @@
 package com.niuqu.chatbubble.server;
-
 import org.junit.jupiter.api.Test;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.util.Arrays;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 class DiskMediaStoreTest {
@@ -37,7 +34,6 @@ class DiskMediaStoreTest {
         assertNotNull(mediaId);
         assertTrue(DiskMediaStore.isValidMediaId(mediaId));
         assertEquals(data.length, store.sizeOf(mediaId));
-
         int total = DiskMediaStore.totalChunksFor(data.length);
         byte[] out = new byte[data.length];
         int off = 0;
@@ -64,7 +60,6 @@ class DiskMediaStoreTest {
         DiskMediaStore store = new DiskMediaStore(dir, 1024 * 1024, 10_000, 0);
         String r = store.beginUpload(1, "alice", 1, 20_000, "image/png");
         assertEquals("quota exceeded", r);
-
         assertNull(store.beginUpload(2, "alice", 1, 1_000, "image/png"));
     }
 
@@ -76,7 +71,6 @@ class DiskMediaStoreTest {
         String r = store.acceptChunk(1, 1, new byte[50]);
         assertEquals("chunk out of order", r);
         assertEquals(-1, store.sizeOf("whatever"));
-
         assertNull(store.acceptChunk(1, 0, new byte[50]));
     }
 
@@ -122,11 +116,9 @@ class DiskMediaStoreTest {
         assertNotNull(mediaId);
         long old = System.currentTimeMillis() - 5_000;
         Files.setLastModifiedTime(dir.resolve(mediaId), FileTime.fromMillis(old));
-
         assertNull(store.beginUpload(id + 1, "alice", 1, 10, "image/png"));
         String fresh = store.acceptChunk(id + 1, 0, new byte[10]);
         assertNotNull(fresh);
-
         int removed = store.cleanupExpired();
         assertEquals(1, removed);
         assertEquals(-1, store.sizeOf(mediaId));

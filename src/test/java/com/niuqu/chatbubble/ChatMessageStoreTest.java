@@ -1,21 +1,21 @@
 package com.niuqu.chatbubble;
-
+import com.niuqu.chatbubble.store.BlockList;
+import com.niuqu.chatbubble.store.ChatMessageStore;
+import com.niuqu.chatbubble.store.EchoTracker;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 class ChatMessageStoreTest {
     @BeforeEach
     void resetState() throws Exception {
-        var echoes = ChatMessageStore.class.getDeclaredField("pendingEchoes");
+        var echoes = EchoTracker.class.getDeclaredField("pendingEchoes");
         echoes.setAccessible(true);
         ((List<?>) echoes.get(null)).clear();
-        var quoteTime = ChatMessageStore.class.getDeclaredField("lastQuoteSendTime");
+        var quoteTime = EchoTracker.class.getDeclaredField("lastQuoteSendTime");
         quoteTime.setAccessible(true);
         quoteTime.setLong(null, 0);
-
         ChatMessageStore.localPlayerSupplier = () -> null;
     }
 
@@ -125,12 +125,12 @@ class ChatMessageStoreTest {
 
     @Test void quoteWindow_edgeExactlyWindowIsFalse() {
         long now = System.currentTimeMillis();
-        assertFalse(ChatMessageStore.wasRecentQuoteAt(now - ChatMessageStore.QUOTE_ECHO_WINDOW_MS, now));
+        assertFalse(ChatMessageStore.wasRecentQuoteAt(now - EchoTracker.QUOTE_ECHO_WINDOW_MS, now));
     }
 
     @Test void quoteWindow_expiredFalse() {
         long now = System.currentTimeMillis();
-        assertFalse(ChatMessageStore.wasRecentQuoteAt(now - ChatMessageStore.QUOTE_ECHO_WINDOW_MS - 1, now));
+        assertFalse(ChatMessageStore.wasRecentQuoteAt(now - EchoTracker.QUOTE_ECHO_WINDOW_MS - 1, now));
     }
 
     @Test void quoteWindow_publicGetterAfterSetPendingReply() {
@@ -156,7 +156,6 @@ class ChatMessageStoreTest {
     @Test void echoQuoted_markerClearedAfterIncrement() {
         ChatMessageStore.setPendingReply("> quoted", "Steve");
         ChatMessageStore.incrementPendingEcho("first send");
-
         ChatMessageStore.incrementPendingEcho("second send");
         var echo = ChatMessageStore.consumeEchoBySystemChat("second send");
         assertTrue(echo.matched());
@@ -168,7 +167,6 @@ class ChatMessageStoreTest {
         ChatMessageStore.incrementPendingEcho("quoted send");
         ChatMessageStore.markSuppressCapture();
         assertTrue(ChatMessageStore.consumeSuppressQuoted());
-
         assertFalse(ChatMessageStore.consumeSuppressQuoted());
     }
 
@@ -249,7 +247,7 @@ class ChatMessageStoreTest {
     }
 
     @Test void repostDedup_sameTextOutsideWindowNotDuplicate() {
-        assertFalse(ChatMessageStore.isRepostDuplicate("<A>[私聊] hi", 1000, "<A>[私聊] hi", 1000 + ChatMessageStore.REPOST_DEDUP_MS));
+        assertFalse(ChatMessageStore.isRepostDuplicate("<A>[私聊] hi", 1000, "<A>[私聊] hi", 1000 + EchoTracker.REPOST_DEDUP_MS));
     }
 
     @Test void repostDedup_firstRepostNeverDuplicate() {
@@ -262,7 +260,7 @@ class ChatMessageStoreTest {
             net.minecraft.text.Text.literal("Steve"),
             net.minecraft.text.Text.literal("今天去打龙吗"),
             1782900000000L,
-            own, system, null, null, "", 1, null, false, null);
+            own, system, null, null, "", 1, null, false, null, null);
     }
 
     @Test void tsv_roundTripPreservesCore() {
@@ -278,7 +276,6 @@ class ChatMessageStoreTest {
 
     @Test void jsonl_lineIsJsonWithFullText() {
         String line = ChatMessageStore.toLine(testMsg(false, false));
-
         assertTrue(line.startsWith("{"), line);
         assertTrue(line.contains("\"uuid\""), line);
         assertTrue(line.contains("今天去打龙吗"), line);
@@ -292,7 +289,7 @@ class ChatMessageStoreTest {
             net.minecraft.text.Text.literal("Steve"),
             net.minecraft.text.Text.literal("hi"),
             1782900000000L,
-            true, false, null, null, "", 1, null, true, null);
+            true, false, null, null, "", 1, null, true, null, null);
         var back = ChatMessageStore.fromLine(ChatMessageStore.toLine(msg));
         assertNotNull(back);
         assertTrue(back.isOwn());
@@ -310,7 +307,7 @@ class ChatMessageStoreTest {
             java.util.UUID.randomUUID(),
             net.minecraft.text.Text.literal("Steve"),
             net.minecraft.text.Text.literal("a\tb\nc\\d\r\nx"),
-            1782900000000L, false, false, null, null, "", 1, null, false, null);
+            1782900000000L, false, false, null, null, "", 1, null, false, null, null);
         var back = ChatMessageStore.fromLine(ChatMessageStore.toLine(msg));
         assertNotNull(back);
         assertEquals("a\tb\nc\\d\r\nx", back.content().getString());
@@ -322,7 +319,7 @@ class ChatMessageStoreTest {
             net.minecraft.text.Text.literal("Steve"),
             net.minecraft.text.Text.literal("hi"),
             1782900000000L,
-            false, false, "引用的内容", "Alex", "", 1, "Steve", true, "Alex");
+            false, false, "引用的内容", "Alex", "", 1, "Steve", true, "Alex", null);
         var back = ChatMessageStore.fromLine(ChatMessageStore.toLine(msg));
         assertNotNull(back);
         assertTrue(back.whisper());
@@ -337,7 +334,7 @@ class ChatMessageStoreTest {
             java.util.UUID.nameUUIDFromBytes("steve".getBytes()),
             net.minecraft.text.Text.literal("Steve"),
             net.minecraft.text.Text.literal("hi"),
-            1782900000000L, false, false, null, null, "", 1, null, false, null);
+            1782900000000L, false, false, null, null, "", 1, null, false, null, null);
         var back = ChatMessageStore.fromLine(ChatMessageStore.toLine(msg));
         assertNotNull(back);
         assertEquals(msg.senderUUID(), back.senderUUID());
@@ -352,7 +349,7 @@ class ChatMessageStoreTest {
         var msg = new ChatMessageStore.ChatMessage(
             java.util.UUID.randomUUID(), styled,
             net.minecraft.text.Text.literal("hi"),
-            1782900000000L, false, false, null, null, "", 1, null, false, null);
+            1782900000000L, false, false, null, null, "", 1, null, false, null, null);
         var back = ChatMessageStore.fromLine(ChatMessageStore.toLine(msg));
         assertNotNull(back);
         assertEquals("Steve", back.senderName().getString());
@@ -372,7 +369,7 @@ class ChatMessageStoreTest {
             java.util.UUID.randomUUID(),
             net.minecraft.text.Text.literal("Steve"),
             content,
-            1782900000000L, false, false, null, null, "", 1, null, false, null);
+            1782900000000L, false, false, null, null, "", 1, null, false, null, null);
         var back = ChatMessageStore.fromLine(ChatMessageStore.toLine(msg));
         assertNotNull(back);
         assertEquals(click, back.content().getStyle().getClickEvent());
@@ -390,13 +387,12 @@ class ChatMessageStoreTest {
             java.util.UUID.randomUUID(),
             net.minecraft.text.Text.literal("Steve"),
             net.minecraft.text.Text.literal("   "),
-            1782900000000L, false, false, null, null, "", 1, null, false, null);
+            1782900000000L, false, false, null, null, "", 1, null, false, null, null);
         assertNull(ChatMessageStore.fromLine(ChatMessageStore.toLine(msg)));
     }
 
     @Test void parseStyled_colorAndReset() {
         var c = ChatMessageStore.parseStyledText("§6[称号]§bE33EPUS");
-
         assertEquals("[称号]E33EPUS", c.getString());
         assertEquals(net.minecraft.util.Formatting.GOLD.getColorValue(),
             c.getSiblings().get(0).getStyle().getColor().getRgb());
@@ -471,7 +467,7 @@ class ChatMessageStoreTest {
             java.util.UUID.randomUUID(),
             net.minecraft.text.Text.literal("Steve"),
             net.minecraft.text.Text.literal("/login hunter2"),
-            1782900000000L, false, false, null, null, "", 1, null, false, null);
+            1782900000000L, false, false, null, null, "", 1, null, false, null, null);
         assertNull(ChatMessageStore.toLine(msg));
     }
 
@@ -495,49 +491,48 @@ class ChatMessageStoreTest {
     }
 
     @Test void blocked_exactNameHits() {
-        assertTrue(ChatMessageStore.matchesBlocked("Steve", List.of("Steve")));
-        assertTrue(ChatMessageStore.matchesBlocked("Steve", List.of("Alex", "Steve", "Bob")));
+        assertTrue(BlockList.matchesBlocked("Steve", List.of("Steve")));
+        assertTrue(BlockList.matchesBlocked("Steve", List.of("Alex", "Steve", "Bob")));
     }
 
     @Test void blocked_caseInsensitiveHits() {
-        assertTrue(ChatMessageStore.matchesBlocked("Steve", List.of("steve")));
-        assertTrue(ChatMessageStore.matchesBlocked("STEVE", List.of("Steve")));
+        assertTrue(BlockList.matchesBlocked("Steve", List.of("steve")));
+        assertTrue(BlockList.matchesBlocked("STEVE", List.of("Steve")));
     }
 
     @Test void blocked_colorCodesHit() {
-        assertTrue(ChatMessageStore.matchesBlocked("§6Steve§r", List.of("Steve")));
-        assertTrue(ChatMessageStore.matchesBlocked("Steve", List.of("§6Steve§r")));
+        assertTrue(BlockList.matchesBlocked("§6Steve§r", List.of("Steve")));
+        assertTrue(BlockList.matchesBlocked("Steve", List.of("§6Steve§r")));
     }
 
     @Test void blocked_whitespaceTrimmed() {
-        assertTrue(ChatMessageStore.matchesBlocked("Steve", List.of("  Steve  ")));
-        assertTrue(ChatMessageStore.matchesBlocked("  Steve  ", List.of("Steve")));
+        assertTrue(BlockList.matchesBlocked("Steve", List.of("  Steve  ")));
+        assertTrue(BlockList.matchesBlocked("  Steve  ", List.of("Steve")));
     }
 
     @Test void blocked_substringMisses() {
-        assertFalse(ChatMessageStore.matchesBlocked("SteveAdmin", List.of("Steve")));
-        assertFalse(ChatMessageStore.matchesBlocked("Steve", List.of("Stev")));
+        assertFalse(BlockList.matchesBlocked("SteveAdmin", List.of("Steve")));
+        assertFalse(BlockList.matchesBlocked("Steve", List.of("Stev")));
     }
 
     @Test void blocked_emptyOrNullSafe() {
-        assertFalse(ChatMessageStore.matchesBlocked(null, List.of("Steve")));
-        assertFalse(ChatMessageStore.matchesBlocked("", List.of("Steve")));
-        assertFalse(ChatMessageStore.matchesBlocked("Steve", null));
-        assertFalse(ChatMessageStore.matchesBlocked("Steve", List.of()));
-        assertFalse(ChatMessageStore.matchesBlocked("Steve", List.of("  ")));
+        assertFalse(BlockList.matchesBlocked(null, List.of("Steve")));
+        assertFalse(BlockList.matchesBlocked("", List.of("Steve")));
+        assertFalse(BlockList.matchesBlocked("Steve", null));
+        assertFalse(BlockList.matchesBlocked("Steve", List.of()));
+        assertFalse(BlockList.matchesBlocked("Steve", List.of("  ")));
     }
 
     @Test void blocked_senderNameFallbackHits() {
         var decorated = net.minecraft.text.Text.literal("[VIP]Steve");
-        assertTrue(ChatMessageStore.isPlayerBlocked(null, decorated, List.of("[VIP]Steve")));
-        assertTrue(ChatMessageStore.isPlayerBlocked("Alex", decorated, List.of("[vip]steve")));
-
-        assertFalse(ChatMessageStore.isPlayerBlocked(null, decorated, List.of("Steve")));
+        assertTrue(BlockList.isPlayerBlocked(null, decorated, List.of("[VIP]Steve")));
+        assertTrue(BlockList.isPlayerBlocked("Alex", decorated, List.of("[vip]steve")));
+        assertFalse(BlockList.isPlayerBlocked(null, decorated, List.of("Steve")));
     }
 
     @Test void blocked_rawNamePrimaryKeyHits() {
-        assertTrue(ChatMessageStore.isPlayerBlocked("Steve", null, List.of("Steve")));
-        assertFalse(ChatMessageStore.isPlayerBlocked("Steve", null, List.of("Alex")));
+        assertTrue(BlockList.isPlayerBlocked("Steve", null, List.of("Steve")));
+        assertFalse(BlockList.isPlayerBlocked("Steve", null, List.of("Alex")));
     }
 
     @Test void blocked_purgeDropsSenderKeepsOwnAndSystem() throws Exception {
@@ -545,18 +540,17 @@ class ChatMessageStoreTest {
             java.util.UUID.randomUUID(),
             net.minecraft.text.Text.literal("Steve"),
             net.minecraft.text.Text.literal("hello"),
-            1L, false, false, null, null, "", 1, "Steve", false, null);
+            1L, false, false, null, null, "", 1, "Steve", false, null, null);
         var ownMsg = new ChatMessageStore.ChatMessage(
             java.util.UUID.randomUUID(),
             net.minecraft.text.Text.literal("Me"),
             net.minecraft.text.Text.literal("hi"),
-            2L, true, false, null, null, "", 1, "Me", false, null);
+            2L, true, false, null, null, "", 1, "Me", false, null, null);
         var sysMsg = new ChatMessageStore.ChatMessage(
             java.util.UUID.randomUUID(),
             net.minecraft.text.Text.literal("Steve"),
             net.minecraft.text.Text.literal("joined the game"),
-            3L, false, true, null, null, "", 1, "Steve", false, null);
-
+            3L, false, true, null, null, "", 1, "Steve", false, null, null);
         var field = ChatMessageStore.class.getDeclaredField("messages");
         field.setAccessible(true);
         @SuppressWarnings("unchecked")
@@ -565,9 +559,7 @@ class ChatMessageStoreTest {
         messages.add(blockedMsg);
         messages.add(ownMsg);
         messages.add(sysMsg);
-
         ChatMessageStore.purgeBlocked(List.of("Steve"));
-
         assertEquals(2, messages.size());
         assertSame(ownMsg, messages.get(0));
         assertSame(sysMsg, messages.get(1));
@@ -577,15 +569,12 @@ class ChatMessageStoreTest {
         clearMessagesAndMetas();
         var uuid = java.util.UUID.randomUUID();
         var sender = net.minecraft.text.Text.literal("Steve");
-
         ChatMessageStore.applyChatMeta(uuid, "Steve", String.valueOf("妈妈".hashCode()),
             "A", "A的话", List.of());
         ChatMessageStore.addMessage(net.minecraft.text.Text.literal("妈妈"),
             uuid, sender, false, "Steve", false, null, false);
-
         ChatMessageStore.addMessage(net.minecraft.text.Text.literal("妈妈"),
             uuid, sender, false, "Steve", false, null, false);
-
         var field = ChatMessageStore.class.getDeclaredField("messages");
         field.setAccessible(true);
         @SuppressWarnings("unchecked")
@@ -601,7 +590,6 @@ class ChatMessageStoreTest {
         clearMessagesAndMetas();
         var uuid = java.util.UUID.randomUUID();
         var sender = net.minecraft.text.Text.literal("Steve");
-
         ChatMessageStore.applyChatMeta(uuid, "Steve", String.valueOf("妈妈".hashCode()),
             "A", "A的话", List.of());
         ChatMessageStore.addMessage(net.minecraft.text.Text.literal("妈妈"),
@@ -610,7 +598,6 @@ class ChatMessageStoreTest {
             "A", "A的话", List.of());
         ChatMessageStore.addMessage(net.minecraft.text.Text.literal("妈妈"),
             uuid, sender, false, "Steve", false, null, false);
-
         var field = ChatMessageStore.class.getDeclaredField("messages");
         field.setAccessible(true);
         @SuppressWarnings("unchecked")
@@ -624,7 +611,7 @@ class ChatMessageStoreTest {
         var messagesField = ChatMessageStore.class.getDeclaredField("messages");
         messagesField.setAccessible(true);
         ((List<?>) messagesField.get(null)).clear();
-        var metasField = ChatMessageStore.class.getDeclaredField("pendingMetas");
+        var metasField = EchoTracker.class.getDeclaredField("pendingMetas");
         metasField.setAccessible(true);
         ((java.util.Map<?, ?>) metasField.get(null)).clear();
     }
@@ -634,15 +621,11 @@ class ChatMessageStoreTest {
         var bUuid = java.util.UUID.randomUUID();
         var sender = net.minecraft.text.Text.literal("B");
         String hash = String.valueOf("？".hashCode());
-
         ChatMessageStore.addMessage(net.minecraft.text.Text.literal("？"),
             bUuid, sender, false, "B", false, null, false);
-
         ChatMessageStore.addMessage(net.minecraft.text.Text.literal("？"),
             bUuid, sender, false, "B", false, null, false);
-
         ChatMessageStore.applyChatMeta(bUuid, "B", hash, "A", "妈妈", List.of());
-
         var field = ChatMessageStore.class.getDeclaredField("messages");
         field.setAccessible(true);
         @SuppressWarnings("unchecked")
@@ -662,7 +645,6 @@ class ChatMessageStoreTest {
         ChatMessageStore.addMessage(net.minecraft.text.Text.literal("？"),
             bUuid, sender, false, "B", false, null, false);
         ChatMessageStore.applyChatMeta(bUuid, "B", hash, "A", "妈妈", List.of());
-
         var field = ChatMessageStore.class.getDeclaredField("messages");
         field.setAccessible(true);
         @SuppressWarnings("unchecked")
@@ -676,15 +658,12 @@ class ChatMessageStoreTest {
         clearMessagesAndMetas();
         var uuid = java.util.UUID.randomUUID();
         var sender = net.minecraft.text.Text.literal("B");
-
         ChatMessageStore.applyChatMeta(uuid, "B", String.valueOf("？".hashCode()),
             "A", "妈妈", List.of());
         ChatMessageStore.addMessage(net.minecraft.text.Text.literal("？"),
             uuid, sender, false, "B", false, null, false);
-
         ChatMessageStore.addMessage(net.minecraft.text.Text.literal("别的"),
             uuid, sender, false, "B", false, null, false);
-
         var field = ChatMessageStore.class.getDeclaredField("messages");
         field.setAccessible(true);
         @SuppressWarnings("unchecked")
@@ -701,12 +680,9 @@ class ChatMessageStoreTest {
         var bUuid = java.util.UUID.randomUUID();
         var sender = net.minecraft.text.Text.literal("B");
         String hash = String.valueOf("？".hashCode());
-
         ChatMessageStore.addMessage(net.minecraft.text.Text.literal("？"),
             new java.util.UUID(0, 0), sender, false, "B", false, null, false);
-
         ChatMessageStore.applyChatMeta(bUuid, "B", hash, "A", "妈妈", List.of());
-
         var field = ChatMessageStore.class.getDeclaredField("messages");
         field.setAccessible(true);
         @SuppressWarnings("unchecked")
@@ -721,11 +697,9 @@ class ChatMessageStoreTest {
         var bUuid = java.util.UUID.randomUUID();
         var sender = net.minecraft.text.Text.literal("B");
         String hash = String.valueOf("？".hashCode());
-
         ChatMessageStore.addMessage(net.minecraft.text.Text.literal("？"),
             bUuid, sender, false, "B", false, null, false);
         ChatMessageStore.applyChatMeta(bUuid, "", hash, "A", "妈妈", List.of());
-
         var field = ChatMessageStore.class.getDeclaredField("messages");
         field.setAccessible(true);
         @SuppressWarnings("unchecked")

@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.chat;
-
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Optional;
@@ -23,10 +22,8 @@ public final class MessagePresentation {
 
     static Optional<PlayerLine> parseGeneric(String text, String name) {
         if (text == null || name == null) return Optional.empty();
-
         String cleanName = name.replaceAll("§.", "");
         if (cleanName.isEmpty()) return Optional.empty();
-
         int[] map = new int[text.length()];
         StringBuilder clean = new StringBuilder(text.length());
         for (int i = 0; i < text.length(); i++) {
@@ -38,19 +35,14 @@ public final class MessagePresentation {
         String ct = clean.toString();
         int idx = ct.indexOf(cleanName);
         if (idx < 0) return Optional.empty();
-
         String beforeName = ct.substring(0, idx);
         if (hasBareChatSeparator(beforeName)) return Optional.empty();
-
         if (isBroadcastLabelPrefix(ct, idx)) return Optional.empty();
-
         int minLen = 3;
-
         if (idx > 0 && ct.charAt(idx - 1) == '<') {
             int closeAngle = ct.indexOf('>', idx + cleanName.length());
             if (closeAngle >= 0 && closeAngle - (idx - 1) <= 64) minLen = 1;
         }
-
         if (minLen == 3 && idx > 0) {
             int bracketClose = ct.lastIndexOf(']', idx);
             if (bracketClose >= 0 && idx - bracketClose <= 2) {
@@ -64,7 +56,6 @@ public final class MessagePresentation {
                 }
             }
         }
-
         if (minLen == 3) {
             int after = idx + cleanName.length();
             if (after < ct.length()) {
@@ -73,13 +64,10 @@ public final class MessagePresentation {
             }
         }
         if (cleanName.length() < minLen) return Optional.empty();
-
         int decorativeLen = countDecorativePrefix(ct, idx);
         if (idx - decorativeLen >= 30) return Optional.empty();
-
         if (idx > 0) {
             char prev = ct.charAt(idx - 1);
-
             boolean prevIsColorCode = prev == '§' || (idx >= 2 && ct.charAt(idx - 2) == '§');
             if (!prevIsColorCode && (Character.isLetterOrDigit(prev) || prev == '_')) {
                 int openAngle = ct.lastIndexOf('<', idx);
@@ -96,16 +84,13 @@ public final class MessagePresentation {
                 }
             }
         }
-
         int after = idx + cleanName.length();
         if (after < ct.length()) {
             char next = ct.charAt(after);
             if (Character.isLetterOrDigit(next) || next == '_') return Optional.empty();
         }
-
         int sep = skipSeparators(ct, after);
         if (sep <= after || sep >= ct.length()) return Optional.empty();
-
         int origNameStart = map[idx];
         int origNameEnd = map[idx + cleanName.length()];
         int origContentStart = map[sep];
@@ -140,10 +125,8 @@ public final class MessagePresentation {
         }
         String zone = colon < 0 ? text : text.substring(0, colon);
         String lower = zone.toLowerCase();
-
         if (WhisperSignal.containsZh(zone))
             return true;
-
         String zoneNoBrackets = zone.replaceAll("\\[[^\\]]*\\]|\\([^\\)]*\\)", "");
         if (!WhisperSignal.EN.matcher(zoneNoBrackets.toLowerCase()).find()) return false;
         String rest = WhisperSignal.EN.matcher(zoneNoBrackets.toLowerCase()).replaceAll(" ").trim();

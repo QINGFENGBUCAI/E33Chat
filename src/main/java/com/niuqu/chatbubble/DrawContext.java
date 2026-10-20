@@ -1,6 +1,5 @@
 //#if MC < 12000
 package com.niuqu.chatbubble;
-
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawableHelper;
@@ -108,7 +107,6 @@ public class DrawContext extends DrawableHelper {
     //$$     BufferRenderer.draw(buffer);
     //$$ }
     //#endif
-
     //#if MC < 11900
     public void enableScissor(int x1, int y1, int x2, int y2) {
         RenderSystem.enableScissor(x1, y1, x2, y2);

@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.ui;
-
 import com.niuqu.chatbubble.chat.GroupChannelState;
 import com.niuqu.chatbubble.render.ChatBubbleTheme;
 import com.niuqu.chatbubble.texture.ColoredTextureRenderer;
@@ -13,7 +12,6 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.text.Text;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -57,20 +55,16 @@ public class GroupBrowserPanel {
         h = panelHeight(GroupChannelState.knownGroups.size());
         px = ChatSearchPanel.clampX(panelX + panelW / 2 - w / 2, w, panelX, panelW);
         py = barTop - h - 4;
-
         ColoredTextureRenderer.drawWithAlpha(g, UiTextureManager.rl(UiElement.CONTENT_BG),
             px, py, w, h, alpha);
         g.drawBorder(px, py, w, h, ChatBubbleTheme.alphaBlend(c.divider(), a255));
-
         int y = py + 3;
         g.drawText(font, Text.translatable("e33chat.group.browser_title").getString(),
             px + 6, y, ChatBubbleTheme.alphaBlend(c.textPrimary(), a255), false);
-
         String hint = Text.translatable("e33chat.group.browser_hint").getString();
         g.drawText(font, hint, px + w - 6 - font.getWidth(hint), y,
             ChatBubbleTheme.alphaBlend(c.textMuted(), a255), false);
         y += TITLE_H;
-
         rowRects.clear();
         rowGroups.clear();
         leaveBtn = null;
@@ -112,7 +106,6 @@ public class GroupBrowserPanel {
                 px + 6, y + 1, ChatBubbleTheme.alphaBlend(c.textMuted(), a255), false);
             y += ROW_H + 2;
         }
-
         y += 4;
         int inputW = w - 8 - 52;
         ColoredTextureRenderer.drawWithAlpha(g, UiTextureManager.rl(UiElement.INPUT_BG),
@@ -132,7 +125,6 @@ public class GroupBrowserPanel {
             g.drawText(font, Text.translatable("e33chat.group.create_placeholder").getString(),
                 px + 6, y + 3, ChatBubbleTheme.alphaBlend(c.textMuted(), a255), false);
         }
-
         String create = Text.translatable("e33chat.group.create_btn").getString();
         int bw = font.getWidth(create) + 8;
         int bx = px + w - bw - 4;

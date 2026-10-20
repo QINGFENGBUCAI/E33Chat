@@ -1,6 +1,5 @@
 package com.niuqu.chatbubble.render;
 import com.niuqu.chatbubble.render.AnimationStyle;
-
 import net.minecraft.util.math.MathHelper;
 
 public final class Animation {

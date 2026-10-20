@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.compat;
-
 import com.niuqu.chatbubble.E33Log;
 import net.minecraft.client.MinecraftClient;
 //#if MC < 26000
@@ -7,7 +6,6 @@ import net.minecraft.client.option.KeyBinding;
 //#else
 //$$ import net.minecraft.client.KeyMapping;
 //#endif
-
 import javax.swing.SwingUtilities;
 import java.awt.FileDialog;
 import java.awt.Frame;
@@ -24,7 +22,6 @@ public final class NativeFileDialog {
         open = true;
         KeyBinding.unpressAll();
         MinecraftClient mc = MinecraftClient.getInstance();
-
         //#if MC >= 26000
         if (mc.mouseHandler != null) ((com.niuqu.chatbubble.mixin.MouseHandlerAccessor) mc.mouseHandler).e33chat$setActiveButton(false);
         //#else
@@ -34,7 +31,6 @@ public final class NativeFileDialog {
         //$$ if (mc.mouse != null) ((com.niuqu.chatbubble.mixin.MouseHandlerAccessor) mc.mouse).e33chat$setActiveButton(0);
         //#endif
         //#endif
-
         Thread t = new Thread(() -> {
             AtomicReference<File> picked = new AtomicReference<>();
             try {

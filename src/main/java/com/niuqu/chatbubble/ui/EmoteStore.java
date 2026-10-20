@@ -1,12 +1,10 @@
 package com.niuqu.chatbubble.ui;
-
 import com.niuqu.chatbubble.E33Log;
 import com.niuqu.chatbubble.compat.TextureCompat;
 import com.niuqu.chatbubble.image.RasterImageDecoder;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.util.Identifier;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -112,7 +110,6 @@ public final class EmoteStore {
                 E33Log.warn("[e33chat] emote decode failed: {}", f.getName());
                 return null;
             }
-
             //#if MC >= 12104
             Identifier tex = Identifier.of("e33chat", "emote_" + (textureSeq++));
             MinecraftClient.getInstance().getTextureManager()

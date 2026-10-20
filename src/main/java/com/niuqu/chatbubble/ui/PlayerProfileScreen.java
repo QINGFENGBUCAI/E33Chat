@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.ui;
-
 import com.niuqu.chatbubble.render.Appearance;
 import com.niuqu.chatbubble.render.ChatBubbleTheme;
 import com.niuqu.chatbubble.render.RoundRectRenderer;
@@ -18,7 +17,6 @@ import net.minecraft.world.level.GameType;
 //#else
 //$$ import net.minecraft.world.GameMode;
 //#endif
-
 import java.util.UUID;
 
 public class PlayerProfileScreen extends Screen {
@@ -62,7 +60,6 @@ public class PlayerProfileScreen extends Screen {
     @Override
     public void render(DrawContext g, int mouseX, int mouseY, float partialTick) {
         //#if MC >= 26000
-
         //#else
         //#if MC >= 12002
         renderBackground(g, mouseX, mouseY, partialTick);
@@ -71,23 +68,19 @@ public class PlayerProfileScreen extends Screen {
         //#endif
         //#endif
         ChatBubbleTheme.Colors c = Appearance.snapshot();
-
         RoundRectRenderer.fill(g, panelX + 2, panelY + 3, panelX + PANEL_W + 2, panelY + PANEL_H + 3,
             8, 0x55000000);
         RoundRectRenderer.fill(g, panelX, panelY, panelX + PANEL_W, panelY + PANEL_H,
             8, 0xF21A1C20);
-
         PlayerListEntry info = info();
         boolean online = info != null;
         boolean isSelf = MinecraftClient.getInstance().player != null
             && MinecraftClient.getInstance().player.getName().getString().equalsIgnoreCase(playerName);
         UUID uuid = online ? info.getProfile().getId() : null;
-
         int headS = 40;
         int headX = panelX + (PANEL_W - headS) / 2;
         int headY = panelY + 14;
         SkinResolver.drawAvatar(g, uuid, playerName, headX, headY, headS, headS + 6, 1f, !isSelf && !online);
-
         int nameW = textRenderer.getWidth(playerName);
         String badge = Text.translatable(isSelf ? "e33chat.profile.self"
             : online ? "e33chat.profile.online" : "e33chat.profile.offline").getString();
@@ -97,7 +90,6 @@ public class PlayerProfileScreen extends Screen {
         int nameY = headY + headS + 8;
         g.drawText(textRenderer, playerName, nameX, nameY, c.textPrimary(), false);
         g.drawText(textRenderer, badge, nameX + nameW + 6, nameY, badgeColor, false);
-
         int fieldX = panelX + 16;
         int fieldY = nameY + 18;
         int lineH = textRenderer.fontHeight + 4;
@@ -106,7 +98,6 @@ public class PlayerProfileScreen extends Screen {
         fieldY = drawField(g, Text.translatable("e33chat.profile.latency").getString(),
             online ? info.getLatency() + " ms" : "—", fieldX, fieldY, lineH, c);
         GameMode gt = online ? info.getGameMode() : null;
-
         //#if MC >= 12105
         String modeName = gt != null ? gt.getTranslatableName().getString() : "—";
         //#else
@@ -114,7 +105,6 @@ public class PlayerProfileScreen extends Screen {
         //#endif
         drawField(g, Text.translatable("e33chat.profile.gamemode").getString(),
             modeName, fieldX, fieldY, lineH, c);
-
         boolean hoverW = over(mouseX, mouseY, btnWhisperX, btnY, btnW, BTN_H);
         boolean hoverC = over(mouseX, mouseY, btnCopyX, btnY, btnW, BTN_H);
         RoundRectRenderer.fill(g, btnWhisperX, btnY, btnWhisperX + btnW, btnY + BTN_H, 4,
@@ -161,7 +151,6 @@ public class PlayerProfileScreen extends Screen {
                 MinecraftClient.getInstance().keyboard.setClipboard(text);
                 return true;
             }
-
             if (!over(mouseX, mouseY, panelX, panelY, PANEL_W, PANEL_H)) {
                 close();
                 return true;

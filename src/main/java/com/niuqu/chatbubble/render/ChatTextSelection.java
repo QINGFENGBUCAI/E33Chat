@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.render;
-
 import java.util.List;
 
 public final class ChatTextSelection {

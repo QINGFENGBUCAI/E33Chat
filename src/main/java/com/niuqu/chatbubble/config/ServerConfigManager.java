@@ -1,8 +1,6 @@
 package com.niuqu.chatbubble.config;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;

@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.render;
-
 import com.niuqu.chatbubble.store.ChatMessageStore;
 
 public final class MessageGrouping {

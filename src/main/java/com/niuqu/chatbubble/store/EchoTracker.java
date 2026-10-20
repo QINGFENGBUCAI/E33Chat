@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.store;
-
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -51,7 +50,6 @@ public final class EchoTracker {
     }
     public static void markSuppressCapture() {
         suppressCaptureTime = System.currentTimeMillis();
-
         suppressQuoted = !pendingEchoes.isEmpty() && pendingEchoes.get(pendingEchoes.size() - 1).quoted();
     }
     public static boolean consumeSuppressQuoted() {
@@ -92,7 +90,6 @@ public final class EchoTracker {
 
     public static void incrementPendingEcho(String sentText) {
         purgeStaleEchoes();
-
         boolean quoted = wasRecentQuoteAt(lastQuoteSendTime, System.currentTimeMillis());
         lastQuoteSendTime = 0;
         pendingEchoes.add(new PendingEcho(sentText, System.currentTimeMillis(), quoted));
@@ -115,9 +112,7 @@ public final class EchoTracker {
         if (pendingEchoes.isEmpty()) return new EchoMatch(false, false);
         var player = net.minecraft.client.MinecraftClient.getInstance().player;
         if (player == null) return new EchoMatch(false, false);
-
         boolean match = senderUUID != null && senderUUID.equals(player.getUuid());
-
         if (!match) {
             String s = senderName.getString();
             match = containsWholeName(s, player.getName().getString());
@@ -140,7 +135,6 @@ public final class EchoTracker {
                     }
                 }
             }
-
             PendingEcho e = pendingEchoes.remove(0);
             ChatMessageStore.updateLatestOwnSenderName(senderName);
             return new EchoMatch(true, e.quoted());
@@ -150,7 +144,6 @@ public final class EchoTracker {
 
     public static boolean containsWholeName(String haystack, String needle) {
         if (haystack == null || needle == null || needle.isEmpty()) return false;
-
         String h = haystack.replaceAll("§.", "");
         String n = needle.replaceAll("§.", "");
         if (n.isEmpty()) return false;

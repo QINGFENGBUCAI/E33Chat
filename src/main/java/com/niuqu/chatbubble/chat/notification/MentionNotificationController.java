@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.chat.notification;
-
 import com.niuqu.chatbubble.ChatBubbleClientSetup;
 import com.niuqu.chatbubble.ChatBubbleScreen;
 import com.niuqu.chatbubble.store.ChatMessageStore;
@@ -9,7 +8,6 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
-
 import java.util.*;
 
 public class MentionNotificationController {
@@ -27,13 +25,10 @@ public class MentionNotificationController {
                                    int messageIndex, String replySender) {
         MinecraftClient mc = MinecraftClient.getInstance();
         if (mc.player == null) return;
-
         String localName = mc.player.getName().getString();
         boolean requireAt = ChatBubbleClientSetup.config().mentionRequireAt();
         String text = content.getString();
-
         if (!MentionDetector.isMentioned(text, localName, requireAt, replySender)) return;
-
         boolean isOwn = (meta.senderUUID() != null && meta.senderUUID().equals(mc.player.getUuid()))
             || (meta.rawPlayerName() != null && meta.rawPlayerName().equals(localName));
         boolean chatOpen = mc.currentScreen instanceof ChatBubbleScreen;
@@ -42,7 +37,6 @@ public class MentionNotificationController {
         boolean selfNotify = isOwn && (type == NotificationType.QUOTE
             ? ChatBubbleClientSetup.config().ownQuoteNotify()
             : ChatBubbleClientSetup.config().ownMentionNotify());
-
         ChatMessageStore.debugLog(() -> "[e33chat] Mention | sender="
             + (meta.rawPlayerName() != null ? meta.rawPlayerName() : "?")
             + " | chatOpen=" + chatOpen
@@ -52,13 +46,11 @@ public class MentionNotificationController {
             + " | banner=" + ChatBubbleClientSetup.config().mentionBannerEnabled()
             + " | selfNotify=" + selfNotify
             + " | preview=" + text.substring(0, Math.min(40, text.length())));
-
         if ((!isOwn || selfNotify) && ChatBubbleClientSetup.config().mentionSoundEnabled()) {
             NotificationSoundGate.tryPlay(() -> mc.getSoundManager().play(PositionedSoundInstance.master(
                 SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 0.25f,
                 0.25f * ChatBubbleClientSetup.config().soundVolume() / 100f)));
         }
-
         if ((!isOwn || selfNotify) && ChatBubbleClientSetup.config().mentionBannerEnabled()) {
             enqueueDeduped(meta.senderUUID(), meta.senderName(), content, messageIndex, type);
         }
@@ -68,25 +60,21 @@ public class MentionNotificationController {
                                    int messageIndex) {
         MinecraftClient mc = MinecraftClient.getInstance();
         if (mc.player == null) return;
-
         boolean chatOpen = mc.currentScreen instanceof ChatBubbleScreen;
         String senderStr = senderName.getString().replaceAll("§.", "");
         boolean isOwn = (senderUUID != null && senderUUID.equals(mc.player.getUuid()))
             || mc.player.getName().getString().equals(senderStr);
-
         ChatMessageStore.debugLog(() -> "[e33chat] Whisper banner | sender=" + senderStr
             + " | chatOpen=" + chatOpen
             + " | own=" + isOwn
             + " | soundWhisper=" + ChatBubbleClientSetup.config().soundWhisper()
             + " | banner=" + ChatBubbleClientSetup.config().mentionWhisperBanner());
-
         boolean selfNotify = isOwn && ChatBubbleClientSetup.config().ownWhisperNotify();
         if ((!isOwn || selfNotify) && ChatBubbleClientSetup.config().soundWhisper()) {
             NotificationSoundGate.tryPlay(() -> mc.getSoundManager().play(PositionedSoundInstance.master(
                 SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 0.25f,
                 0.25f * ChatBubbleClientSetup.config().soundVolume() / 100f)));
         }
-
         if ((!isOwn || selfNotify) && ChatBubbleClientSetup.config().mentionWhisperBanner()) {
             enqueueDeduped(senderUUID, senderName, content, messageIndex, NotificationType.WHISPER);
         }

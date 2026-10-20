@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.texture;
-
 import com.niuqu.chatbubble.render.ChatBubbleTheme;
 import net.minecraft.util.Identifier;
 
@@ -18,10 +17,8 @@ public enum UiElement {
     WHISPER_BAR("whisper_bar"),
     CONFIG_BG("config_bg"),
     CONTENT_BG("content_bg"),
-
     QUICK_SCROLLBAR_TRACK("quick_scrollbar_track"),
     QUICK_SCROLLBAR_THUMB("quick_scrollbar_thumb"),
-
     HOVER_BG("hover_bg"),
     SIDEBAR_SELECTED("sidebar_selected"),
     SIDEBAR_HOVER("sidebar_hover"),

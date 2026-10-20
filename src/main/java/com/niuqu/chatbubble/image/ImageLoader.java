@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.image;
-
 import com.niuqu.chatbubble.E33Log;
 import com.niuqu.chatbubble.compat.TextureCompat;
 import java.net.URI;
@@ -112,7 +111,6 @@ public final class ImageLoader {
             while (it.hasNext() && LRU.size() > CACHE_CAP) {
                 String url = it.next();
                 ImageEntry e = CACHE.get(url);
-
                 if (e == null || e.state() == ImageEntry.State.LOADING) continue;
                 it.remove();
                 CACHE.remove(url, e);
@@ -255,7 +253,6 @@ public final class ImageLoader {
                 E33Log.info("[e33chat] image fetch {} -> decode failed ({} bytes, {}ms)", url, body.length, t1 - t0);
                 return;
             }
-
             int[] sc = scaledSize(decoded.width(), decoded.height());
             if (sc[0] != decoded.width() || sc[1] != decoded.height()) {
                 NativeImage scaled = new NativeImage(NativeImage.Format.RGBA, sc[0], sc[1], false);
@@ -273,7 +270,6 @@ public final class ImageLoader {
             }
             E33Log.info("[e33chat] image fetch {} -> {}x{} ({} bytes, {}ms)",
                 url, decoded.width(), decoded.height(), body.length, t1 - t0);
-
             final RasterImageDecoder.DecodedImage uploadImage = decoded;
             MinecraftClient.getInstance().execute(() -> {
                 if (entry.state() != ImageEntry.State.LOADING) {
@@ -281,7 +277,6 @@ public final class ImageLoader {
                     E33Log.info("[e33chat] image upload SKIPPED (state {}) for {}", entry.state(), url);
                     return;
                 }
-
                 try {
                     Identifier id = Identifier.of("e33chat", "img/" + hash(url));
                     TextureManager tm = MinecraftClient.getInstance().getTextureManager();

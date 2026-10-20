@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.chat;
-
 import java.util.regex.Pattern;
 
 public final class WhisperSignal {

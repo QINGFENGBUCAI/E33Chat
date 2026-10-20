@@ -1,11 +1,9 @@
 package com.niuqu.chatbubble.image;
-
 import com.niuqu.chatbubble.E33Log;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.texture.NativeImageBackedTexture;
 import net.minecraft.util.Identifier;
-
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 import javax.imageio.metadata.IIOMetadata;
@@ -67,7 +65,6 @@ public final class AnimatedImageLoader {
                     it.remove();
                     continue;
                 }
-
                 boolean loading = !e.ready && !e.failed && !e.staticImage;
                 if (loading || e.staticImage || now - e.lastAccessMs < IDLE_EVICT_MS) continue;
                 it.remove();
@@ -250,7 +247,6 @@ public final class AnimatedImageLoader {
                 if (count < 2) return null;
                 int w = reader.getWidth(0);
                 int h = reader.getHeight(0);
-
                 if ("gif".equalsIgnoreCase(reader.getFormatName())) {
                     IIOMetadata stream = reader.getStreamMetadata();
                     if (stream != null) {
@@ -317,7 +313,6 @@ public final class AnimatedImageLoader {
                 if ("gif".equalsIgnoreCase(reader.getFormatName())) {
                     return decodeGif(reader, count);
                 }
-
                 int budget = framesWithinBudget(reader.getWidth(0), reader.getHeight(0));
                 if (budget < count) {
                     E33Log.info("[e33chat] animated image trimmed to {} of {} frames (pixel budget)",
@@ -382,7 +377,6 @@ public final class AnimatedImageLoader {
             } catch (Throwable ignored) {}
         }
         if (canvasW > MAX_DIMENSION || canvasH > MAX_DIMENSION) return null;
-
         int budget = framesWithinBudget(canvasW, canvasH);
         if (budget < count) {
             E33Log.info("[e33chat] animated GIF trimmed to {} of {} frames (pixel budget)", budget, count);
@@ -410,7 +404,6 @@ public final class AnimatedImageLoader {
                 Graphics2D graphics = canvas.createGraphics();
                 try {
                     graphics.setComposite(AlphaComposite.SrcOver);
-
                     boolean logical = frame.getWidth() == canvasW && frame.getHeight() == canvasH
                         && (info.width() != canvasW || info.height() != canvasH);
                     graphics.drawImage(frame, logical ? 0 : info.left(), logical ? 0 : info.top(), null);
@@ -528,37 +521,28 @@ public final class AnimatedImageLoader {
         private volatile long sizeBytes;
         private volatile long frameStart;
         private volatile int frameIndex;
-
         private volatile long lastAccessMs = System.currentTimeMillis();
-
         private Entry(String url) {
             this.url = url;
         }
-
         public boolean ready() {
             return ready && frames != null && frames.length > 1;
         }
-
         public boolean failed() {
             return failed;
         }
-
         public boolean staticImage() {
             return staticImage;
         }
-
         public long sizeBytes() {
             return sizeBytes;
         }
-
         public int width() {
             return width;
         }
-
         public int height() {
             return height;
         }
-
         public Identifier texture() {
             lastAccessMs = System.currentTimeMillis();
             Identifier[] current = frames;
@@ -566,7 +550,6 @@ public final class AnimatedImageLoader {
             advance(System.currentTimeMillis());
             return current[Math.max(0, Math.min(frameIndex, current.length - 1))];
         }
-
         private synchronized void advance(long now) {
             Identifier[] current = frames;
             int[] currentDelays = delays;
@@ -579,7 +562,6 @@ public final class AnimatedImageLoader {
                 frameStart = now - elapsed;
             }
         }
-
         private void markFailed() {
             failed = true;
             failedAt = System.currentTimeMillis();

@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.chat.capture;
-
 import com.niuqu.chatbubble.chat.WhisperSignal;
 import com.niuqu.chatbubble.store.ChatMessageStore;
 import net.minecraft.client.MinecraftClient;
