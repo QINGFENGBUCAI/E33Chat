@@ -93,16 +93,6 @@ public class MentionNotificationBanner {
     public int pendingCount() { return banners.size() + exiting.size(); }
 
     public void tick() {
-        MinecraftClient mc = MinecraftClient.getInstance();
-        // Auto-clear banners when window loses focus
-        if (!mc.getWindow().isFocused()) {
-            if (!banners.isEmpty() || !exiting.isEmpty()) {
-                ChatMessageStore.debugLog(() -> "[e33chat] Window lost focus, clearing banners");
-                banners.clear();
-                exiting.clear();
-            }
-            return;
-        }
         long now = System.currentTimeMillis();
         List<ActiveBanner> expired = new ArrayList<>();
         for (ActiveBanner b : banners) {
