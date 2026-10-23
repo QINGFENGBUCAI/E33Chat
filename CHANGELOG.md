@@ -1,5 +1,22 @@
 # Changelog
 
+## v2.4.22-pre2
+
+**26.3 输入事件适配 + 注释/空行清理**
+
+- 26.3 鼠标事件迁移到 `MouseButtonEvent` 新 API（`InputCompat` / `ChatBubbleScreen`），按钮编号按 26.3 的 HID 体系转换
+- 全仓库清理非功能性注释与仅含空白的空行，保留预处理器指令与 `//$$` 备用分支
+- 22 个 Fabric 目标重新打包验证，主版本 252 项单元测试全部通过
+
+## v2.4.22-pre1
+
+**测试基建修复 + 注释清理**
+
+- 单元测试按设计仅在主版本（1.21.1）编译运行，接入 JUnit 5 平台
+- 修复中文路径下 Gradle test worker 读取 classpath argfile 的编码错配（daemon 以 GBK 写入）
+- 修复符号迁移后失效的测试引用（`BlockList` / `EchoTracker` / `render` 子包 / `ChatMessage.group`）
+- 移除 `MentionNotificationBanner` 中误加的窗口焦点检查（1.16.5 无 `Window.isFocused`）
+
 ## v2.4.21
 
 **实机验证修复（1.21.9~1.21.11 与全版本映射审计）+ 下线头像保护**

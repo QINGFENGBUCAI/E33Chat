@@ -11,7 +11,7 @@
   <img alt="Loader" src="https://img.shields.io/badge/Loader-Fabric-orange">
   <img alt="Side" src="https://img.shields.io/badge/Side-Client%20required,%20server%20optional-blue">
   <img alt="Java" src="https://img.shields.io/badge/Java-17%2B%20%7C%2021%2B%20%7C%2025-yellow">
-  <img alt="Version" src="https://img.shields.io/badge/Version-2.4.20-informational">
+  <img alt="Version" src="https://img.shields.io/badge/Version-2.4.22--pre2-informational">
   <img alt="License" src="https://img.shields.io/badge/License-MIT-brightgreen">
 </p>
 
@@ -51,8 +51,6 @@ E33Chat is a chat-enhancement mod that rebuilds the vanilla chat HUD in a chat-a
 |---|---|---|
 | Minecraft | Required | 1.16.5 ~ 26.3 (22 Fabric targets, download the JAR matching your version) |
 | Java | Required | 17+ (1.16.5~1.20.1) / 21+ (1.21.x) / 25 (26.x) |
-| Forge | Per platform | 47.0.0+ (1.20.1) |
-| NeoForge | Per platform | 21.x (1.21.1) |
 | Fabric Loader | Required | 0.16.0+ (0.19.0+ for 26.x) |
 | Fabric API | Required | Any compatible version |
 | CustomSkinLoader | Optional | Shows offline players' heads |
@@ -61,8 +59,8 @@ E33Chat is a chat-enhancement mod that rebuilds the vanilla chat HUD in a chat-a
 
 ## Installation
 
-1. Download the JAR for your platform from [Releases](https://github.com/QINGFENGBUCAI/E33Chat/releases)
-2. Drop it into `.minecraft/mods/` (match your loader — do not mix platform JARs)
+1. Download the JAR matching your Minecraft version from [Releases](https://github.com/QINGFENGBUCAI/E33Chat/releases)
+2. Drop it into `.minecraft/mods/` (the JAR's Minecraft version must match your game version)
 3. Launch the game
 
 ---
@@ -350,12 +348,11 @@ Yes, no extra permission needed.
 
 1. Confirm the Minecraft version matches the mod version
 2. Confirm the mod loader is installed correctly
-3. Confirm you have not mixed platform JARs (e.g. Forge and Fabric at once)
-4. Back up `config/e33chat-client.toml`, then delete it to test for config corruption
-5. Keep only E33Chat to isolate mod conflicts
-6. Check for custom fonts or resource packs
-7. Look for `[e33chat]` errors in `.minecraft/logs/latest.log`
-8. When reporting, include versions, mod list, `latest.log`, screenshots and reproduction steps
+3. Back up `config/e33chat-client.toml`, then delete it to test for config corruption
+4. Keep only E33Chat to isolate mod conflicts
+5. Check for custom fonts or resource packs
+6. Look for `[e33chat]` errors in `.minecraft/logs/latest.log`
+7. When reporting, include versions, mod list, `latest.log`, screenshots and reproduction steps
 
 ---
 

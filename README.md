@@ -11,7 +11,7 @@
   <img alt="Loader" src="https://img.shields.io/badge/Loader-Fabric-orange">
   <img alt="Side" src="https://img.shields.io/badge/Side-Client%20required,%20server%20optional-blue">
   <img alt="Java" src="https://img.shields.io/badge/Java-17%2B%20%7C%2021%2B%20%7C%2025-yellow">
-  <img alt="Version" src="https://img.shields.io/badge/Version-2.4.20-informational">
+  <img alt="Version" src="https://img.shields.io/badge/Version-2.4.22--pre2-informational">
   <img alt="License" src="https://img.shields.io/badge/License-MIT-brightgreen">
 </p>
 
@@ -51,8 +51,6 @@ E33Chat 是一款聊天增强模组，把原版聊天 HUD 重做成聊天 APP �
 |---|---|---|
 | Minecraft | 必需 | 1.16.5 ~ 26.3（22 个 Fabric 目标，按版本下载对应 JAR）|
 | Java | 必需 | 17+（1.16.5~1.20.1）/ 21+（1.21.x）/ 25（26.x）|
-| Forge | 按平台 | 47.0.0+ (1.20.1) |
-| NeoForge | 按平台 | 21.x (1.21.1) |
 | Fabric Loader | 必需 | 0.16.0+（26.x 需 0.19.0+）|
 | Fabric API | 必需 | 任意兼容版本 |
 | CustomSkinLoader | 可选 | 显示离线玩家头像 |
@@ -61,8 +59,8 @@ E33Chat 是一款聊天增强模组，把原版聊天 HUD 重做成聊天 APP �
 
 ## 安装方法
 
-1. 从 [Releases](https://github.com/QINGFENGBUCAI/E33Chat/releases) 下载对应平台的 JAR
-2. 放入 `.minecraft/mods/` 目录（与你的加载器匹配，勿混装多平台 JAR）
+1. 从 [Releases](https://github.com/QINGFENGBUCAI/E33Chat/releases) 下载与你的 Minecraft 版本对应的 JAR
+2. 放入 `.minecraft/mods/` 目录（版本号必须与游戏版本一致，不要跨版本混用）
 3. 启动游戏
 
 ---
