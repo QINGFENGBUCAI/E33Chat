@@ -1,37 +1,5 @@
 import groovy.json.JsonSlurper
 
-pluginManagement {
-    repositories {
-        maven {
-            name = 'Fabric'
-            url = 'https://maven.fabricmc.net/'
-        }
-        maven {
-            name = 'Forge'
-            url = 'https://maven.minecraftforge.net/'
-        }
-        maven {
-            name = 'Jitpack'
-            url = 'https://jitpack.io'
-            content {
-                includeGroupAndSubgroups('com.github')
-            }
-        }
-        mavenCentral()
-        gradlePluginPortal()
-    }
-    resolutionStrategy {
-        eachPlugin {
-            switch (requested.id.id) {
-                case 'com.replaymod.preprocess': {
-                    useModule("com.github.Fallen-Breath:preprocessor:${requested.version}")
-                    break
-                }
-            }
-        }
-    }
-}
-
 rootProject.name = 'E33Chat'
 
 def settingsFile = new File(rootDir, 'settings.json')

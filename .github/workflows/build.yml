@@ -11,11 +11,11 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
       - name: validate gradle wrapper
-        uses: gradle/actions/wrapper-validation@v5
+        uses: gradle/actions/wrapper-validation@4c125117fe7c5aed11272ec4213f602f012f89f2 # v5
       - name: setup jdk
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
         with:
           java-version: '25'
           distribution: 'microsoft'
@@ -63,8 +63,15 @@ jobs:
           annotate("Gradle build failed - tail", log[-180:])
           PY
           fi
+      - name: generate checksums
+        if: success()
+        shell: bash
+        run: |
+          find versions -path '*/build/libs/*.jar' -type f -print0 | sort -z | xargs -0 sha256sum > checksums.sha256
       - name: capture build artifacts
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: Artifacts
-          path: versions/*/build/libs/*.jar
+          path: |
+            versions/*/build/libs/*.jar
+            checksums.sha256

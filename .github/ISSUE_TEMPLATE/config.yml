@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 安全漏洞
+    url: https://github.com/QINGFENGBUCAI/E33Chat/security/advisories/new
+    about: 请勿公开提交安全漏洞，使用私密上报渠道

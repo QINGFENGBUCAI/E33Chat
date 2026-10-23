@@ -1,0 +1,80 @@
+name: Bug 报告
+description: 报告崩溃、显示异常或功能失效
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        提交前请确认已使用与游戏版本匹配的 JAR，并删除日志中的本机路径与账号信息。
+  - type: input
+    id: mc-version
+    attributes:
+      label: Minecraft 版本
+      placeholder: 1.21.1
+    validations:
+      required: true
+  - type: input
+    id: mod-version
+    attributes:
+      label: E33Chat 版本
+      placeholder: 2.4.22-pre2
+    validations:
+      required: true
+  - type: input
+    id: loader-version
+    attributes:
+      label: Fabric Loader / Fabric API 版本
+      placeholder: 0.16.14 / 0.92.11+1.20.1
+    validations:
+      required: true
+  - type: dropdown
+    id: side
+    attributes:
+      label: 运行环境
+      options:
+        - 单人游戏
+        - 局域网联机
+        - 服务器（客户端装有 E33Chat）
+        - 服务器（客户端与服务端均装有 E33Chat）
+    validations:
+      required: true
+  - type: textarea
+    id: mods
+    attributes:
+      label: 其他相关模组
+      description: 是否安装 CustomSkinLoader、No Chat Reports、ModernUI、ChatHeads 等
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      placeholder: |
+        1. 打开聊天框
+        2. 输入 ...
+        3. 出现 ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 预期结果
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: 日志 / 崩溃报告
+      description: 粘贴 latest.log 或 crash-report 的相关片段
+      render: text
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: 确认
+      options:
+        - label: 已使用与游戏版本一致的最新版 JAR
+          required: true
+        - label: 已移除日志中的本机路径与账号信息
+          required: true

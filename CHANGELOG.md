@@ -1,5 +1,18 @@
 # Changelog
 
+格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [SemVer](https://semver.org/lang/zh-CN/)。新条目按 Added / Changed / Fixed / Removed 分类。
+
+## v2.4.22
+
+**工程规范落地 + 配置清理**
+
+- 22 个 `fabric.mod.json` 的作者列表加入 `QINGFENGBUCAI`
+- 删除失效的 ReplayMod 预处理器配置：根 `build.gradle`、`settings.gradle` 插件解析、无操作任务块、空 `java` 块与 `maven-publish`
+- 移除 22 个版本的 `include_common_sources`、6 个失效 `ref_source`、5 个 `stub_only_sources`
+- 新增工程规范文档、ADR、`SECURITY.md`、`CONTRIBUTING.md` 与 Issue 表单
+- 新增语言键一致性、预处理器指令、资源完整性、纯逻辑边界四项守护测试
+- 编译启用 `-Xlint:all`；CI Action 固定到 commit SHA 并生成 SHA-256 校验和
+
 ## v2.4.22-pre2
 
 **26.3 输入事件适配 + 注释/空行清理**

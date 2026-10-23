@@ -11,7 +11,7 @@
   <img alt="Loader" src="https://img.shields.io/badge/Loader-Fabric-orange">
   <img alt="Side" src="https://img.shields.io/badge/Side-Client%20required,%20server%20optional-blue">
   <img alt="Java" src="https://img.shields.io/badge/Java-17%2B%20%7C%2021%2B%20%7C%2025-yellow">
-  <img alt="Version" src="https://img.shields.io/badge/Version-2.4.22--pre2-informational">
+  <img alt="Version" src="https://img.shields.io/badge/Version-2.4.22-informational">
   <img alt="License" src="https://img.shields.io/badge/License-MIT-brightgreen">
 </p>
 

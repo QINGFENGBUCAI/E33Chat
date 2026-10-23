@@ -5,7 +5,8 @@
   "name": "E33Chat",
   "description": "Rebuilds the vanilla chat HUD in a chat-app style",
   "authors": [
-    "E33EPUS"
+    "E33EPUS",
+    "QINGFENGBUCAI"
   ],
   "license": "MIT",
   "icon": "logo.png",
