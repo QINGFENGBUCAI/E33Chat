@@ -3,6 +3,24 @@ package com.niuqu.chatbubble.compat;
 public final class InputCompat {
     private InputCompat() {}
 
+    public static int glfwButton(int button) {
+        //#if MC >= 260300
+        if (button == 1) return 0;
+        if (button == 2) return 1;
+        if (button == 3) return 2;
+        //#endif
+        return button;
+    }
+
+    public static int rawButton(int button) {
+        //#if MC >= 260300
+        if (button == 0) return 1;
+        if (button == 1) return 2;
+        if (button == 2) return 3;
+        //#endif
+        return button;
+    }
+
     //#if MC >= 12109
     //#if MC >= 26000
     public static net.minecraft.client.gui.Click click(double x, double y, int button) {
@@ -55,64 +73,38 @@ public final class InputCompat {
         return (modifiers & 192) != 0;
     }
 
-    //#if MC >= 260300
-    public static int glfwButton(int button) {
-        // 26.3 uses SDL/HID button values (1=left, 2=middle, 3=right)
-        // Convert to GLFW-style values (0=left, 1=middle, 2=right)
-        if (button == 1) return 0;
-        if (button == 2) return 1;
-        if (button == 3) return 2;
-        return button;
-    }
-
-    public static int rawButton(int button) {
-        // Convert GLFW-style values (0=left, 1=middle, 2=right) to SDL/HID (1=left, 2=middle, 3=right)
-        if (button == 0) return 1;
-        if (button == 1) return 2;
-        if (button == 2) return 3;
-        return button;
-    }
-    //#else
-    //$$ public static int glfwButton(int button) {
-    //$$     return button;
-    //$$ }
-    //$$ public static int rawButton(int button) {
-    //$$     return button;
-    //$$ }
-    //#endif
-
     public static boolean hasShiftDown() {
         return net.minecraft.client.Minecraft.getInstance().options.keyShift.isDown();
     }
     //#else
-    public static net.minecraft.client.gui.Click click(double x, double y, int button) {
-        return new net.minecraft.client.gui.Click(x, y,
-            new net.minecraft.client.input.MouseInput(button, 0));
-    }
-
-    public static net.minecraft.client.input.KeyInput key(int keyCode, int scanCode, int modifiers) {
-        return new net.minecraft.client.input.KeyInput(keyCode, scanCode, modifiers);
-    }
-
-    public static boolean mouseClicked(net.minecraft.client.gui.widget.ClickableWidget widget,
-                                       double x, double y, int button) {
-        return widget.mouseClicked(click(x, y, button), false);
-    }
-
-    public static void onClick(net.minecraft.client.gui.widget.ClickableWidget widget,
-                               double x, double y) {
-        widget.onClick(click(x, y, 0), false);
-    }
-
-    public static boolean hasShiftDown() {
-        return net.minecraft.client.util.InputUtil.isKeyPressed(
-            net.minecraft.client.MinecraftClient.getInstance().getWindow(),
-            net.minecraft.client.util.InputUtil.GLFW_KEY_LEFT_SHIFT);
-    }
-
-    public static boolean hasControl(int modifiers) {
-        return (modifiers & 0x2) != 0;
-    }
+    //$$ public static net.minecraft.client.gui.Click click(double x, double y, int button) {
+    //$$     return new net.minecraft.client.gui.Click(x, y,
+    //$$         new net.minecraft.client.input.MouseInput(button, 0));
+    //$$ }
+    //$$ 
+    //$$ public static net.minecraft.client.input.KeyInput key(int keyCode, int scanCode, int modifiers) {
+    //$$     return new net.minecraft.client.input.KeyInput(keyCode, scanCode, modifiers);
+    //$$ }
+    //$$ 
+    //$$ public static boolean mouseClicked(net.minecraft.client.gui.widget.ClickableWidget widget,
+    //$$                                        double x, double y, int button) {
+    //$$     return widget.mouseClicked(click(x, y, button), false);
+    //$$ }
+    //$$ 
+    //$$ public static void onClick(net.minecraft.client.gui.widget.ClickableWidget widget,
+    //$$                            double x, double y) {
+    //$$     widget.onClick(click(x, y, 0), false);
+    //$$ }
+    //$$ 
+    //$$ public static boolean hasShiftDown() {
+    //$$     return net.minecraft.client.util.InputUtil.isKeyPressed(
+    //$$         net.minecraft.client.MinecraftClient.getInstance().getWindow(),
+    //$$         net.minecraft.client.util.InputUtil.GLFW_KEY_LEFT_SHIFT);
+    //$$ }
+    //$$ 
+    //$$ public static boolean hasControl(int modifiers) {
+    //$$     return (modifiers & 0x2) != 0;
+    //$$ }
     //#endif
     //#endif
 }

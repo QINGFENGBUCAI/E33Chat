@@ -1,7 +1,3 @@
-// Root project - 普通构建使用各版本 build.gradle 中的自定义预处理任务。
-// ReplayMod preprocessor 只在显式传入 -PenableReplayPreprocess=true 时加载，
-// 避免它的 mapping-io 版本和较新的 Fabric Loom 版本在 CI 配置阶段冲突。
-
 if ((findProperty("enableReplayPreprocess") ?: "false").toString().toBoolean()) {
     buildscript {
         repositories {

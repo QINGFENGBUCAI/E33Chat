@@ -927,11 +927,20 @@ public class ChatBubbleScreen extends ChatScreen {
         return true;
     }
 
+    //#if MC >= 260300
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        //#if MC >= 260300
+    public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent clickInput, boolean doubled) {
+        double mouseX = clickInput.x();
+        double mouseY = clickInput.y();
+        int button = clickInput.button();
         button = com.niuqu.chatbubble.compat.InputCompat.glfwButton(button);
-        //#endif
+    //#else
+    //$$ @Override
+    //$$ public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        //$$ //#if MC >= 260300
+        //$$ button = com.niuqu.chatbubble.compat.InputCompat.glfwButton(button);
+        //$$ //#endif
+    //#endif
         double origX = mouseX;
         if (isPanelSliding()) mouseX -= currentPanelOffset();
         if (showMentions && button == 0) {
@@ -1235,11 +1244,20 @@ public class ChatBubbleScreen extends ChatScreen {
         return chatHandled;
     }
 
+    //#if MC >= 260300
     @Override
-    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
-        //#if MC >= 260300
+    public boolean mouseDragged(net.minecraft.client.input.MouseButtonEvent clickInput, double dragX, double dragY) {
+        double mouseX = clickInput.x();
+        double mouseY = clickInput.y();
+        int button = clickInput.button();
         button = com.niuqu.chatbubble.compat.InputCompat.glfwButton(button);
-        //#endif
+    //#else
+    //$$ @Override
+    //$$ public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+        //$$ //#if MC >= 260300
+        //$$ button = com.niuqu.chatbubble.compat.InputCompat.glfwButton(button);
+        //$$ //#endif
+    //#endif
         if (textSelection.isDragActive()) {
             double mx = mouseX;
             if (isPanelSliding()) mx -= currentPanelOffset();
@@ -1288,14 +1306,27 @@ public class ChatBubbleScreen extends ChatScreen {
             }
             return true;
         }
-        return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+        //#if MC >= 260300
+        return super.mouseDragged(clickInput, dragX, dragY);
+        //#else
+        //$$ return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+        //#endif
     }
 
+    //#if MC >= 260300
     @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        //#if MC >= 260300
+    public boolean mouseReleased(net.minecraft.client.input.MouseButtonEvent clickInput) {
+        double mouseX = clickInput.x();
+        double mouseY = clickInput.y();
+        int button = clickInput.button();
         button = com.niuqu.chatbubble.compat.InputCompat.glfwButton(button);
-        //#endif
+    //#else
+    //$$ @Override
+    //$$ public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        //$$ //#if MC >= 260300
+        //$$ button = com.niuqu.chatbubble.compat.InputCompat.glfwButton(button);
+        //$$ //#endif
+    //#endif
         if (textSelection.isDragActive()) {
             textSelection.endDrag();
             if (!textSelection.didMove()) {
@@ -1311,7 +1342,11 @@ public class ChatBubbleScreen extends ChatScreen {
             inputDragAnchor = -1;
         }
         if (scrollbarDragging) { scrollbarDragging = false; return true; }
-        return super.mouseReleased(mouseX, mouseY, button);
+        //#if MC >= 260300
+        return super.mouseReleased(clickInput);
+        //#else
+        //$$ return super.mouseReleased(mouseX, mouseY, button);
+        //#endif
     }
 
     private boolean handleIconClick(int mx, int my) {
@@ -2037,8 +2072,37 @@ public class ChatBubbleScreen extends ChatScreen {
             } else if (click.getAction() == ClickEvent.Action.OPEN_URL) {
                 String clickUrl = StyleCompat.clickValue(click);
                 if (clickUrl != null && (clickUrl.startsWith("http://") || clickUrl.startsWith("https://"))) {
-                    handleTextClick(style);
+                    //#if MC >= 260300
+                    if (click instanceof net.minecraft.text.ClickEvent.OpenUrl openUrl) {
+                        try {
+                            com.mojang.blaze3d.Blaze3D.openUri(openUrl.uri());
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    //#else
+                    //$$ handleTextClick(style);
+                    //#endif
                 }
+            } else if (click.getAction() == ClickEvent.Action.RUN_COMMAND) {
+                //#if MC >= 260300
+                if (click instanceof net.minecraft.text.ClickEvent.RunCommand runCmd) {
+                    String command = runCmd.command();
+                    if (client.player != null) {
+                        client.player.networkHandler.sendChatCommand(command.startsWith("/") ? command.substring(1) : command);
+                    }
+                }
+                //#else
+                //$$ handleTextClick(style);
+                //#endif
+            } else if (click.getAction() == ClickEvent.Action.COPY_TO_CLIPBOARD) {
+                //#if MC >= 260300
+                if (click instanceof net.minecraft.text.ClickEvent.CopyToClipboard copyClip) {
+                    client.keyboard.setClipboard(copyClip.value());
+                }
+                //#else
+                //$$ handleTextClick(style);
+                //#endif
             } else {
                 handleTextClick(style);
             }

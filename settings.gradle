@@ -34,7 +34,6 @@ pluginManagement {
 
 rootProject.name = 'E33Chat'
 
-// MasaGadget 风格：从 settings.json 读取版本列表，精确匹配目录名
 def settingsFile = new File(rootDir, 'settings.json')
 if (!settingsFile.exists()) {
     throw new GradleException("Missing settings.json: ${settingsFile.absolutePath}")
@@ -43,7 +42,6 @@ if (!settingsFile.exists()) {
 def settings = new JsonSlurper().parse(settingsFile) as Map<String, List<String>>
 List<String> versions = settings.get('versions') as List<String>
 
-// 主项目文件
 File mainProjectFile = new File(rootDir, 'versions/mainProject')
 if (!mainProjectFile.exists()) {
     throw new GradleException("Missing versions/mainProject file: ${mainProjectFile.absolutePath}")
@@ -60,7 +58,6 @@ for (String version : versions) {
     ProjectDescriptor proj = project(":${version}")
     proj.setProjectDir(projectDir)
 
-    // 优先使用版本专属 build.gradle，否则使用共享脚本
     File versionBuildFile = new File(projectDir, "build.gradle")
     if (versionBuildFile.exists()) {
         println "Registered version: ${version} -> versions/${version} (local build script)"

@@ -38,14 +38,12 @@ public class ChatMessageEffects implements ChatMessageStore.MessageEffectObserve
             var player = MinecraftClient.getInstance().player;
             if (player != null) {
                 //#if MC >= 26000
-                // MC 26.x: SoundEvents may use different API
                 try {
                     net.minecraft.sound.SoundEvent sound = SoundEvents.BLOCK_NOTE_BLOCK_CHIME.value();
                     if (sound != null) {
                         player.playSound(sound, 0.6F * ChatBubbleClientSetup.config().soundVolume() / 100f, 1.0F);
                     }
                 } catch (Exception e) {
-                    // Fallback to older API if needed
                     ChatMessageStore.debugLog(() -> "[e33chat] Sound play failed: " + e.getMessage());
                 }
                 //#else

@@ -60,3 +60,6 @@ tmp-jar-extract/
 /tools/
 /init.gradle
 versions/*/build_*.txt
+
+# IDE 代理配置与本地技能（含本机路径/环境信息，禁止上传）
+/.trae/
