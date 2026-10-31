@@ -6,6 +6,7 @@ import net.minecraft.network.packet.CustomPayload;
 //#endif
 import net.minecraft.util.Identifier;
 
+// 媒体上传确认包
 //#if MC >= 12005
 public record MediaUploadAckPayload(long uploadId, String mediaId, String error)
         implements CustomPayload {
@@ -61,8 +62,10 @@ public record MediaUploadAckPayload(long uploadId, String mediaId, String error)
     //$$ }
     //#endif
 
+    // 空串转空值
     private static String nullOrEmpty(String s) { return s == null || s.isEmpty() ? null : s; }
 
+    // 获取包标识
     //#if MC >= 12005
     @Override
     public Id<MediaUploadAckPayload> getId() { return ID; }

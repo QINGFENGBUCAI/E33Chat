@@ -6,10 +6,13 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+// 服务端配置管理器
 public final class ServerConfigManager {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    // 禁止外部实例化
     private ServerConfigManager() {}
 
+    // 加载配置文件
     public static ServerConfig load(Path path) {
         if (Files.exists(path)) {
             try (Reader r = new InputStreamReader(Files.newInputStream(path), StandardCharsets.UTF_8)) {
@@ -27,6 +30,7 @@ public final class ServerConfigManager {
         return def;
     }
 
+    // 保存配置文件
     public static void save(Path path, ServerConfig config) {
         try {
             Files.createDirectories(path.getParent());

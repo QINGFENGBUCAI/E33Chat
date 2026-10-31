@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+// 表情文件存储
 public final class EmoteStore {
     public static final int EMOTE_MAX = 32;
     private static final List<File> emotes = new ArrayList<>();
@@ -21,12 +22,15 @@ public final class EmoteStore {
     private static int textureSeq;
     private static boolean scanned;
 
+    // 禁止外部实例化
     private EmoteStore() {}
 
+    // 获取表情目录
     public static File dir() {
         return FabricLoader.getInstance().getConfigDir().resolve("e33chat/emotes").toFile();
     }
 
+    // 判断图片文件
     public static boolean isImageFile(File f) {
         if (f == null) return false;
         String n = f.getName().toLowerCase();
@@ -34,8 +38,10 @@ public final class EmoteStore {
             || n.endsWith(".gif");
     }
 
+    // 判断图片文件
     private static boolean isImage(File f) { return isImageFile(f); }
 
+    // 刷新表情列表
     public static void refresh() {
         scanned = true;
         emotes.clear();
@@ -51,11 +57,13 @@ public final class EmoteStore {
         textures.keySet().removeIf(f -> !emotes.contains(f));
     }
 
+    // 获取表情列表
     public static List<File> list() {
         if (!scanned) refresh();
         return emotes;
     }
 
+    // 添加表情文件
     public static boolean add(File f) {
         if (!isImage(f)) return false;
         if (emotes.size() >= EMOTE_MAX) return false;
@@ -71,6 +79,7 @@ public final class EmoteStore {
         }
     }
 
+    // 删除表情文件
     public static boolean remove(File f) {
         if (f.delete()) {
             refresh();
@@ -79,6 +88,7 @@ public final class EmoteStore {
         return false;
     }
 
+    // 写入表情图片
     public static boolean addBytes(byte[] png, String name) {
         if (png == null || png.length == 0) return false;
         if (emotes.size() >= EMOTE_MAX) return false;
@@ -96,10 +106,12 @@ public final class EmoteStore {
         }
     }
 
+    // 判断存储已满
     public static boolean isFull() {
         return emotes.size() >= EMOTE_MAX;
     }
 
+    // 获取表情纹理
     public static Identifier texture(File f) {
         Identifier id = textures.get(f);
         if (id != null) return id;

@@ -43,6 +43,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+// 服务端主入口
 public class ChatBubbleMod implements ModInitializer {
     public static final String MOD_ID = "e33chat";
 
@@ -69,6 +70,7 @@ public class ChatBubbleMod implements ModInitializer {
     private static boolean configLoaded;
     private static volatile com.niuqu.chatbubble.server.DiskMediaStore mediaStore;
 
+    // 获取媒体存储
     private static com.niuqu.chatbubble.server.DiskMediaStore mediaStore(net.minecraft.server.MinecraftServer server) {
         com.niuqu.chatbubble.server.DiskMediaStore s = mediaStore;
         if (s == null) {
@@ -85,23 +87,28 @@ public class ChatBubbleMod implements ModInitializer {
         return s;
     }
 
+    // 待引用消息暂存
     public record QuotePending(String quotedSenderName, String quotedContent, String messageHash, long time) {}
 
+    // 取出待引用消息
     private static QuotePending takeQuote(UUID playerUUID) {
         QuotePending quote = pendingQuotes.remove(playerUUID);
         if (quote != null && System.currentTimeMillis() - quote.time() > 10_000) return null;
         return quote;
     }
 
+    // 消费待引用消息
     public static QuotePending consumeQuote(UUID playerUUID) {
         return takeQuote(playerUUID);
     }
 
+    // 添加上下文消息
     public static void addHistoryEntry(HistoryPayload.HistoryEntry entry) {
         addToHistory(entry);
     }
 
     @Override
+    // 模组服务端初始化
     public void onInitialize() {
         //#if MC >= 12005
         PayloadTypeRegistry.playC2S().register(QuoteSyncPayload.ID, QuoteSyncPayload.CODEC);
@@ -310,6 +317,7 @@ public class ChatBubbleMod implements ModInitializer {
         });
     }
 
+    // 处理私聊引用
     public static void consumePrivateMessageQuote(ParseResults<ServerCommandSource> parseResults, String command) {
         String[] parts = command.split(" ");
         if (parts.length < 3) return;
@@ -334,6 +342,7 @@ public class ChatBubbleMod implements ModInitializer {
         }
     }
 
+    // 载入服务端配置
     private static void loadConfig(ServerConfig config) {
         useTpa = config.use_tpa;
         historyEnabled = config.history_enabled;
@@ -349,12 +358,14 @@ public class ChatBubbleMod implements ModInitializer {
         whisperTemplates = config.whisper_templates != null ? config.whisper_templates : List.of();
     }
 
+    // 广播服务端配置
     public static void broadcastServerConfig(net.minecraft.server.MinecraftServer server) {
         for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
             sendServerConfigTripleTo(p);
         }
     }
 
+    // 发送全部配置包
     private static void sendServerConfigTripleTo(ServerPlayerEntity player) {
         //#if MC >= 12005
         ServerPlayNetworking.send(player,
@@ -376,29 +387,44 @@ public class ChatBubbleMod implements ModInitializer {
         //#endif
     }
 
+    // 构建V2配置包
     private static ConfigSyncV2Payload buildConfigV2() {
         return new ConfigSyncV2Payload(useTpa, new ArrayList<>(chatTemplates),
             new ArrayList<>(whisperTemplates), templateDebug);
     }
 
+    // 是否启用Tpa
     public static boolean useTpa() { return useTpa; }
+    // 是否启用历史
     public static boolean historyEnabled() { return historyEnabled; }
+    // 是否启用模板调试
     public static boolean templateDebug() { return templateDebug; }
+    // 是否启用媒体
     public static boolean mediaEnabled() { return mediaEnabled; }
+    // 是否自动清理媒体
     public static boolean mediaAutoClean() { return mediaAutoClean; }
+    // 是否兼容EasyBot
     public static boolean easyBotCompat() { return easyBotCompat; }
+    // 是否启用群聊
     public static boolean groupsEnabled() { return groupsEnabled; }
+    // 获取最大群数量
     public static int groupMaxCount() { return groupMaxCount; }
+    // 获取最大群成员数
     public static int groupMaxMembers() { return groupMaxMembers; }
+    // 建群是否仅限管理员
     public static boolean groupCreateOpOnly() { return groupCreateOpOnly; }
+    // 获取聊天模板
     public static List<String> chatTemplates() { return chatTemplates; }
+    // 获取私聊模板
     public static List<String> whisperTemplates() { return whisperTemplates; }
+    // 设置聊天模板
     public static void setTemplates(List<String> chat, List<String> whisper, boolean debug) {
         chatTemplates = chat;
         whisperTemplates = whisper;
         templateDebug = debug;
     }
 
+    // 写入历史缓冲
     private static void addToHistory(HistoryPayload.HistoryEntry entry) {
         if (entry == null) return;
         synchronized (HISTORY_LOCK) {
@@ -408,12 +434,14 @@ public class ChatBubbleMod implements ModInitializer {
         }
     }
 
+    // 获取历史快照
     private static List<HistoryPayload.HistoryEntry> snapshotHistory() {
         synchronized (HISTORY_LOCK) {
             return new ArrayList<>(historyBuffer);
         }
     }
 
+    // 解析提及玩家
     private static List<String> extractMentions(String text, int playerCount) {
         if (playerCount <= 1) return Collections.emptyList();
         List<String> mentions = new ArrayList<>();

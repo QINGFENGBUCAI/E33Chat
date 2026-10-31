@@ -7,9 +7,12 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.text.Text;
 
+// 聊天消息分类
 public final class ChatClassifier {
+    // 私有构造
     private ChatClassifier() {}
 
+    // 取名字候选列表
     public static String[] nameCandidates(PlayerListEntry info) {
         var out = new java.util.LinkedHashSet<String>();
         String profile = GuiCompat.profileName(info.getProfile());
@@ -19,6 +22,7 @@ public final class ChatClassifier {
         return out.toArray(new String[0]);
     }
 
+    // 添加名字变体
     public static void addNameVariants(java.util.Set<String> out, String name) {
         if (name == null || name.isEmpty()) return;
         out.add(name);
@@ -26,6 +30,7 @@ public final class ChatClassifier {
         if (!stripped.isEmpty()) out.add(stripped);
     }
 
+    // 是否原版广播
     public static boolean isVanillaBroadcast(Text message) {
         if (message.getContent() instanceof net.minecraft.text.TranslatableTextContent tc) {
             String key = tc.getKey();
@@ -41,10 +46,27 @@ public final class ChatClassifier {
         return false;
     }
 
+    private static final java.util.List<String> JOIN_LEAVE_SUFFIXES = java.util.List.of(
+        "joined the game", "left the game",
+        "加入了游戏", "离开了游戏",
+        "加入游戏", "离开游戏");
+
+    // 是否进退服消息
+    public static boolean isJoinLeaveMessage(String text) {
+        if (text == null) return false;
+        String t = text.replaceAll("§.", "").trim();
+        for (String suffix : JOIN_LEAVE_SUFFIXES) {
+            if (t.endsWith(suffix)) return true;
+        }
+        return false;
+    }
+
+    // 参数转文本组件
     public static Text argAsComponent(Object arg) {
         return arg instanceof Text c ? c : Text.literal(String.valueOf(arg));
     }
 
+    // 解析在线玩家
     public static PlayerListEntry resolveOnlinePlayer(String displayName) {
         var player = MinecraftClient.getInstance().player;
         if (player == null || player.networkHandler == null || displayName.isEmpty()) return null;
@@ -67,6 +89,7 @@ public final class ChatClassifier {
         return best;
     }
 
+    // 按语言键分类
     public static boolean classifyByKey(Text message) {
         if (!(message.getContent() instanceof net.minecraft.text.TranslatableTextContent tc)) return false;
         String key = tc.getKey();

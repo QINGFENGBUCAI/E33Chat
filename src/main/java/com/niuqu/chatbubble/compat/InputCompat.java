@@ -1,8 +1,11 @@
 package com.niuqu.chatbubble.compat;
 
+// 输入接口版本适配
 public final class InputCompat {
+    // 禁止外部实例化
     private InputCompat() {}
 
+    // 转换为原版按键号
     public static int glfwButton(int button) {
         //#if MC >= 260300
         if (button == 1) return 0;
@@ -12,6 +15,7 @@ public final class InputCompat {
         return button;
     }
 
+    // 转换为原始按键号
     public static int rawButton(int button) {
         //#if MC >= 260300
         if (button == 0) return 1;
@@ -23,29 +27,35 @@ public final class InputCompat {
 
     //#if MC >= 12109
     //#if MC >= 26000
+    // 构造点击事件
     public static net.minecraft.client.gui.Click click(double x, double y, int button) {
         return new net.minecraft.client.gui.Click(x, y,
             new net.minecraft.client.input.MouseInput(rawButton(button), 0));
     }
 
+    // 构造按键事件
     public static net.minecraft.client.input.KeyInput key(int keyCode, int scanCode, int modifiers) {
         return new net.minecraft.client.input.KeyInput(rawKey(keyCode), scanCode, modifiers);
     }
 
+    // 转发鼠标点击
     public static boolean mouseClicked(net.minecraft.client.gui.widget.ClickableWidget widget,
                                        double x, double y, int button) {
         return widget.mouseClicked(click(x, y, button), false);
     }
 
+    // 触发控件点击
     public static void onClick(net.minecraft.client.gui.widget.ClickableWidget widget,
                                double x, double y) {
         widget.onClick(click(x, y, 0), false);
     }
 
+    // 判断按键是否匹配
     public static boolean keyMatches(net.minecraft.client.KeyBinding binding, int keyCode, int scanCode) {
         return binding.matches(key(keyCode, scanCode, 0));
     }
 
+    // 转换按键为原版号
     public static int glfwKey(net.minecraft.client.input.KeyEvent e) {
         if (e.isEscape()) return 256;
         if (e.isConfirmation()) return 257;
@@ -60,6 +70,7 @@ public final class InputCompat {
         return k;
     }
 
+    // 转换原版为按键号
     public static int rawKey(int keyCode) {
         if (keyCode == 256) return com.mojang.blaze3d.platform.InputConstants.KEY_ESCAPE;
         if (keyCode == 257) return 40;
@@ -69,10 +80,12 @@ public final class InputCompat {
         return keyCode;
     }
 
+    // 判断控制键按下
     public static boolean hasControl(int modifiers) {
         return (modifiers & 192) != 0;
     }
 
+    // 判断上档键按下
     public static boolean hasShiftDown() {
         return net.minecraft.client.Minecraft.getInstance().options.keyShift.isDown();
     }
@@ -101,7 +114,7 @@ public final class InputCompat {
     //$$         net.minecraft.client.MinecraftClient.getInstance().getWindow(),
     //$$         net.minecraft.client.util.InputUtil.GLFW_KEY_LEFT_SHIFT);
     //$$ }
-    //$$ 
+    //$$
     //$$ public static boolean hasControl(int modifiers) {
     //$$     return (modifiers & 0x2) != 0;
     //$$ }

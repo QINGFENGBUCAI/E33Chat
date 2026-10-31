@@ -8,6 +8,7 @@ import net.minecraft.util.Identifier;
 import java.util.ArrayList;
 import java.util.List;
 
+// 服务端配置界面包
 //#if MC >= 12005
 public record ServerConfigScreenPayload(boolean useTpa, boolean historyEnabled, boolean templateDebug,
                                         boolean mediaEnabled, boolean mediaAutoClean, boolean easyBotCompat,
@@ -64,6 +65,7 @@ public record ServerConfigScreenPayload(boolean useTpa, boolean historyEnabled, 
     //$$     return buf;
     //$$ }
     //#endif
+    // 获取包标识
     //#if MC >= 12005
     @Override
     public Id<ServerConfigScreenPayload> getId() { return ID; }

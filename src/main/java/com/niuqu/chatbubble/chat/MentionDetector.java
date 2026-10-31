@@ -1,10 +1,11 @@
 package com.niuqu.chatbubble.chat;
-import java.util.ArrayList;
-import java.util.List;
 
+// 提及检测
 public final class MentionDetector {
+    // 私有构造
     private MentionDetector() {}
 
+    // 是否被提及
     public static boolean isMentioned(String text, String localPlayerName,
                                       boolean requireAt, String replySender) {
         if (text == null || localPlayerName == null || localPlayerName.isBlank()) return false;
@@ -29,28 +30,8 @@ public final class MentionDetector {
         return false;
     }
 
-    public static List<MentionRange> findMentionRanges(String text, String localPlayerName,
-                                                        boolean requireAt) {
-        List<MentionRange> ranges = new ArrayList<>();
-        if (text == null || localPlayerName == null || localPlayerName.isBlank()) return ranges;
-        String lower = text.toLowerCase();
-        String needle = localPlayerName.toLowerCase();
-        int idx = 0;
-        while ((idx = lower.indexOf(needle, idx)) >= 0) {
-            int end = idx + needle.length();
-            boolean hasAt = idx > 0 && text.charAt(idx - 1) == '@';
-            int matchStart = hasAt ? idx - 1 : idx;
-            if ((!requireAt || hasAt) && (end >= text.length() || !isNameCharacter(text.charAt(end)))) {
-                ranges.add(new MentionRange(matchStart, end));
-            }
-            idx = end;
-        }
-        return ranges;
-    }
-
+    // 是否名字字符
     private static boolean isNameCharacter(char c) {
         return Names.isNameChar(c);
     }
-
-    public record MentionRange(int start, int end) {}
 }

@@ -6,7 +6,9 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.util.Identifier;
 
 //#if MC >= 12000
+// 纹理绘制版本适配
 public class DrawHelper {
+    // 绘制纹理
     public static void drawTexture(DrawContext context, Identifier texture, int x, int y, float u, float v, int width, int height, int textureWidth, int textureHeight) {
         //#if MC >= 12106
         context.drawTexture(net.minecraft.client.gl.RenderPipelines.GUI_TEXTURED, texture, x, y, u, v, width, height, textureWidth, textureHeight);
@@ -19,6 +21,7 @@ public class DrawHelper {
         //#endif
     }
 
+    // 绘制带色纹理
     public static void drawTexture(DrawContext context, Identifier texture, int x, int y, float u, float v, int width, int height, int textureWidth, int textureHeight, int color) {
         //#if MC >= 12106
         context.drawTexture(net.minecraft.client.gl.RenderPipelines.GUI_TEXTURED, texture, x, y, u, v, width, height, textureWidth, textureHeight, color);
@@ -32,6 +35,7 @@ public class DrawHelper {
         //#endif
     }
 
+    // 绘制区域纹理
     public static void drawTexture(DrawContext context, Identifier texture, int x, int y, int width, int height, float u, float v, int regionWidth, int regionHeight, int textureWidth, int textureHeight) {
         //#if MC >= 12106
         context.drawTexture(net.minecraft.client.gl.RenderPipelines.GUI_TEXTURED, texture, x, y, u, v, width, height, regionWidth, regionHeight, textureWidth, textureHeight);
@@ -44,6 +48,7 @@ public class DrawHelper {
         //#endif
     }
 
+    // 绘制带色区域纹理
     public static void drawTexture(DrawContext context, Identifier texture, int x, int y, int width, int height, float u, float v, int regionWidth, int regionHeight, int textureWidth, int textureHeight, int color) {
         //#if MC >= 12106
         context.drawTexture(net.minecraft.client.gl.RenderPipelines.GUI_TEXTURED, texture, x, y, u, v, width, height, regionWidth, regionHeight, textureWidth, textureHeight, color);

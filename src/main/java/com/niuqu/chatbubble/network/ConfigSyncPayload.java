@@ -7,6 +7,7 @@ import net.minecraft.network.packet.CustomPayload;
 //#endif
 import net.minecraft.util.Identifier;
 
+// 服务端配置同步包
 //#if MC >= 12005
 public record ConfigSyncPayload(boolean useTpa) implements CustomPayload {
 //#else
@@ -42,11 +43,13 @@ public record ConfigSyncPayload(boolean useTpa) implements CustomPayload {
     //$$     return buf;
     //$$ }
     //#endif
+    // 获取包标识
     //#if MC >= 12005
     @Override
     public Id<ConfigSyncPayload> getId() { return ID; }
     //#endif
 
+    // 应用配置同步
     public static void handle(ConfigSyncPayload payload) {
         ChatMessageStore.setServerUseTpa(payload.useTpa());
     }

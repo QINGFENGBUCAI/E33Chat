@@ -1,14 +1,17 @@
 package com.niuqu.chatbubble.render;
 import java.util.List;
 
+// 文本选区管理
 public final class ChatTextSelection {
     private static final int SELECTION_BG = 0xE02D6FD6;
     private static final int SELECTION_FG = 0xFFFFFFFF;
 
+    // 选区背景色
     public static int selectionBg() {
         return SELECTION_BG;
     }
 
+    // 选区前景色
     public static int selectionFg() {
         return SELECTION_FG;
     }
@@ -18,6 +21,7 @@ public final class ChatTextSelection {
     private boolean dragActive;
     private boolean moved;
 
+    // 开始选区拖拽
     public void begin(int msg, int line, int kind, int ch) {
         anchorMsg = focusMsg = msg;
         anchorLine = focusLine = line;
@@ -27,6 +31,7 @@ public final class ChatTextSelection {
         moved = false;
     }
 
+    // 更新选区焦点
     public void update(int msg, int line, int kind, int ch) {
         if (!dragActive) return;
         focusMsg = msg;
@@ -35,22 +40,27 @@ public final class ChatTextSelection {
         focusChar = ch;
     }
 
+    // 结束拖拽
     public void endDrag() {
         dragActive = false;
     }
 
+    // 是否拖拽中
     public boolean isDragActive() {
         return dragActive;
     }
 
+    // 是否发生移动
     public boolean didMove() {
         return moved;
     }
 
+    // 标记已移动
     public void markMoved() {
         if (dragActive) moved = true;
     }
 
+    // 清空选区
     public void clear() {
         anchorMsg = focusMsg = -1;
         anchorLine = focusLine = -1;
@@ -60,6 +70,7 @@ public final class ChatTextSelection {
         moved = false;
     }
 
+    // 是否存在选区
     public boolean hasSelection() {
         if (anchorMsg < 0 || focusMsg < 0) return false;
         if (anchorMsg != focusMsg || anchorLine != focusLine || anchorKind != focusKind) {
@@ -68,10 +79,12 @@ public final class ChatTextSelection {
         return anchorChar != focusChar;
     }
 
+    // 计算跨行定位键
     private static long key(int msg, int line, int kind) {
         return (long) msg * 100_000L + kind * 10_000L + line;
     }
 
+    // 计算选区行范围
     public int[] rangeFor(TextSpan span) {
         if (anchorMsg < 0 || focusMsg < 0) return null;
         long a = key(anchorMsg, anchorLine, anchorKind);
@@ -99,6 +112,7 @@ public final class ChatTextSelection {
         return new int[]{start, end};
     }
 
+    // 复制选中文本
     public String copyText(List<TextSpan> spans) {
         StringBuilder sb = new StringBuilder();
         boolean first = true;

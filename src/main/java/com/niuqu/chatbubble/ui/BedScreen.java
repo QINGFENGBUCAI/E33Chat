@@ -11,17 +11,21 @@ import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.text.Text;
 
+// 睡眠状态界面
 public class BedScreen extends Screen {
     private static Screen screenBeforeSleep;
 
+    // 构造睡眠界面
     public BedScreen() {
         super(Text.translatable("multiplayer.stopSleeping"));
     }
 
+    // 记录睡前界面
     public static void setScreenBeforeSleep(Screen screen) {
         screenBeforeSleep = screen;
     }
 
+    // 初始化界面控件
     @Override
     protected void init() {
         addDrawableChild(ButtonWidget.builder(Text.translatable("multiplayer.stopSleeping"), b -> sendWakeUp())
@@ -29,6 +33,7 @@ public class BedScreen extends Screen {
     }
 
     //#if MC >= 12002
+    // 绘制背景
     @Override
     public void renderBackground(DrawContext g, int mouseX, int mouseY, float delta) {
     }
@@ -38,6 +43,7 @@ public class BedScreen extends Screen {
     //$$ }
     //#endif
 
+    // 检测睡眠状态
     @Override
     public void tick() {
         if (client == null || client.player == null || !client.player.isSleeping()) {
@@ -49,6 +55,7 @@ public class BedScreen extends Screen {
         }
     }
 
+    // 处理按键事件
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         //#if MC >= 26000
@@ -66,11 +73,13 @@ public class BedScreen extends Screen {
         return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
+    // 是否暂停游戏
     @Override
     public boolean shouldPause() {
         return false;
     }
 
+    // 发送起床请求
     private void sendWakeUp() {
         if (client != null && client.player != null) {
             client.player.networkHandler.sendPacket(

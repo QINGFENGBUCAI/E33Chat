@@ -12,8 +12,10 @@ import org.spongepowered.asm.mixin.injection.ModifyArg;
 import com.niuqu.chatbubble.HeadTextureHelper;
 import java.util.function.Supplier;
 
+// 皮肤纹理下载器挂钩
 @Mixin(SkinTextureDownloader.class)
 public abstract class SkinTextureDownloaderMixin {
+    // 注册混合头像纹理
     @ModifyArg(
         method = "registerTextureInManager",
         at = @At(

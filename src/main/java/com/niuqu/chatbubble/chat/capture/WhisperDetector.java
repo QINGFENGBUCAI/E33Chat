@@ -6,15 +6,29 @@ import java.util.UUID;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.Text;
 
+// 系统私聊检测
 public final class WhisperDetector {
+    // 私有构造
     private WhisperDetector() {}
 
+    // 检测系统私聊消息
     public static ChatMessageStore.SenderMeta detectWhisperInSystemMessage(String text, String logTag) {
         var self = MinecraftClient.getInstance().player;
         if (self == null) return null;
         var connection = self.networkHandler;
         if (connection == null) return null;
         String clean = text.replaceAll("§.", "");
+        String outgoingPartner = MessagePresentation.outgoingWhisperPartner(clean);
+        if (outgoingPartner != null && MessagePresentation.hasWhisperKeywordBeforeColon(clean)) {
+            String content = MessagePresentation.extractWhisperContent(clean, outgoingPartner);
+            Text ownName = ChatMessageStore.ownDisplayName();
+            String ownRaw = self.getName().getString();
+            ChatMessageStore.debugLog(() -> "[e33chat] System(" + logTag + "/outgoing) | text='" + clean
+                + "' | partner=" + outgoingPartner + " | content='" + content + "'");
+            return new ChatMessageStore.SenderMeta(
+                self.getUuid(), ownName, Text.literal(content),
+                false, ownRaw, true, outgoingPartner);
+        }
         for (var info : connection.getPlayerList()) {
             String profile = GuiCompat.profileName(info.getProfile());
             for (String cand : ChatClassifier.nameCandidates(info)) {

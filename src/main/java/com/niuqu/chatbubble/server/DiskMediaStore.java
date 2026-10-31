@@ -9,6 +9,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
+// 磁盘媒体文件存储
 public final class DiskMediaStore {
     public static final long MAX_SINGLE_BYTES = 8L * 1024 * 1024;
     public static final long QUOTA_BYTES = 512L * 1024 * 1024;
@@ -23,13 +24,16 @@ public final class DiskMediaStore {
     private final long ttlMillis;
     private final Map<Long, Session> sessions = new ConcurrentHashMap<>();
 
+    // 上传会话记录
     private record Session(long uploadId, String playerName, int totalChunks,
                            long totalBytes, String contentType, Path tmpFile, int received) {}
 
+    // 创建媒体存储
     public DiskMediaStore(Path dir) {
         this(dir, MAX_SINGLE_BYTES, QUOTA_BYTES, TTL_MILLIS);
     }
 
+    // 创建带参数存储
     DiskMediaStore(Path dir, long maxSingle, long quota, long ttlMillis) {
         this.dir = dir;
         this.maxSingle = maxSingle;
@@ -37,26 +41,32 @@ public final class DiskMediaStore {
         this.ttlMillis = ttlMillis;
     }
 
+    // 生成媒体标识
     public static String newMediaId() {
         return UUID.randomUUID().toString().replace("-", "");
     }
 
+    // 校验媒体标识
     public static boolean isValidMediaId(String id) {
         return id != null && MEDIA_ID.matcher(id).matches();
     }
 
+    // 计算分块总数
     public static int totalChunksFor(long size) {
         return (int) ((size + CHUNK_BYTES - 1) / CHUNK_BYTES);
     }
 
+    // 获取最大分块数
     public static int maxTotalChunks() {
         return totalChunksFor(MAX_SINGLE_BYTES);
     }
 
+    // 校验分块数量
     public static boolean isValidChunkCount(int totalChunks) {
         return totalChunks >= 1 && totalChunks <= maxTotalChunks();
     }
 
+    // 开始分块上传
     public synchronized String beginUpload(long uploadId, String playerName, int totalChunks,
                                            long totalBytes, String contentType) {
         if (totalBytes <= 0 || totalBytes > maxSingle) return "too large";
@@ -73,6 +83,7 @@ public final class DiskMediaStore {
         }
     }
 
+    // 接收上传分块
     public synchronized String acceptChunk(long uploadId, int index, byte[] chunk) {
         Session s = sessions.get(uploadId);
         if (s == null) return null;
@@ -109,6 +120,7 @@ public final class DiskMediaStore {
         }
     }
 
+    // 丢弃单个上传
     public synchronized void discardUpload(long uploadId) {
         Session s = sessions.remove(uploadId);
         if (s != null) {
@@ -116,6 +128,7 @@ public final class DiskMediaStore {
         }
     }
 
+    // 丢弃全部上传
     public synchronized void discardAllUploads() {
         for (Session s : sessions.values()) {
             try { Files.deleteIfExists(s.tmpFile()); } catch (IOException ignored) {}
@@ -123,6 +136,7 @@ public final class DiskMediaStore {
         sessions.clear();
     }
 
+    // 丢弃玩家上传
     public synchronized void discardUploadsFor(String playerName) {
         for (Session s : sessions.values()) {
             if (playerName != null && playerName.equals(s.playerName())) {
@@ -136,6 +150,7 @@ public final class DiskMediaStore {
     private static final long RATE_WINDOW_MS = 10_000;
     private final Map<String, java.util.ArrayDeque<Long>> rateWindows = new ConcurrentHashMap<>();
 
+    // 校验传输频率
     public boolean allowTransfer(String playerName) {
         long now = System.currentTimeMillis();
         java.util.ArrayDeque<Long> q = rateWindows.computeIfAbsent(playerName, k -> new java.util.ArrayDeque<>());
@@ -147,6 +162,7 @@ public final class DiskMediaStore {
         }
     }
 
+    // 获取文件大小
     public long sizeOf(String mediaId) {
         Path f = dir.resolve(mediaId);
         if (!isValidMediaId(mediaId) || !Files.isRegularFile(f)) return -1;
@@ -157,6 +173,7 @@ public final class DiskMediaStore {
         }
     }
 
+    // 读取媒体分块
     public byte[] readChunk(String mediaId, int index, int totalChunks) {
         long size = sizeOf(mediaId);
         if (size < 0 || index < 0 || index >= totalChunks) return null;
@@ -178,10 +195,12 @@ public final class DiskMediaStore {
         }
     }
 
+    // 清理过期文件
     public int cleanupExpired() {
         return cleanupExpired(System.currentTimeMillis());
     }
 
+    // 清理指定时刻过期
     synchronized int cleanupExpired(long now) {
         if (ttlMillis <= 0) return 0;
         int removed = 0;
@@ -206,6 +225,7 @@ public final class DiskMediaStore {
     private static final long CLEAN_INTERVAL_MILLIS = 6L * 60 * 60 * 1000;
     private volatile long lastCleanupAt;
 
+    // 限频清理过期文件
     public void cleanupExpiredThrottled() {
         long now = System.currentTimeMillis();
         if (now - lastCleanupAt < CLEAN_INTERVAL_MILLIS) return;
@@ -213,6 +233,7 @@ public final class DiskMediaStore {
         cleanupExpired(now);
     }
 
+    // 统计目录占用
     private long dirSize() {
         try {
             if (!Files.isDirectory(dir)) return 0;
@@ -230,6 +251,7 @@ public final class DiskMediaStore {
         }
     }
 
+    // 丢弃上传会话
     private void discardSession(Session s) {
         sessions.remove(s.uploadId());
         try { Files.deleteIfExists(s.tmpFile()); } catch (IOException ignored) {}

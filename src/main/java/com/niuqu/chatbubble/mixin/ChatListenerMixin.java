@@ -16,66 +16,87 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.UUID;
 
+// 捕获并路由聊天消息
 @Mixin(value = net.minecraft.client.network.message.MessageHandler.class, priority = 500)
 public class ChatListenerMixin {
+    // 提取装饰名
     private static Text extractDecoratedName(Text fullLine, String contentStr,
                                                   String rawName, Text fallback) {
         return com.niuqu.chatbubble.chat.capture.ChatPipeline.extractDecoratedName(fullLine, contentStr, rawName, fallback);
     }
 
+    // 清理名称区域
     private static Text cleanNameArea(Text fullLine, int a, int b,
                                            String rawName, Text fallback) {
         return com.niuqu.chatbubble.chat.capture.ChatPipeline.cleanNameArea(fullLine, a, b, rawName, fallback);
     }
 
+    // 生成候选名称
     private static String[] nameCandidates(net.minecraft.client.network.PlayerListEntry info) {
         return com.niuqu.chatbubble.chat.capture.ChatClassifier.nameCandidates(info);
     }
 
+    // 补充名称变体
     private static void addNameVariants(java.util.Set<String> out, String name) {
         com.niuqu.chatbubble.chat.capture.ChatClassifier.addNameVariants(out, name);
     }
 
+    // 判断原版广播
     private static boolean isVanillaBroadcast(Text message) {
         return com.niuqu.chatbubble.chat.capture.ChatClassifier.isVanillaBroadcast(message);
     }
 
+    // 判断进出消息
+    private static boolean isJoinLeaveMessage(String text) {
+        return com.niuqu.chatbubble.chat.capture.ChatClassifier.isJoinLeaveMessage(text);
+    }
+
+    // 参数转文本组件
     private static Text argAsComponent(Object arg) {
         return com.niuqu.chatbubble.chat.capture.ChatClassifier.argAsComponent(arg);
     }
 
+    // 解析在线玩家
     private static net.minecraft.client.network.PlayerListEntry resolveOnlinePlayer(String displayName) {
         return com.niuqu.chatbubble.chat.capture.ChatClassifier.resolveOnlinePlayer(displayName);
     }
 
+    // 按类型键分类
     private static boolean classifyByKey(Text message) {
         return com.niuqu.chatbubble.chat.capture.ChatClassifier.classifyByKey(message);
     }
 
+    // 检测私聊点击
     private static SenderMeta detectByTellClick(Text message, String text) {
         return com.niuqu.chatbubble.chat.capture.TellClickDetector.detectByTellClick(message, text);
     }
 
+    // 检测系统私聊
     private static SenderMeta detectWhisperInSystemMessage(String text, String logTag) {
         return com.niuqu.chatbubble.chat.capture.WhisperDetector.detectWhisperInSystemMessage(text, logTag);
     }
 
+    // 记录模板未命中
     private static void logTemplateMiss(String text) {
         com.niuqu.chatbubble.chat.capture.TemplateLayer.logTemplateMiss(text);
     }
 
+    // 判断模板名已知
     private static boolean isTemplateNameKnown(String name) {
         return com.niuqu.chatbubble.chat.capture.TemplateLayer.isTemplateNameKnown(name);
     }
 
+    // 按模板匹配
     private static SenderMeta matchByTemplate(Text message, String text) {
         return com.niuqu.chatbubble.chat.capture.TemplateLayer.matchByTemplate(message, text);
     }
 
+    // 按模板匹配带日志
     private static SenderMeta matchByTemplate(Text message, String text, String logTag) {
         return com.niuqu.chatbubble.chat.capture.TemplateLayer.matchByTemplate(message, text, logTag);
     }
 
+    // 截取模板片段
     private static Text templateSlice(Text message, String text, int from, int to) {
         return com.niuqu.chatbubble.chat.capture.TemplateLayer.templateSlice(message, text, from, to);
     }
@@ -103,6 +124,7 @@ public class ChatListenerMixin {
     //$$         new UUID(0, 0), Text.translatable("e33chat.sender.system"), raw, true, null, false, null));
     //$$ }
     //#else
+    // 处理玩家聊天
     @Inject(method = "onChatMessage", at = @At("HEAD"))
     private void onPlayerChat(SignedMessage message, GameProfile gameProfile,
                                MessageType.Parameters params, CallbackInfo ci) {
@@ -196,6 +218,7 @@ public class ChatListenerMixin {
     }
     //#endif
     //#if MC >= 11903
+    // 处理伪装聊天
     @Inject(method = "onProfilelessMessage", at = @At("HEAD"))
     private void onDisguisedChat(Text message, MessageType.Parameters params, CallbackInfo ci) {
         String msgStr = message.getString();
@@ -252,6 +275,14 @@ public class ChatListenerMixin {
             ? MinecraftClient.getInstance().player.networkHandler : null;
         SenderMeta tc = detectByTellClick(message, msgStr);
         if (tc != null) { ChatMessageStore.setPendingMeta(tc); return; }
+        if (!isWhisper && isJoinLeaveMessage(msgStr)) {
+            ChatMessageStore.debugLog(() -> "[e33chat] Disguised(join/leave -> system) | text='" + msgStr + "'");
+            var cfg = ChatBubbleClientSetup.config();
+            boolean isSystem = cfg == null || !cfg.systemChatAsBubble();
+            ChatMessageStore.setPendingMeta(new SenderMeta(new UUID(0, 0),
+                Text.translatable("e33chat.sender.system"), message, isSystem, null, false, null));
+            return;
+        }
         if (connection != null && !isWhisper) {
             SenderMeta parsed = com.niuqu.chatbubble.chat.capture.ChatPipeline.tryParsePlayerLine(message, msgStr, "Disguised");
             if (parsed != null) { ChatMessageStore.setPendingMeta(parsed); return; }
@@ -266,9 +297,13 @@ public class ChatListenerMixin {
     }
     //#endif
 
+    // 处理系统消息
     @Inject(method = "onGameMessage", at = @At("HEAD"))
     private void onSystemChat(Text message, boolean overlay, CallbackInfo ci) {
+        //#if MC >= 26000
+        //#else
         if (overlay) return;
+        //#endif
         if (classifyByKey(message)) return;
         String sysText = message.getString();
         if (com.niuqu.chatbubble.chat.capture.EchoSuppressor.trySuppressOutgoingEcho(sysText)) return;
@@ -298,6 +333,14 @@ public class ChatListenerMixin {
         if (wm != null) { ChatMessageStore.setPendingMeta(wm); return; }
         SenderMeta tc = detectByTellClick(message, text);
         if (tc != null) { ChatMessageStore.setPendingMeta(tc); return; }
+        if (isJoinLeaveMessage(text)) {
+            ChatMessageStore.debugLog(() -> "[e33chat] System(join/leave -> system) | text='" + text + "'");
+            var cfg = ChatBubbleClientSetup.config();
+            boolean isSystem = cfg == null || !cfg.systemChatAsBubble();
+            ChatMessageStore.setPendingMeta(new SenderMeta(new UUID(0, 0),
+                Text.translatable("e33chat.sender.system"), message, isSystem, null, false, null));
+            return;
+        }
         if (connection != null) {
             SenderMeta parsed = com.niuqu.chatbubble.chat.capture.ChatPipeline.tryParsePlayerLine(message, text, "System");
             if (parsed != null) { ChatMessageStore.setPendingMeta(parsed); return; }

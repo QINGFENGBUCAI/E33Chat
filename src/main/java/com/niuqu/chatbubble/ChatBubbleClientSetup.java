@@ -33,13 +33,16 @@ import net.minecraft.util.Identifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+// 客户端初始化入口
 public class ChatBubbleClientSetup implements ClientModInitializer {
     private static ChatBubbleConfig config = ChatBubbleConfig.defaults();
     private static Path configPath;
     private static boolean leftWasDown;
 
+    // 获取客户端配置
     public static ChatBubbleConfig config() { return config; }
 
+    // 保存客户端配置
     public static void saveConfig(ChatBubbleConfig newConfig) {
         config = newConfig;
         E33Log.info("[e33chat] Saving config | soundPublic=" + newConfig.soundPublic() + " | soundSystem=" + newConfig.soundSystem());
@@ -47,6 +50,7 @@ public class ChatBubbleClientSetup implements ClientModInitializer {
     }
 
     @Override
+    // 客户端初始化
     public void onInitializeClient() {
         Path configDir = MinecraftClient.getInstance().runDirectory.toPath().resolve("config/e33chat");
         configPath = configDir.resolve("e33chat-client.json");
@@ -273,10 +277,12 @@ public class ChatBubbleClientSetup implements ClientModInitializer {
         ResourceManagerHelper.get(ResourceType.CLIENT_RESOURCES).registerReloadListener(
             new SimpleSynchronousResourceReloadListener() {
                 @Override
+                // 获取资源监听标识
                 public Identifier getFabricId() {
                     return Identifier.of(ChatBubbleMod.MOD_ID, "shader_reload");
                 }
                 @Override
+                // 资源重载回调
                 public void reload(ResourceManager manager) {
                     RoundRectRenderer.resetShader();
                 }

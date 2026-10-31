@@ -12,9 +12,12 @@ import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
+// 渲染接口版本适配
 public final class RenderHelper {
+    // 禁止外部实例化
     private RenderHelper() {}
 
+    // 绘制文本
     public static void drawText(Object ctx, TextRenderer tr, Text text, int x, int y, int color, boolean shadow) {
         //#if MC >= 12000
         ((DrawContext) ctx).drawText(tr, text, x, y, color, shadow);
@@ -27,6 +30,7 @@ public final class RenderHelper {
         //#endif
     }
 
+    // 绘制字符串
     public static void drawText(Object ctx, TextRenderer tr, String text, int x, int y, int color, boolean shadow) {
         //#if MC >= 12000
         ((DrawContext) ctx).drawText(tr, text, x, y, color, shadow);
@@ -39,6 +43,7 @@ public final class RenderHelper {
         //#endif
     }
 
+    // 绘制有序文本
     public static void drawText(Object ctx, TextRenderer tr, OrderedText text, int x, int y, int color, boolean shadow) {
         //#if MC >= 12000
         ((DrawContext) ctx).drawText(tr, text, x, y, color, shadow);
@@ -51,6 +56,7 @@ public final class RenderHelper {
         //#endif
     }
 
+    // 填充矩形
     public static void fill(Object ctx, int x1, int y1, int x2, int y2, int color) {
         //#if MC >= 12000
         ((DrawContext) ctx).fill(x1, y1, x2, y2, color);
@@ -59,6 +65,7 @@ public final class RenderHelper {
         //#endif
     }
 
+    // 填充渐变矩形
     public static void fillGradient(Object ctx, int x1, int y1, int x2, int y2, int c1, int c2) {
         //#if MC >= 12000
         ((DrawContext) ctx).fillGradient(x1, y1, x2, y2, c1, c2);
@@ -67,6 +74,7 @@ public final class RenderHelper {
         //#endif
     }
 
+    // 绘制纹理
     public static void drawTexture(Object ctx, Identifier texture, int x, int y, float u, float v,
                                    int width, int height, int textureWidth, int textureHeight) {
         //#if MC >= 12000
@@ -81,6 +89,7 @@ public final class RenderHelper {
         //#endif
     }
 
+    // 绘制带色纹理
     public static void drawTexture(Object ctx, Identifier texture, int x, int y, float u, float v,
                                    int width, int height, int textureWidth, int textureHeight, int color) {
         //#if MC >= 12000
@@ -92,6 +101,7 @@ public final class RenderHelper {
         //#endif
     }
 
+    // 绘制区域纹理
     public static void drawTexture(Object ctx, Identifier texture, int x, int y, int width, int height,
                                    float u, float v, int regionWidth, int regionHeight,
                                    int textureWidth, int textureHeight) {
@@ -107,6 +117,7 @@ public final class RenderHelper {
         //#endif
     }
 
+    // 绘制带色区域纹理
     public static void drawTexture(Object ctx, Identifier texture, int x, int y, int width, int height,
                                    float u, float v, int regionWidth, int regionHeight,
                                    int textureWidth, int textureHeight, int color) {
@@ -119,6 +130,7 @@ public final class RenderHelper {
         //#endif
     }
 
+    // 启用裁剪区域
     public static void enableScissor(Object ctx, int x1, int y1, int x2, int y2) {
         //#if MC >= 12000
         ((DrawContext) ctx).enableScissor(x1, y1, x2, y2);
@@ -135,6 +147,7 @@ public final class RenderHelper {
         //#endif
     }
 
+    // 关闭裁剪区域
     public static void disableScissor(Object ctx) {
         //#if MC >= 12000
         ((DrawContext) ctx).disableScissor();
@@ -143,6 +156,7 @@ public final class RenderHelper {
         //#endif
     }
 
+    // 压入矩阵栈
     public static void pushMatrix(Object ctx) {
         //#if MC >= 12106
         ((DrawContext) ctx).getMatrices().pushMatrix();
@@ -155,6 +169,7 @@ public final class RenderHelper {
         //#endif
     }
 
+    // 弹出矩阵栈
     public static void popMatrix(Object ctx) {
         //#if MC >= 12106
         ((DrawContext) ctx).getMatrices().popMatrix();
@@ -167,6 +182,7 @@ public final class RenderHelper {
         //#endif
     }
 
+    // 平移坐标
     public static void translate(Object ctx, float x, float y, float z) {
         //#if MC >= 12106
         ((DrawContext) ctx).getMatrices().translate(x, y);
@@ -179,10 +195,12 @@ public final class RenderHelper {
         //#endif
     }
 
+    // 平移坐标
     public static void translate(Object ctx, float x, float y) {
         translate(ctx, x, y, 0.0F);
     }
 
+    // 缩放坐标
     public static void scale(Object ctx, float x, float y, float z) {
         //#if MC >= 12106
         ((DrawContext) ctx).getMatrices().scale(x, y);
@@ -195,16 +213,19 @@ public final class RenderHelper {
         //#endif
     }
 
+    // 缩放坐标
     public static void scale(Object ctx, float x, float y) {
         scale(ctx, x, y, 1.0F);
     }
 
+    // 绑定纹理
     public static void bindTexture(Identifier texture) {
         //#if MC < 12000
         //$$ MinecraftClient.getInstance().getTextureManager().bindTexture(texture);
         //#endif
     }
 
+    // 设置着色颜色
     public static void setShaderColor(int argb) {
         //#if MC < 12000
         //$$ float a = ((argb >>> 24) & 0xFF) / 255.0F;
@@ -219,6 +240,7 @@ public final class RenderHelper {
         //#endif
     }
 
+    // 重置着色颜色
     public static void resetShaderColor() {
         //#if MC < 12000
         //#if MC >= 11700

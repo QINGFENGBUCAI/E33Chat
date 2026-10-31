@@ -20,9 +20,12 @@ import org.joml.Matrix4f;
 //#endif
 import net.minecraft.util.Identifier;
 
+// 彩色纹理绘制工具
 public final class ColoredTextureRenderer {
+    // 禁止实例化
     private ColoredTextureRenderer() {}
 
+    // 按透明度绘制纹理
     public static void drawWithAlpha(DrawContext g, Identifier tex,
                                      int x, int y, int w, int h, float alpha) {
         if (w <= 0 || h <= 0 || alpha <= 0.003f) return;
@@ -46,6 +49,7 @@ public final class ColoredTextureRenderer {
         //#endif
     }
 
+    // 按颜色绘制纹理
     public static void drawTinted(DrawContext g, Identifier tex,
                                   int x, int y, int w, int h, int argb) {
         if (w <= 0 || h <= 0) return;
@@ -73,6 +77,7 @@ public final class ColoredTextureRenderer {
         //#endif
     }
 
+    // 按区域绘制纹理
     public static void drawWithAlpha(DrawContext g, Identifier tex,
                                      int x, int y, int w, int h,
                                      float u, float v, int regionW, int regionH,
@@ -80,6 +85,7 @@ public final class ColoredTextureRenderer {
         drawWithAlphaTinted(g, tex, x, y, w, h, u, v, regionW, regionH, texW, texH, alpha, 1f, 1f, 1f);
     }
 
+    // 灰度透明度绘制
     public static void drawWithAlphaGrayscale(DrawContext g, Identifier tex,
                                               int x, int y, int w, int h,
                                               float u, float v, int regionW, int regionH,
@@ -87,6 +93,7 @@ public final class ColoredTextureRenderer {
         drawWithAlphaTinted(g, tex, x, y, w, h, u, v, regionW, regionH, texW, texH, alpha, grayLevel, grayLevel, grayLevel);
     }
 
+    // 混合色绘制纹理
     private static void drawWithAlphaTinted(DrawContext g, Identifier tex,
                                             int x, int y, int w, int h,
                                             float u, float v, int regionW, int regionH,
@@ -117,6 +124,7 @@ public final class ColoredTextureRenderer {
     }
 
     //#if MC >= 12105
+    // 打包颜色为ARGB
     private static int pack(float r, float g, float b, float a) {
         int ai = Math.round(Math.max(0f, Math.min(1f, a)) * 255f);
         int ri = Math.round(Math.max(0f, Math.min(1f, r)) * 255f);

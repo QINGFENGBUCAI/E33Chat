@@ -3,12 +3,15 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.Optional;
 
+// 消息展示解析
 public final class MessagePresentation {
+    // 私有构造
     private MessagePresentation() {}
 
     public record PlayerLine(String playerName, String displayLabel, String content,
                              int nameStart, int nameEnd, int contentStart) {}
 
+    // 解析玩家发言行
     public static Optional<PlayerLine> parseDecoratedPlayerLine(
         String text, Collection<String> onlineNames
     ) {
@@ -20,6 +23,7 @@ public final class MessagePresentation {
             .findFirst();
     }
 
+    // 通用玩家行解析
     static Optional<PlayerLine> parseGeneric(String text, String name) {
         if (text == null || name == null) return Optional.empty();
         String cleanName = name.replaceAll("§.", "");
@@ -33,7 +37,7 @@ public final class MessagePresentation {
             clean.append(ch);
         }
         String ct = clean.toString();
-        int idx = ct.indexOf(cleanName);
+        int idx = findNameIndex(ct, cleanName);
         if (idx < 0) return Optional.empty();
         String beforeName = ct.substring(0, idx);
         if (hasBareChatSeparator(beforeName)) return Optional.empty();
@@ -99,6 +103,29 @@ public final class MessagePresentation {
             origNameStart, origNameEnd, origContentStart));
     }
 
+    // 查找名字位置
+    private static int findNameIndex(String text, String name) {
+        int from = 0;
+        while (true) {
+            int idx = text.indexOf(name, from);
+            if (idx < 0) return -1;
+            if (!insideDecoratedBracket(text, idx, name.length())) return idx;
+            from = idx + 1;
+        }
+    }
+
+    // 判断括号内名字
+    private static boolean insideDecoratedBracket(String text, int idx, int nameLen) {
+        int open = text.lastIndexOf('[', idx);
+        if (open < 0) return false;
+        int close = text.indexOf(']', idx + nameLen);
+        if (close < 0 || close - open > 64) return false;
+        if (text.indexOf(']', open) < idx) return false;
+        String inner = text.substring(open + 1, close).trim();
+        return !inner.equals(text.substring(idx, idx + nameLen));
+    }
+
+    // 跳过分隔符
     public static int skipSeparators(String text, int from) {
         int sep = from;
         while (sep < text.length()) {
@@ -116,6 +143,7 @@ public final class MessagePresentation {
         return sep;
     }
 
+    // 冒号前含私聊词
     public static boolean hasWhisperKeywordBeforeColon(String text) {
         if (text == null) return false;
         int colon = -1;
@@ -133,6 +161,7 @@ public final class MessagePresentation {
         return !rest.isEmpty();
     }
 
+    // 提取私聊正文
     public static String extractWhisperContent(String fullText, String senderName) {
         if (senderName == null || senderName.isEmpty()) return fullText;
         int idx = fullText == null ? -1 : fullText.indexOf(senderName);
@@ -145,6 +174,46 @@ public final class MessagePresentation {
         return after.trim();
     }
 
+    // 解析发出的私聊对象
+    public static String outgoingWhisperPartner(String text) {
+        if (text == null) return null;
+        String t = text.replaceAll("§.", "").trim();
+        int i = 0;
+        while (i < t.length()) {
+            char c = t.charAt(i);
+            if (c == '[' || c == '【') {
+                char close = c == '[' ? ']' : '】';
+                int end = t.indexOf(close, i + 1);
+                if (end < 0 || end - i > 64) return null;
+                i = end + 1;
+                while (i < t.length() && Character.isWhitespace(t.charAt(i))) i++;
+                continue;
+            }
+            break;
+        }
+        String rest = t.substring(i);
+        String lower = rest.toLowerCase(java.util.Locale.ROOT);
+        int nameStart = -1;
+        for (String p : new String[]{"你悄悄地对", "你悄悄的对"}) {
+            if (rest.startsWith(p)) { nameStart = p.length(); break; }
+        }
+        if (nameStart < 0 && lower.startsWith("you whisper to ")) {
+            nameStart = "you whisper to ".length();
+        }
+        if (nameStart < 0) return null;
+        int colon = -1;
+        for (int j = nameStart; j < rest.length(); j++) {
+            char ch = rest.charAt(j);
+            if (ch == ':' || ch == '：') { colon = j; break; }
+        }
+        if (colon < 0) return null;
+        String partner = rest.substring(nameStart, colon).trim();
+        if (partner.endsWith("说")) partner = partner.substring(0, partner.length() - 1).trim();
+        partner = partner.replaceAll("\\[[^\\]]*\\]|【[^】]*】|\\([^\\)]*\\)", "").trim();
+        return partner.isEmpty() ? null : partner;
+    }
+
+    // 判断纯空白间隔
     public static boolean isWhitespaceOnlyGap(String text, int from, int to) {
         if (text == null || to <= from) return false;
         for (int i = from; i < to && i < text.length(); i++) {
@@ -157,6 +226,7 @@ public final class MessagePresentation {
         "系统", "公告", "服务器", "广播", "提示", "通知",
         "system", "server", "notice", "broadcast", "announcement", "alert");
 
+    // 检测裸聊天分隔符
     private static boolean hasBareChatSeparator(String text) {
         int i = 0, n = text.length();
         while (i < n) {
@@ -183,6 +253,7 @@ public final class MessagePresentation {
         return false;
     }
 
+    // 判断广播标签前缀
     static boolean isBroadcastLabelPrefix(String cleanText, int nameIdx) {
         String zone = cleanText.substring(0, nameIdx).trim();
         if (zone.isEmpty()) return false;
@@ -200,6 +271,7 @@ public final class MessagePresentation {
         return BROADCAST_LABELS.contains(zone.toLowerCase(java.util.Locale.ROOT));
     }
 
+    // 统计装饰前缀长度
     private static int countDecorativePrefix(String text, int upTo) {
         int i = 0;
         while (i < upTo) {

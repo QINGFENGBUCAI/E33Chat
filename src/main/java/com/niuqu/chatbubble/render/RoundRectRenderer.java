@@ -5,16 +5,20 @@ import net.minecraft.client.gui.DrawContext;
 //#else
 //$$ import com.niuqu.chatbubble.DrawContext;
 //#endif
+// 圆角矩形渲染器
 public final class RoundRectRenderer {
+    // 私有构造
     private RoundRectRenderer() {}
 
     private static final float BAND = 0.75f;
 
     private static final int N = 4;
 
+    // 重置着色器
     public static void resetShader() {
     }
 
+    // 填充圆角矩形
     public static void fill(DrawContext g, int x1, int y1, int x2, int y2, float radius, int argb) {
         int w = x2 - x1;
         int h = y2 - y1;
@@ -54,6 +58,7 @@ public final class RoundRectRenderer {
         }
     }
 
+    // 计算像素覆盖率
     private static float pixelCoverage(int px, int py, int w, int h, float radius, int cr) {
         boolean nearLeft = px < cr;
         boolean nearRight = px >= w - cr;
@@ -78,6 +83,7 @@ public final class RoundRectRenderer {
         return covSum / (N * N);
     }
 
+    // 填充实心矩形
     private static void solid(DrawContext g, int x1, int y1, int x2, int y2, int argb) {
         //#if MC >= 12000
         com.niuqu.chatbubble.RenderHelper.fill(g, x1, y1, x2, y2, argb);

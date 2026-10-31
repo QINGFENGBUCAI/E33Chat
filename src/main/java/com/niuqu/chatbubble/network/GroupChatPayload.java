@@ -7,6 +7,7 @@ import net.minecraft.network.packet.CustomPayload;
 import net.minecraft.util.Identifier;
 import java.util.UUID;
 
+// 群组聊天消息包
 //#if MC >= 12005
 public record GroupChatPayload(UUID senderUUID, String senderName, String groupName,
                                String content, String quoteSender, String quoteContent)
@@ -82,10 +83,12 @@ public record GroupChatPayload(UUID senderUUID, String senderName, String groupN
     //$$ }
     //#endif
 
+    // 空串转空值
     private static String blankToNull(String s) {
         return s == null || s.isEmpty() ? null : s;
     }
 
+    // 获取包标识
     //#if MC >= 12005
     @Override
     public CustomPayload.Id<? extends CustomPayload> getId() {
@@ -93,6 +96,7 @@ public record GroupChatPayload(UUID senderUUID, String senderName, String groupN
     }
     //#endif
 
+    // 客户端处理群聊
     public static void handleClient(GroupChatPayload payload) {
         com.niuqu.chatbubble.store.ChatMessageStore.addGroupMessage(
             net.minecraft.text.Text.literal(payload.content()),

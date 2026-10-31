@@ -30,6 +30,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.UUID;
 
+// 接管聊天渲染与捕获
 @Mixin(value = ChatHud.class, priority = 500)
 public class ChatComponentMixin {
     private Text lastComponent;
@@ -39,6 +40,7 @@ public class ChatComponentMixin {
     private long lastRepostTime;
 
     //#if MC >= 26000
+    // 气泡界面拦截渲染
     @Inject(method = "extractRenderState(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Lnet/minecraft/client/gui/Font;IIILnet/minecraft/client/gui/components/ChatComponent$DisplayMode;Z)V",
             at = @At("HEAD"), cancellable = true)
     private void onRender(CallbackInfo ci) {
@@ -49,6 +51,7 @@ public class ChatComponentMixin {
     }
     //#else
     //#if MC >= 12111
+    // 气泡界面拦截渲染
     @Inject(method = "render", at = @At("HEAD"), cancellable = true)
     private void onRender(DrawContext context, TextRenderer textRenderer, int tickDelta, int mouseX, int mouseY,
                           boolean focused, boolean unread, CallbackInfo ci) {
@@ -64,6 +67,7 @@ public class ChatComponentMixin {
         }
     }
 
+    // 恢复渲染位移
     @Inject(method = "render", at = @At("RETURN"))
     private void onRenderReturn(DrawContext context, TextRenderer textRenderer, int tickDelta, int mouseX, int mouseY,
                                 boolean focused, boolean unread, CallbackInfo ci) {
@@ -73,6 +77,7 @@ public class ChatComponentMixin {
     }
     //#else
     //#if MC >= 12100
+    // 气泡界面拦截渲染
     @Inject(method = "render", at = @At("HEAD"), cancellable = true)
     private void onRender(DrawContext context, int tickDelta, int mouseX, int mouseY,
                           boolean focused, CallbackInfo ci) {
@@ -88,6 +93,7 @@ public class ChatComponentMixin {
         }
     }
 
+    // 恢复渲染位移
     @Inject(method = "render", at = @At("RETURN"))
     private void onRenderReturn(DrawContext context, int tickDelta, int mouseX, int mouseY,
                                 boolean focused, CallbackInfo ci) {
@@ -97,6 +103,7 @@ public class ChatComponentMixin {
     }
     //#else
     //#if MC >= 12000
+    // 气泡界面拦截渲染
     @Inject(method = "render", at = @At("HEAD"), cancellable = true)
     private void onRender(DrawContext context, int tickDelta, int mouseX, int mouseY, CallbackInfo ci) {
         e33chat$shifted = false;
@@ -111,6 +118,7 @@ public class ChatComponentMixin {
         }
     }
 
+    // 恢复渲染位移
     @Inject(method = "render", at = @At("RETURN"))
     private void onRenderReturn(DrawContext context, int tickDelta, int mouseX, int mouseY, CallbackInfo ci) {
         if (e33chat$shifted) {
@@ -119,6 +127,7 @@ public class ChatComponentMixin {
     }
     //#else
     //#if MC >= 11903
+    // 气泡界面拦截渲染
     @Inject(method = "render", at = @At("HEAD"), cancellable = true)
     private void onRender(net.minecraft.client.util.math.MatrixStack matrices, int tickDelta, int mouseX, int mouseY, CallbackInfo ci) {
         e33chat$shifted = false;
@@ -133,6 +142,7 @@ public class ChatComponentMixin {
         }
     }
 
+    // 恢复渲染位移
     @Inject(method = "render", at = @At("RETURN"))
     private void onRenderReturn(net.minecraft.client.util.math.MatrixStack matrices, int tickDelta, int mouseX, int mouseY, CallbackInfo ci) {
         if (e33chat$shifted) {
@@ -140,6 +150,7 @@ public class ChatComponentMixin {
         }
     }
     //#else
+    // 气泡界面拦截渲染
     @Inject(method = "render", at = @At("HEAD"), cancellable = true)
     private void onRender(net.minecraft.client.util.math.MatrixStack matrices, int tickDelta, CallbackInfo ci) {
         e33chat$shifted = false;
@@ -154,6 +165,7 @@ public class ChatComponentMixin {
         }
     }
 
+    // 恢复渲染位移
     @Inject(method = "render", at = @At("RETURN"))
     private void onRenderReturn(net.minecraft.client.util.math.MatrixStack matrices, int tickDelta, CallbackInfo ci) {
         if (e33chat$shifted) {
@@ -166,6 +178,7 @@ public class ChatComponentMixin {
     //#endif
     //#endif
     //#if MC >= 26000
+    // 捕获新增消息
     @Inject(method = "addMessage(Lnet/minecraft/network/chat/Component;Lnet/minecraft/network/chat/MessageSignature;Lnet/minecraft/client/multiplayer/chat/GuiMessageSource;Lnet/minecraft/client/multiplayer/chat/GuiMessageTag;)V",
             at = @At("HEAD"), cancellable = true)
     private void onAddMessage(Text message, net.minecraft.network.chat.MessageSignature signature,
@@ -174,6 +187,7 @@ public class ChatComponentMixin {
         captureMessage(message, ci);
     }
     //#else
+    // 捕获新增消息
     @Inject(method = "addMessage(Lnet/minecraft/text/Text;)V",
             at = @At("HEAD"), cancellable = true)
     private void onAddMessage(Text message, CallbackInfo ci) {
@@ -182,6 +196,7 @@ public class ChatComponentMixin {
     //#endif
     //#if MC >= 11900
     //#if MC < 26000
+    // 捕获新增消息
     @Inject(method = "addMessage(Lnet/minecraft/text/Text;Lnet/minecraft/network/message/MessageSignatureData;Lnet/minecraft/client/gui/hud/MessageIndicator;)V",
             at = @At("HEAD"), cancellable = true)
     private void onAddMessageFull(Text message, MessageSignatureData signature,
@@ -191,6 +206,7 @@ public class ChatComponentMixin {
     //#endif
     //#endif
 
+    // 重投到原版聊天
     private void repostToVanilla(Text name, String content, boolean quoting) {
         Text tag = (quoting
             ? Text.translatable("e33chat.banner.quote").formatted(Formatting.YELLOW)
@@ -216,6 +232,7 @@ public class ChatComponentMixin {
         e33chat$reposting = false;
     }
 
+    // 替换图片占位码
     private void rewriteVanillaImageCode(Text finalComponent, CallbackInfo ci) {
         Text placeholder = BracketCodec.toPlaceholderText(finalComponent);
         if (placeholder == finalComponent) return;
@@ -229,6 +246,7 @@ public class ChatComponentMixin {
         e33chat$reposting = false;
     }
 
+    // 捕获并入库消息
     private void captureMessage(Text finalComponent, CallbackInfo ci) {
         if (!ChatBubbleClientSetup.config().enabled()) return;
         if (e33chat$reposting) return;
@@ -248,14 +266,27 @@ public class ChatComponentMixin {
         SenderMeta meta = ChatMessageStore.consumePendingMeta();
         if (meta == null) {
             if (ChatMessageStore.isRecentDuplicate(text)) return;
-            meta = new SenderMeta(
-                new UUID(0, 0),
-                Text.translatable("e33chat.sender.system"),
-                finalComponent,
-                true,
-                null,
-                false, null
-            );
+            int lt = text.indexOf('<');
+            boolean chatShape = lt >= 0 && text.indexOf('>', lt) > lt;
+            if (chatShape && !com.niuqu.chatbubble.chat.capture.ChatClassifier.isJoinLeaveMessage(text)) {
+                var cp = MinecraftClient.getInstance().player;
+                var conn = cp != null ? cp.networkHandler : null;
+                if (conn != null) {
+                    SenderMeta parsed = com.niuqu.chatbubble.chat.capture.ChatPipeline.tryParsePlayerLine(
+                        finalComponent, text, "CaptureFallback");
+                    if (parsed != null) meta = parsed;
+                }
+            }
+            if (meta == null) {
+                meta = new SenderMeta(
+                    new UUID(0, 0),
+                    Text.translatable("e33chat.sender.system"),
+                    finalComponent,
+                    true,
+                    null,
+                    false, null
+                );
+            }
         }
         if (!meta.whisper() && !meta.isSystem()) {
             String sn = meta.senderName().getString();
@@ -266,6 +297,22 @@ public class ChatComponentMixin {
                     meta = new SenderMeta(meta.senderUUID(), Text.literal(partner),
                         meta.rawContent(), meta.isSystem(), partner, true, partner);
                 }
+            }
+        }
+        if (!meta.whisper()) {
+            String partner = com.niuqu.chatbubble.chat.MessagePresentation.outgoingWhisperPartner(text);
+            if (partner != null
+                && com.niuqu.chatbubble.chat.MessagePresentation.hasWhisperKeywordBeforeColon(text)) {
+                var self = MinecraftClient.getInstance().player;
+                UUID ownId = self != null ? self.getUuid() : meta.senderUUID();
+                String ownRaw = self != null ? self.getName().getString() : meta.rawPlayerName();
+                Text content = meta.rawContent() != null && !meta.rawContent().getString().isBlank()
+                    ? meta.rawContent()
+                    : Text.literal(com.niuqu.chatbubble.chat.MessagePresentation.extractWhisperContent(text, partner));
+                ChatMessageStore.debugLog(() -> "[e33chat] Outgoing whisper normalized | text='" + text
+                    + "' | partner=" + partner + " | content='" + content.getString() + "'");
+                meta = new SenderMeta(ownId, ChatMessageStore.ownDisplayName(),
+                    content, false, ownRaw, true, partner);
             }
         }
         if (BlockList.isPlayerBlocked(meta.rawPlayerName(), meta.senderName(),

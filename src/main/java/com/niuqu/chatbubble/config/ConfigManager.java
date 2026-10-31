@@ -7,10 +7,13 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+// 客户端配置管理器
 public final class ConfigManager {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    // 禁止外部实例化
     private ConfigManager() {}
 
+    // 加载配置文件
     public static ChatBubbleConfig load(Path path) {
         if (Files.exists(path)) {
             try (Reader r = new InputStreamReader(Files.newInputStream(path), StandardCharsets.UTF_8)) {
@@ -34,6 +37,7 @@ public final class ConfigManager {
         return def;
     }
 
+    // 合并默认值
     private static ChatBubbleConfig mergeWithDefaults(ChatBubbleConfig c) {
         ChatBubbleConfig d = ChatBubbleConfig.defaults();
         return new ChatBubbleConfig(
@@ -90,6 +94,7 @@ public final class ConfigManager {
             c.panelBgCrop() != null ? c.panelBgCrop() : d.panelBgCrop());
     }
 
+    // 保存配置文件
     public static void save(Path path, ChatBubbleConfig config) {
         try {
             Files.createDirectories(path.getParent());

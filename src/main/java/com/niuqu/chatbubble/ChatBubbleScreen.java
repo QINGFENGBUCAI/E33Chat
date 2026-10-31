@@ -70,6 +70,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+// 聊天界面主屏
 public class ChatBubbleScreen extends ChatScreen {
     private int panelX, panelW;
     private static final int TITLE_H = 24;
@@ -86,10 +87,12 @@ public class ChatBubbleScreen extends ChatScreen {
     private static final int SIDEBAR_ITEM_H = 22;
     private static final int SIDEBAR_ICON_S = 20;
 
+    // 获取主题配色
     private ChatBubbleTheme.Colors c() {
         return Appearance.snapshot();
     }
 
+    // 获取当前主题
     private ChatBubbleTheme theme() {
         return "light".equalsIgnoreCase(ChatBubbleClientSetup.config().theme())
             ? ChatBubbleTheme.LIGHT : ChatBubbleTheme.DARK;
@@ -98,6 +101,7 @@ public class ChatBubbleScreen extends ChatScreen {
     private static final int INPUT_H = 14;
     private static final int ICON_S = 14;
 
+    // 获取图标纹理
     public static Identifier iconTex(String name) {
         String theme = ChatBubbleClientSetup.config().theme().toLowerCase();
         return Identifier.of("e33chat", "textures/gui/" + theme + "/" + name + ".png");
@@ -108,6 +112,7 @@ public class ChatBubbleScreen extends ChatScreen {
     private long clockStamp = -1;
     private String clockText = "";
 
+    // 生成时间缓存键
     private static String timeKey(long t) {
         return ChatMessageStore.timeKey(t, ChatBubbleClientSetup.config().timeSeparatorMinutes());
     }
@@ -117,7 +122,9 @@ public class ChatBubbleScreen extends ChatScreen {
     //#endif
     private static int inputX, inputY;
 
+    // 获取输入框横坐标
     public static int getInputX() { return inputX; }
+    // 获取输入框纵坐标
     public static int getInputY() { return inputY; }
     private final String initialText;
 
@@ -145,6 +152,7 @@ public class ChatBubbleScreen extends ChatScreen {
     private static final int QUICK_CHAT_W = 140;
     private static boolean sidebarOpen;
 
+    // 判断浮层是否打开
     private boolean overlayOpen() {
         return emojiPanel.visible || settingsMenu.visible || searchPanel.visible || groupBrowser.visible || quickChatPanel.visible;
     }
@@ -208,6 +216,7 @@ public class ChatBubbleScreen extends ChatScreen {
     private long lastLayoutEpoch = -1;
     private int lastStoreSize = -1;
 
+    // 获取布局版本号
     private long layoutEpoch() {
         long e = panelW;
         e = e * 1000003L + textRenderer.fontHeight;
@@ -274,12 +283,14 @@ public class ChatBubbleScreen extends ChatScreen {
     private int notifMentionLeft = -1, notifMentionRight = -1;
     private int notifBarTextY;
 
+    // 创建聊天界面
     public ChatBubbleScreen(String initialText) {
         super("");
         this.initialText = initialText;
     }
 
     @Override
+    // 初始化界面
     protected void init() {
         if (!hudHidden) {
             com.niuqu.chatbubble.render.HudVisibility.push();
@@ -379,6 +390,7 @@ public class ChatBubbleScreen extends ChatScreen {
         });
     }
 
+    // 计算面板宽度
     static int computePanelWidth(int physicalW, double guiScale, int width, int panelX, boolean fullscreen) {
         if (fullscreen) {
             return Math.max(100, width - panelX);
@@ -389,6 +401,7 @@ public class ChatBubbleScreen extends ChatScreen {
         return Math.max(100, Math.min(w, width - panelX));
     }
 
+    // 重建界面布局
     private void rebuildLayout() {
         int physicalW = ChatBubbleClientSetup.config().panelWidth();
         double guiScale = client.getWindow().getScaleFactor();
@@ -409,11 +422,13 @@ public class ChatBubbleScreen extends ChatScreen {
         }
     }
 
+    // 获取显示标题
     private String getDisplayTitle() {
         if (whisperPartner != null) return whisperPartner;
         return Text.translatable("e33chat.sidebar.public").getString();
     }
 
+    // 获取侧栏动画进度
     private float getSidebarAnimProgress() {
         if (!ChatBubbleClientSetup.config().animationEnabled()) return sidebarOpen ? 1f : 0f;
         AnimationStyle style = AnimationStyle.parse(ChatBubbleClientSetup.config().panelAnimStyle());
@@ -428,10 +443,12 @@ public class ChatBubbleScreen extends ChatScreen {
         return getAnimProgress();
     }
 
+    // 获取侧栏屏幕坐标
     private int getSidebarScreenX() {
         return (int) ((getSidebarAnimProgress() - 1.0f) * SIDEBAR_W);
     }
 
+    // 更新侧栏动画
     private void tickSidebarAnimation() {
         if (!sidebarAnimating) return;
         long elapsed = Util.getMeasuringTimeMs() - sidebarAnimStart;
@@ -455,6 +472,7 @@ public class ChatBubbleScreen extends ChatScreen {
 
     private static final int SIDEBAR_SEARCH_H = 14;
 
+    // 绘制侧栏
     private void renderSidebar(DrawContext g, int mouseX, int mouseY, float alpha) {
         ColoredTextureRenderer.drawWithAlpha(g, UiTextureManager.rl(UiElement.SIDEBAR_BG), 0, 0, SIDEBAR_W, height, alpha);
         ColoredTextureRenderer.drawWithAlpha(g, UiTextureManager.rl(UiElement.DIVIDER), SIDEBAR_W - 1, 0, 1, height, alpha);
@@ -557,6 +575,7 @@ public class ChatBubbleScreen extends ChatScreen {
         }
     }
 
+    // 插入提及称呼
     private void insertMention(String name) {
         String text = chatField.getText();
         int atIdx = text.lastIndexOf('@');
@@ -566,6 +585,7 @@ public class ChatBubbleScreen extends ChatScreen {
         mentionNavigated = false;
     }
 
+    // 输入框变更回调
     private void onInputEdited(String text) {
         if (suppressInputChange) return;
         if (!emojiReplacing && ModernUIEmojiCompat.isEnabled() && !text.startsWith("/")) {
@@ -605,6 +625,7 @@ public class ChatBubbleScreen extends ChatScreen {
         IMBlockerCompat.setCommandMode(chatField, text.startsWith("/"));
     }
 
+    // 搜索框变更回调
     private void onSearchEdited(String text) {
         if (suppressInputChange) return;
         searchMatches.clear();
@@ -628,6 +649,7 @@ public class ChatBubbleScreen extends ChatScreen {
     }
 
     @Override
+    // 每帧更新
     public void tick() {
         if (copyToastTicks > 0) copyToastTicks--;
         if (copyToastTicks <= 0) toastText = null;
@@ -652,6 +674,7 @@ public class ChatBubbleScreen extends ChatScreen {
 
     //#if MC >= 12002
     @Override
+    // 绘制背景
     public void renderBackground(DrawContext g, int mouseX, int mouseY, float delta) {
     }
     //#else
@@ -661,6 +684,7 @@ public class ChatBubbleScreen extends ChatScreen {
     //$$ }
     //#endif
 
+    // 获取窗口动画进度
     private float getAnimProgress() {
         if (!ChatBubbleClientSetup.config().animationEnabled()) return 1.0f;
         AnimationStyle style = AnimationStyle.parse(ChatBubbleClientSetup.config().panelAnimStyle());
@@ -671,6 +695,7 @@ public class ChatBubbleScreen extends ChatScreen {
         return Animation.styleCurve(style, t);
     }
 
+    // 获取底栏透明度
     private float getBarAlpha() {
         if (!ChatBubbleClientSetup.config().animationEnabled()) return 1.0f;
         AnimationStyle style = AnimationStyle.parse(ChatBubbleClientSetup.config().panelAnimStyle());
@@ -681,6 +706,7 @@ public class ChatBubbleScreen extends ChatScreen {
         return t;
     }
 
+    // 带动画绘制弹窗
     private void renderPopupWithAnim(DrawContext g, long openStartMs, long closeStartMs,
                                      java.util.function.Function<Float, Runnable> renderer) {
         AnimationStyle style = AnimationStyle.parse(ChatBubbleClientSetup.config().popupAnimStyle());
@@ -719,6 +745,7 @@ public class ChatBubbleScreen extends ChatScreen {
         }
     }
 
+    // 开始关闭弹窗
     private void beginPopupClose(java.util.function.LongConsumer setCloseStart, Runnable hide) {
         if (!ChatBubbleClientSetup.config().animationEnabled()
                 || AnimationStyle.parse(ChatBubbleClientSetup.config().popupAnimStyle()) == AnimationStyle.NONE) {
@@ -729,6 +756,7 @@ public class ChatBubbleScreen extends ChatScreen {
         setCloseStart.accept(Util.getMeasuringTimeMs());
     }
 
+    // 结束关闭弹窗
     private void finishPopupClose(long closeStart, Runnable hide) {
         if (closeStart > 0 && Util.getMeasuringTimeMs() - closeStart >= UiTokens.POPUP_CLOSE_MS) {
             hide.run();
@@ -736,6 +764,7 @@ public class ChatBubbleScreen extends ChatScreen {
     }
 
     @Override
+    // 处理按键输入
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         //#if MC >= 26000
         net.minecraft.client.input.KeyEvent keyEvent = new net.minecraft.client.input.KeyInput(keyCode, scanCode, modifiers);
@@ -887,6 +916,7 @@ public class ChatBubbleScreen extends ChatScreen {
 
     //#if MC >= 12002
     @Override
+    // 处理滚轮滚动
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
     //#else
     //$$ @Override
@@ -929,6 +959,7 @@ public class ChatBubbleScreen extends ChatScreen {
 
     //#if MC >= 260300
     @Override
+    // 处理鼠标点击
     public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent clickInput, boolean doubled) {
         double mouseX = clickInput.x();
         double mouseY = clickInput.y();
@@ -1246,6 +1277,7 @@ public class ChatBubbleScreen extends ChatScreen {
 
     //#if MC >= 260300
     @Override
+    // 处理鼠标拖拽
     public boolean mouseDragged(net.minecraft.client.input.MouseButtonEvent clickInput, double dragX, double dragY) {
         double mouseX = clickInput.x();
         double mouseY = clickInput.y();
@@ -1315,6 +1347,7 @@ public class ChatBubbleScreen extends ChatScreen {
 
     //#if MC >= 260300
     @Override
+    // 处理鼠标释放
     public boolean mouseReleased(net.minecraft.client.input.MouseButtonEvent clickInput) {
         double mouseX = clickInput.x();
         double mouseY = clickInput.y();
@@ -1349,6 +1382,7 @@ public class ChatBubbleScreen extends ChatScreen {
         //#endif
     }
 
+    // 处理图标点击
     private boolean handleIconClick(int mx, int my) {
         int iconY = barTop + (BAR_H - ICON_S) / 2;
         int gearX = panelX + 4;
@@ -1388,6 +1422,7 @@ public class ChatBubbleScreen extends ChatScreen {
     }
 
     @Override
+    // 处理拖入文件
     public void filesDragged(List<java.nio.file.Path> paths) {
         E33Log.info("[e33chat] filesDrop {} paths | emojiTab={}",
             paths.size(), emojiPanel.visible && emojiPanel.tab == 2);
@@ -1412,6 +1447,7 @@ public class ChatBubbleScreen extends ChatScreen {
         }
     }
 
+    // 添加剪贴板表情
     private void addClipboardEmote() {
         ImageLoader.executor().execute(() -> {
             LocalImageSource.PreparedImage prep = readClipboard();
@@ -1420,6 +1456,7 @@ public class ChatBubbleScreen extends ChatScreen {
         });
     }
 
+    // 从剪贴板上传
     private void startUploadFromClipboard() {
         ImageLoader.executor().execute(() -> {
             LocalImageSource.PreparedImage prep = readClipboard();
@@ -1428,6 +1465,7 @@ public class ChatBubbleScreen extends ChatScreen {
         });
     }
 
+    // 读取剪贴板图片
     private static LocalImageSource.PreparedImage readClipboard() {
         try {
             return LocalImageSource.fromClipboard();
@@ -1436,6 +1474,7 @@ public class ChatBubbleScreen extends ChatScreen {
         }
     }
 
+    // 处理消息右键
     private void handleContextClick(int mx, int my) {
         int menuH = CTX_ITEM_H * 2 + 2;
         int menuX = Math.min(contextX, panelX + panelW - CTX_W - 2);
@@ -1452,6 +1491,7 @@ public class ChatBubbleScreen extends ChatScreen {
         contextMsgIndex = -1;
     }
 
+    // 处理头像右键
     private void handleAvatarContextClick(int mx, int my) {
         int menuH = CTX_ITEM_H * 4 + 6;
         int menuX = Math.min(contextAvatarX, panelX + panelW - CTX_W - 2);
@@ -1477,6 +1517,7 @@ public class ChatBubbleScreen extends ChatScreen {
         contextAvatarIndex = -1;
     }
 
+    // 切换玩家屏蔽
     private void toggleBlockedPlayer() {
         ChatMessageStore.ChatMessage msg = ChatMessageStore.getMessageAt(contextAvatarIndex);
         if (msg == null) return;
@@ -1500,6 +1541,7 @@ public class ChatBubbleScreen extends ChatScreen {
     }
 
     @Override
+    // 绘制主界面
     public void render(DrawContext g, int mouseX, int mouseY, float delta) {
         tickSidebarAnimation();
         float anim = getAnimProgress();
@@ -1601,6 +1643,7 @@ public class ChatBubbleScreen extends ChatScreen {
         g.getMatrices().pop();
     }
 
+    // 绘制标题栏
     private void renderTitleBar(DrawContext g, int mouseX, int mouseY, float panelAlpha) {
         int ty = titleY;
         int a255 = (int) (255 * panelAlpha);
@@ -1634,6 +1677,7 @@ public class ChatBubbleScreen extends ChatScreen {
         g.drawText(textRenderer, "✕", closeX + 6 - textRenderer.getWidth("✕") / 2, closeY + 2, ChatBubbleTheme.alphaBlend(c().closeText(), c255), false);
     }
 
+    // 判断悬停菜单按钮
     private boolean isMouseOverHamburger(double mx, double my) {
         int menuX = panelX + 3;
         int menuY = titleY + (TITLE_H - ICON_S) / 2;
@@ -1642,6 +1686,7 @@ public class ChatBubbleScreen extends ChatScreen {
 
     private static final int TAB_H = 16;
 
+    // 判断标签栏可见
     private boolean tabsVisible() {
         return whisperPartner == null
             && com.niuqu.chatbubble.chat.GroupChannelState.supported()
@@ -1652,12 +1697,14 @@ public class ChatBubbleScreen extends ChatScreen {
     private int tabLayoutFontHeight = -1;
     private int tabLayoutGroupStamp = -1;
 
+    // 生成群组标签戳
     private int groupTabStamp() {
         int s = com.niuqu.chatbubble.chat.GroupChannelState.myGroups.size();
         for (String g : com.niuqu.chatbubble.chat.GroupChannelState.myGroups) s = s * 31 + g.hashCode();
         return s;
     }
 
+    // 计算标签布局
     private java.util.List<Object[]> tabLayout() {
         int stamp = groupTabStamp();
         if (tabLayoutCache != null
@@ -1684,6 +1731,7 @@ public class ChatBubbleScreen extends ChatScreen {
         return tabs;
     }
 
+    // 绘制标签栏
     private void renderTabStrip(DrawContext g, int mouseX, int mouseY, int tabY) {
         String active = com.niuqu.chatbubble.chat.GroupChannelState.active();
         float alpha = getAnimProgress();
@@ -1711,6 +1759,7 @@ public class ChatBubbleScreen extends ChatScreen {
         }
     }
 
+    // 检测标签栏点击
     private String hitTestTabStrip(double mouseX, double mouseY) {
         if (!tabsVisible()) return null;
         int tabY = msgTop;
@@ -1724,17 +1773,20 @@ public class ChatBubbleScreen extends ChatScreen {
         return null;
     }
 
+    // 关闭群组浏览
     private void closeGroupBrowser() {
         beginPopupClose(s -> groupCloseStart = s, this::hideGroupBrowser);
         setFocused(chatField);
     }
 
+    // 隐藏群组浏览
     private void hideGroupBrowser() {
         groupCloseStart = 0;
         groupBrowser.visible = false;
         if (groupCreateInput != null) groupCreateInput.setVisible(false);
     }
 
+    // 绘制消息列表
     private void renderMessages(DrawContext g, int mouseX, int mouseY) {
         long epoch = layoutEpoch();
         int storeSize = ChatMessageStore.getMessages().size();
@@ -1921,6 +1973,7 @@ public class ChatBubbleScreen extends ChatScreen {
         g.disableScissor();
     }
 
+    // 绘制滚动条
     private void renderScrollbar(DrawContext g, int mouseX, int mouseY, int effectiveMsgBottom) {
         if (maxScroll <= 0) return;
         boolean inZone = mouseX >= panelX + panelW - SCROLLBAR_HOVER_ZONE
@@ -1948,6 +2001,7 @@ public class ChatBubbleScreen extends ChatScreen {
             ChatBubbleTheme.alphaBlend(c().scrollbar(), (int) (thumbBase * scrollbarAlpha)));
     }
 
+    // 绘制时间分隔
     private void renderTimeSeparator(DrawContext g, long timeMillis, int y) {
         String text = ChatMessageStore.formatTime(timeMillis);
         int tw = textRenderer.getWidth(text);
@@ -1956,6 +2010,7 @@ public class ChatBubbleScreen extends ChatScreen {
         g.drawText(textRenderer, text, tx, y + 3, c().timeColor(), false);
     }
 
+    // 换行排版文本
     private List<OrderedText> wrapContent(Text c, int width) {
         List<Text> paras = new ArrayList<>();
         MutableText[] cur = { Text.empty() };
@@ -1981,6 +2036,7 @@ public class ChatBubbleScreen extends ChatScreen {
         return out;
     }
 
+    // 缓存换行结果
     private List<OrderedText> wrapContentCached(ChatMessageStore.ChatMessage msg, Text c, int width) {
         if (msgLinesCache.size() > 512) msgLinesCache.clear();
         var byWidth = msgLinesCache.computeIfAbsent(msg, k -> new java.util.HashMap<>());
@@ -1991,6 +2047,7 @@ public class ChatBubbleScreen extends ChatScreen {
         return lines;
     }
 
+    // 查找命中文本片段
     private TextSpan findTextSpanAt(double mouseX, double mouseY) {
         for (int i = textSpans.size() - 1; i >= 0; i--) {
             TextSpan s = textSpans.get(i);
@@ -2002,6 +2059,7 @@ public class ChatBubbleScreen extends ChatScreen {
         return null;
     }
 
+    // 查找最近文本片段
     private TextSpan findNearestTextSpan(double mouseX, double mouseY) {
         TextSpan best = null;
         double bestDist = Double.MAX_VALUE;
@@ -2019,6 +2077,7 @@ public class ChatBubbleScreen extends ChatScreen {
         return best;
     }
 
+    // 选区自动滚动
     private void autoScrollSelection(double mouseY) {
         boolean changed = false;
         if (mouseY < msgTop + 16 && scrollOffset > 0) {
@@ -2036,6 +2095,7 @@ public class ChatBubbleScreen extends ChatScreen {
         }
     }
 
+    // 计算字符位置
     private int charAt(TextSpan span, double mouseX) {
         String text = span.text();
         if (text.isEmpty()) return 0;
@@ -2060,6 +2120,7 @@ public class ChatBubbleScreen extends ChatScreen {
         return lo;
     }
 
+    // 执行点击动作
     private void executeClickAction(double mouseX, double mouseY) {
         Style style = getHoveredStyle(mouseX, mouseY);
         if (style != null && style.getClickEvent() != null) {
@@ -2109,10 +2170,12 @@ public class ChatBubbleScreen extends ChatScreen {
         }
     }
 
+    // 判断面板滑动中
     private boolean isPanelSliding() {
         return ChatBubbleClientSetup.config().animationEnabled() && getAnimProgress() < 1.0f;
     }
 
+    // 计算面板偏移
     private int currentPanelOffset() {
         if (AnimationStyle.parse(ChatBubbleClientSetup.config().panelAnimStyle()) != AnimationStyle.SLIDE)
             return 0;
@@ -2126,6 +2189,7 @@ public class ChatBubbleScreen extends ChatScreen {
         return (int) ((anim - 1.0f) * moveDist);
     }
 
+    // 判断是否显示头像
     private boolean avatarVisibleAt(int index) {
         var cfg = ChatBubbleClientSetup.config();
         if (!(cfg.hideRepeatedAvatars() != null && cfg.hideRepeatedAvatars())) return true;
@@ -2134,12 +2198,14 @@ public class ChatBubbleScreen extends ChatScreen {
         return !MessageGrouping.isSameGroup(prev, msg);
     }
 
+    // 判断系统发送者
     private static boolean isSystemSender(ChatMessageStore.ChatMessage msg) {
         return !msg.isSystem()
             && "\u7cfb\u7edf".equals(msg.senderName().getString())
             && (msg.senderUUID() == null || msg.senderUUID().equals(new UUID(0, 0)));
     }
 
+    // 获取消息高度
     private int getMsgHeight(ChatMessageStore.ChatMessage msg) {
         Integer cached = msgHeightCache.get(msg);
         if (cached != null) return cached;
@@ -2177,6 +2243,7 @@ public class ChatBubbleScreen extends ChatScreen {
         return h;
     }
 
+    // 解析消息图片
     private BracketCodec.ParseResult parseImages(ChatMessageStore.ChatMessage msg) {
         if (!ChatBubbleClientSetup.config().receiveImages()) {
             return new BracketCodec.ParseResult(
@@ -2189,6 +2256,7 @@ public class ChatBubbleScreen extends ChatScreen {
         return cached;
     }
 
+    // 获取动图条目
     private com.niuqu.chatbubble.image.AnimatedImageLoader.Entry animatedEntry(String url) {
         var entry = com.niuqu.chatbubble.image.AnimatedImageLoader.getOrLoad(url, null);
         if (entry != null) return entry;
@@ -2197,11 +2265,13 @@ public class ChatBubbleScreen extends ChatScreen {
             : null;
     }
 
+    // 判断动图加载中
     private static boolean animatedPending(
             com.niuqu.chatbubble.image.AnimatedImageLoader.Entry animated) {
         return animated != null && !animated.ready() && !animated.failed() && !animated.staticImage();
     }
 
+    // 获取动图纹理
     private static com.niuqu.chatbubble.image.AnimatedImageLoader.FrameTex animatedTex(
             com.niuqu.chatbubble.image.AnimatedImageLoader.Entry animated) {
         if (animated == null || !animated.ready()) return null;
@@ -2210,6 +2280,7 @@ public class ChatBubbleScreen extends ChatScreen {
             : new com.niuqu.chatbubble.image.AnimatedImageLoader.FrameTex(tex, animated.width(), animated.height());
     }
 
+    // 计算图片显示高度
     private int imageEdgeHeight(String url) {
         int maxW = Math.max(80, panelW - Appearance.avatarSize() - PAD * 2 - 16);
         var animated = animatedEntry(url);
@@ -2230,6 +2301,7 @@ public class ChatBubbleScreen extends ChatScreen {
         return maxW;
     }
 
+    // 绘制消息气泡
     private void renderBubble(DrawContext g, ChatMessageStore.ChatMessage msg, int index, int baseY, int mouseX, int mouseY, float alpha, boolean showAvatar) {
         if (msg.isSystem()) {
             List<OrderedText> lines = wrapContentCached(msg, msg.content(), panelW - PAD * 2 - 20);
@@ -2387,6 +2459,7 @@ public class ChatBubbleScreen extends ChatScreen {
             g.drawBorder(bubbleX - 1, bubbleY - 1, bubbleW + 2, bubbleH + 2, ChatSearchPanel.HIGHLIGHT);
     }
 
+    // 绘制无气泡消息
     private void renderNoBubbleMessage(DrawContext g, ChatMessageStore.ChatMessage msg, int index, int baseY,
             boolean own, float alpha, BracketCodec.ParseResult parsed, List<OrderedText> lines, boolean showAvatar) {
         int avatarX = own ? panelX + panelW - PAD - Appearance.avatarSize() : panelX + PAD;
@@ -2502,6 +2575,7 @@ public class ChatBubbleScreen extends ChatScreen {
             baseY, Math.max(maxTextW, maxImgW), y - baseY, index});
     }
 
+    // 绘制表情消息
     private void renderEmoteMessage(DrawContext g, ChatMessageStore.ChatMessage msg, int index, int baseY, boolean own, float alpha, boolean showAvatar) {
         BracketCodec.ParseResult parsed = parseImages(msg);
         if (parsed.images().isEmpty()) return;
@@ -2574,15 +2648,18 @@ public class ChatBubbleScreen extends ChatScreen {
         }
     }
 
+    // 绘制可点击文本
     private void renderLineWithClicks(DrawContext g, OrderedText line, int x, int y, int color) {
         renderLineWithClicks(g, line, x, y, color, null);
     }
 
+    // 绘制可点击文本简版
     private void renderLineWithClicks(DrawContext g, OrderedText line, int x, int y, int color, Style fallback) {
         renderLineWithClicks(g, line, x, y, color, fallback, -1, -1,
             TextSpan.KIND_CONTENT, 1f, 0, null);
     }
 
+    // 绘制可点击文本带选区
     private void renderLineWithClicks(DrawContext g, OrderedText line, int x, int y, int color,
                                       Style fallback, int messageIndex, int lineIndex,
                                       int kind, float scale, int backgroundRgb,
@@ -2591,6 +2668,7 @@ public class ChatBubbleScreen extends ChatScreen {
             kind, scale, backgroundRgb, selection, true);
     }
 
+    // 绘制可点击文本完整版
     private void renderLineWithClicks(DrawContext g, OrderedText line, int x, int y, int color,
                                       Style fallback, int messageIndex, int lineIndex,
                                       int kind, float scale, int backgroundRgb,
@@ -2696,6 +2774,7 @@ public class ChatBubbleScreen extends ChatScreen {
         g.drawText(textRenderer, decorated, x, y, color, false);
     }
 
+    // 计算前缀宽度
     private int prefixWidth(OrderedText line, int count) {
         if (count <= 0) return 0;
         return textRenderer.getWidth((OrderedText) sink -> {
@@ -2705,11 +2784,13 @@ public class ChatBubbleScreen extends ChatScreen {
         });
     }
 
+    // 获取根点击样式
     private Style findRootClickStyle(Text c) {
         Style s = c.getStyle();
         return s != null && s.getClickEvent() != null ? s : null;
     }
 
+    // 获取悬停样式
     private Style getHoveredStyle(double mouseX, double mouseY) {
         for (ClickableSpan s : clickableSpans) {
             if (mouseX >= s.x && mouseX <= s.x + s.w
@@ -2719,6 +2800,7 @@ public class ChatBubbleScreen extends ChatScreen {
         return null;
     }
 
+    // 绘制新消息提示
     private void renderNotificationBar(DrawContext g, int mouseX, int mouseY) {
         if (newMessageCount <= 0) return;
         int notifY = barTop - NOTIF_H;
@@ -2744,6 +2826,7 @@ public class ChatBubbleScreen extends ChatScreen {
         }
     }
 
+    // 绘制消息菜单
     private void renderContextMenu(DrawContext g, int mouseX, int mouseY) {
         if (contextMsgIndex < 0) return;
         int menuH = CTX_ITEM_H * 2 + 2;
@@ -2771,6 +2854,7 @@ public class ChatBubbleScreen extends ChatScreen {
         g.drawText(textRenderer, Text.translatable("e33chat.context.quote").getString(), menuX + 22, menuY + CTX_ITEM_H + 5, c().textPrimary(), false);
     }
 
+    // 绘制头像菜单
     private void renderAvatarContextMenu(DrawContext g, int mouseX, int mouseY) {
         if (contextAvatarIndex < 0) return;
         int menuH = CTX_ITEM_H * 4 + 6;
@@ -2820,6 +2904,7 @@ public class ChatBubbleScreen extends ChatScreen {
 
     private static final int REPLY_BAR_H = 18;
 
+    // 绘制回复栏
     private void renderReplyBar(DrawContext g, int mouseX, int mouseY) {
         if (replyTargetIndex < 0) return;
         ChatMessageStore.ChatMessage target = ChatMessageStore.getMessageAt(replyTargetIndex);
@@ -2850,6 +2935,7 @@ public class ChatBubbleScreen extends ChatScreen {
         g.drawText(textRenderer, "✕", cx + 6 - textRenderer.getWidth("✕") / 2, cy + 2, c().closeText(), false);
     }
 
+    // 判断悬停回复关闭
     private boolean isMouseOverReplyCancel(double mx, double my) {
         if (replyTargetIndex < 0) return false;
         int notifOffset = (newMessageCount > 0) ? NOTIF_H : 0;
@@ -2863,6 +2949,7 @@ public class ChatBubbleScreen extends ChatScreen {
         return mx >= cx && mx <= cx + 12 && my >= cy && my <= cy + 12;
     }
 
+    // 绘制提及弹窗
     private void renderMentionPopup(DrawContext g, int mouseX, int mouseY) {
         if (!showMentions || mentionCandidates.isEmpty()) return;
         int maxW = 60;
@@ -2886,6 +2973,7 @@ public class ChatBubbleScreen extends ChatScreen {
         }
     }
 
+    // 绘制提示条
     private void renderToast(DrawContext g) {
         int alpha;
         String text;
@@ -2912,11 +3000,13 @@ public class ChatBubbleScreen extends ChatScreen {
         g.drawText(textRenderer, text, tx, ty, color, false);
     }
 
+    // 显示提示
     private void showToast(String key) {
         toastText = key;
         copyToastTicks = 30;
     }
 
+    // 清空后重置状态
     private void resetChatStateAfterClear() {
         scrollOffset = 0;
         maxScroll = 0;
@@ -2945,6 +3035,7 @@ public class ChatBubbleScreen extends ChatScreen {
         sidebarMaxScroll = 0;
     }
 
+    // 执行菜单动作
     private void executeMenuAction(int action) {
         switch (action) {
             case 0:
@@ -3002,6 +3093,7 @@ public class ChatBubbleScreen extends ChatScreen {
         }
     }
 
+    // 关闭搜索面板
     private void closeSearchPanel() {
         beginPopupClose(s -> searchCloseStart = s, () -> {
             searchPanel.visible = false;
@@ -3012,6 +3104,7 @@ public class ChatBubbleScreen extends ChatScreen {
         setFocused(chatField);
     }
 
+    // 绘制底部栏
     private void renderBottomBar(DrawContext g, int mouseX, int mouseY, float panelAlpha) {
         int a255 = (int) (255 * panelAlpha);
         ColoredTextureRenderer.drawWithAlpha(g, UiTextureManager.rl(UiElement.BOTTOM_BAR), panelX, barTop, panelW, height - barTop, panelAlpha);
@@ -3043,6 +3136,7 @@ public class ChatBubbleScreen extends ChatScreen {
         drawTextureIconAlpha(g, iconTex("send"), sendX, iconY, ICON_S, getAnimProgress());
     }
 
+    // 绘制图标
     static void drawTextureIcon(DrawContext g, Identifier tex, int x, int y, int size) {
         //#if MC < 12102
         RenderSystem.setShaderTexture(0, tex);
@@ -3056,6 +3150,7 @@ public class ChatBubbleScreen extends ChatScreen {
         }
     }
 
+    // 绘制透明图标
     public static void drawTextureIconAlpha(DrawContext g, Identifier tex, int x, int y, int size, float alpha) {
         if (alpha <= 0.003f) return;
         if (size < 16) {
@@ -3065,6 +3160,7 @@ public class ChatBubbleScreen extends ChatScreen {
         }
     }
 
+    // 跳转到消息
     private void jumpToMessage(int msgIndex) {
         var msgs = ChatMessageStore.getMessages();
         if (msgIndex < 0 || msgIndex >= msgs.size()) return;
@@ -3089,6 +3185,7 @@ public class ChatBubbleScreen extends ChatScreen {
         latestMentionIndex = -1; lastSeenMessageCount = msgs.size();
     }
 
+    // 解析颜色代码
     private static Text parseColorCodes(String s) {
         if (s.indexOf('&') < 0) return Text.literal(s);
         MutableText out = Text.empty();
@@ -3111,6 +3208,7 @@ public class ChatBubbleScreen extends ChatScreen {
         return out;
     }
 
+    // 应用颜色代码
     private static Style applyCode(Style st, char c) {
         switch (Character.toLowerCase(c)) {
             case '0': return st.withColor(Formatting.BLACK.getColorValue() != null ? Formatting.BLACK.getColorValue() : null);
@@ -3139,12 +3237,14 @@ public class ChatBubbleScreen extends ChatScreen {
         }
     }
 
+    // 判断格式代码
     private static boolean isFormatCode(char c) {
         return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')
             || (c >= 'k' && c <= 'o') || (c >= 'A' && c <= 'F')
             || (c >= 'K' && c <= 'O');
     }
 
+    // 提取本地路径
     private static String extractLocalPath(String cicode) {
         int start = cicode.indexOf("url=file:///");
         if (start < 0) return null;
@@ -3156,6 +3256,7 @@ public class ChatBubbleScreen extends ChatScreen {
         return path;
     }
 
+    // 发送消息
     private void sendMessage() {
         String raw = chatField.getText().trim();
         if (raw.isEmpty()) return;
@@ -3179,6 +3280,7 @@ public class ChatBubbleScreen extends ChatScreen {
         sendMessageText(raw);
     }
 
+    // 发送文本消息
     private void sendMessageText(String text) {
         String raw = text;
         var cfg = ChatBubbleClientSetup.config();
@@ -3269,6 +3371,7 @@ public class ChatBubbleScreen extends ChatScreen {
     }
 
     @Override
+    // 设置历史输入
     public void setChatFromHistory(int offset) {
         int size = client.inGameHud.getChatHud().getMessageHistory().size();
         int newPos = MathHelper.clamp(historyPos + offset, 0, size);
@@ -3289,6 +3392,7 @@ public class ChatBubbleScreen extends ChatScreen {
     }
 
     @Override
+    // 调整界面尺寸
     public void resize(MinecraftClient client, int width, int height) {
         String cur = chatField.getText();
         this.init(client, width, height);
@@ -3296,6 +3400,7 @@ public class ChatBubbleScreen extends ChatScreen {
     }
 
     @Override
+    // 界面移除清理
     public void removed() {
         if (ChatBubbleClientSetup.config().preserveInput()) savedInput = chatField.getText();
         ChatMessageStore.setScreenOpen(false);
@@ -3309,6 +3414,7 @@ public class ChatBubbleScreen extends ChatScreen {
         }
     }
 
+    // 关闭聊天界面
     public void onClose() {
         if (ChatBubbleClientSetup.config().preserveInput()) savedInput = chatField.getText();
         if (!ChatBubbleClientSetup.config().animationEnabled()) {
@@ -3319,11 +3425,14 @@ public class ChatBubbleScreen extends ChatScreen {
         animStart = Util.getMeasuringTimeMs();
     }
 
+    // 判断是否暂停
     public boolean shouldPause() { return false; }
 
+    // 可点击文本片段
     private static class ClickableSpan {
         final int x, y, w, h;
         final Style style;
+        // 构造可点击片段
         ClickableSpan(int x, int y, int w, int h, Style style) {
             this.x = x; this.y = y; this.w = w; this.h = h; this.style = style;
         }

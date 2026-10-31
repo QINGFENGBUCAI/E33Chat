@@ -328,4 +328,20 @@ class MessagePresentationTest {
         assertEquals("S§6t§beve", text.substring(pl.nameStart(), pl.nameEnd()));
         assertEquals("hi", text.substring(pl.contentStart()).strip());
     }
+
+    @Test void parsesChatHeadsDecorationInAngleBrackets() {
+        var parsed = MessagePresentation.parseDecoratedPlayerLine(
+            "<[Steve head]Steve> hello", List.of("Steve"));
+        assertTrue(parsed.isPresent());
+        assertEquals("Steve", parsed.orElseThrow().playerName());
+        assertEquals("hello", parsed.orElseThrow().content());
+    }
+
+    @Test void parsesChatHeadsDecorationInWhisperPrefix() {
+        var parsed = MessagePresentation.parseDecoratedPlayerLine(
+            "[Steve head]Steve 悄悄地对你说：hi", List.of("Steve"));
+        assertTrue(parsed.isPresent());
+        assertEquals("Steve", parsed.orElseThrow().playerName());
+        assertTrue(parsed.orElseThrow().content().endsWith("hi"));
+    }
 }

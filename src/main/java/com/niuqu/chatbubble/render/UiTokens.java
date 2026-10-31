@@ -1,6 +1,8 @@
 package com.niuqu.chatbubble.render;
 
+// 界面尺寸常量
 public final class UiTokens {
+    // 私有构造
     private UiTokens() {}
 
     public static final int RADIUS_MEDIUM = 8;

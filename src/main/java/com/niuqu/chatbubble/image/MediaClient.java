@@ -16,6 +16,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
+// 服务端媒体传输客户端
 public final class MediaClient {
     private static final long TIMEOUT_SECONDS = 30;
 
@@ -29,6 +30,7 @@ public final class MediaClient {
     private static final Map<String, byte[]> OWN_UPLOADS = new ConcurrentHashMap<>();
     private static final java.util.Deque<String> OWN_UPLOAD_ORDER = new java.util.ArrayDeque<>();
 
+    // 记录自传媒体缓存
     private static void rememberOwnUpload(String mediaId, byte[] bytes) {
         if (mediaId == null || bytes == null || bytes.length == 0) return;
         synchronized (OWN_UPLOAD_ORDER) {
@@ -41,11 +43,15 @@ public final class MediaClient {
         }
     }
 
+    // 禁止实例化
     private MediaClient() {}
 
+    // 设置服务端开关
     public static void setServerEnabled(boolean b) { serverEnabled = b; }
+    // 查询服务端开关
     public static boolean serverEnabled() { return serverEnabled; }
 
+    // 注册网络接收器
     public static void registerReceivers() {
         //#if MC >= 12005
         ClientPlayNetworking.registerGlobalReceiver(MediaUploadAckPayload.ID, (payload, context) -> {
@@ -72,6 +78,7 @@ public final class MediaClient {
         //#endif
     }
 
+    // 终止失败的下载
     private static void failFetch(String id, String message) {
         FETCH_BUFFERS.remove(id);
         FETCH_COUNTS.remove(id);
@@ -79,6 +86,7 @@ public final class MediaClient {
         if (f != null) f.completeExceptionally(new RuntimeException(message));
     }
 
+    // 处理媒体响应包
     public static void handleResponse(MediaResponsePayload payload) {
         String id = payload.mediaId();
         if (payload.totalChunks() == 1 && payload.chunk().length == 0) {
@@ -122,6 +130,7 @@ public final class MediaClient {
         }
     }
 
+    // 上传媒体到服务端
     public static String upload(byte[] bytes, String contentType) {
         if (!serverEnabled || bytes == null || bytes.length == 0) return null;
         if (!ClientPlayNetworking.canSend(MediaUploadPayload.ID)) return null;
@@ -162,6 +171,7 @@ public final class MediaClient {
         }
     }
 
+    // 从服务端下载媒体
     public static byte[] fetch(String mediaId) {
         if (!DiskMediaStore.isValidMediaId(mediaId)) return null;
         if (!ClientPlayNetworking.canSend(MediaRequestPayload.ID)) return null;

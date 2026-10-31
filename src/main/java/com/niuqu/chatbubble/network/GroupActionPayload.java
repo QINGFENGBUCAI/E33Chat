@@ -6,6 +6,7 @@ import net.minecraft.network.packet.CustomPayload;
 //#endif
 import net.minecraft.util.Identifier;
 
+// 群组操作请求包
 //#if MC >= 12005
 public record GroupActionPayload(int action, String groupName) implements CustomPayload {
 //#else
@@ -56,6 +57,7 @@ public record GroupActionPayload(int action, String groupName) implements Custom
     //$$     return buf;
     //$$ }
     //#endif
+    // 获取包标识
     //#if MC >= 12005
     @Override
     public CustomPayload.Id<? extends CustomPayload> getId() {
@@ -63,6 +65,7 @@ public record GroupActionPayload(int action, String groupName) implements Custom
     }
     //#endif
 
+    // 发送群组操作
     public static void send(int action, String groupName) {
         //#if MC >= 12005
         net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(

@@ -6,11 +6,14 @@ import net.minecraft.util.Identifier;
 import java.util.HashSet;
 import java.util.Set;
 
+// 头像纹理合成工具
 public final class HeadTextureHelper {
+    // 禁止外部实例化
     private HeadTextureHelper() {}
 
     public static final Set<Identifier> BLENDED_HEAD_TEXTURES = new HashSet<>();
 
+    // 提取合成头像
     public static NativeImage extractBlendedHead(NativeImage skin) {
         boolean isLegacy = skin.getWidth() / 2 == skin.getHeight();
         int xScale = skin.getWidth() / 64;
@@ -38,6 +41,7 @@ public final class HeadTextureHelper {
         return head;
     }
 
+    // 混合两层颜色
     public static int blendColors(int color1, int color2) {
         float a1 = ((color1 >> 24) & 0xFF) / 255f;
         float r1 = ((color1 >> 16) & 0xFF) / 255f;
@@ -57,6 +61,7 @@ public final class HeadTextureHelper {
              | Math.min((int)(b3 * 255f), 255);
     }
 
+    // 获取合成头像标识
     public static Identifier getBlendedHeadLocation(Identifier skinLocation) {
         //#if MC >= 12100
         return Identifier.of("e33chat", skinLocation.getPath());
@@ -65,6 +70,7 @@ public final class HeadTextureHelper {
         //#endif
     }
 
+    // 注册合成头像纹理
     public static void registerBlendedHead(Identifier skinLocation, NativeImage skinImage) {
         if (skinLocation == null || skinImage == null) return;
         if ("e33chat".equals(skinLocation.getNamespace())) return;

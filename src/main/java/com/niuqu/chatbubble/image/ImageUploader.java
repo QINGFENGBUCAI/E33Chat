@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.UUID;
 
+// 图片上传与URL解析
 public final class ImageUploader {
     public static final String DEFAULT_URL = "https://uguu.se/upload";
     public static final String DEFAULT_FIELD = "files[]";
@@ -18,8 +19,10 @@ public final class ImageUploader {
     private static final int MAX_UPLOAD_BYTES = 16 * 1024 * 1024;
     private static final long UPLOAD_TIMEOUT_SECONDS = 30;
 
+    // 禁止实例化
     private ImageUploader() {}
 
+    // 上传图片取外链
     public static String upload(byte[] bytes, String fileName,
                                 String url, String field, String extra, String responseMode) {
         if (bytes == null || bytes.length == 0 || bytes.length > MAX_UPLOAD_BYTES) {
@@ -59,6 +62,7 @@ public final class ImageUploader {
         }
     }
 
+    // 构造多段表单
     static byte[] buildMultipart(byte[] fileBytes, String fileName, String field,
                                  String extra, String boundary) {
         StringBuilder head = new StringBuilder();
@@ -87,6 +91,7 @@ public final class ImageUploader {
         return out;
     }
 
+    // 从响应解析URL
     public static String extractUrl(String responseBody, String responseMode) {
         if (responseBody == null) return null;
         String body = responseBody.trim();
@@ -105,6 +110,7 @@ public final class ImageUploader {
         return isHttpUrl(body) ? body : null;
     }
 
+    // 按路径遍历JSON
     private static Object walkJson(com.google.gson.JsonElement el, String path) {
         if (path == null || path.isEmpty()) return null;
         String[] segments = path.split("\\.");
@@ -134,6 +140,7 @@ public final class ImageUploader {
         return cur.isJsonPrimitive() ? cur.getAsJsonPrimitive().getAsString() : null;
     }
 
+    // 判断合法HTTP地址
     private static boolean isHttpUrl(String s) {
         String lower = s.toLowerCase();
         if (!(lower.startsWith("http://") || lower.startsWith("https://"))) return false;
@@ -145,6 +152,7 @@ public final class ImageUploader {
         }
     }
 
+    // 清理上传文件名
     private static String sanitizeFileName(String name) {
         if (name == null || name.isBlank()) return "image.png";
         String n = name.replaceAll("[^A-Za-z0-9._-]", "_");

@@ -24,6 +24,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+// HUD 隐藏挂钩
 //#if MC >= 260200
 @Mixin(Hud.class)
 //#else
@@ -34,6 +35,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 //#endif
 //#endif
 public class InGameHudMixin {
+    // 半透明界面隐藏 HUD
     //#if MC >= 26000
     @Inject(method = "extractRenderState(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Lnet/minecraft/client/DeltaTracker;)V",
         at = @At("HEAD"), cancellable = true)

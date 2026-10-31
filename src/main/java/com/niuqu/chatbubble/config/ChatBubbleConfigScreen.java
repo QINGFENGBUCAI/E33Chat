@@ -29,11 +29,13 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
 
+// 客户端配置界面
 public class ChatBubbleConfigScreen extends Screen {
     private final Screen lastScreen;
 
     private boolean hudHidden;
 
+    // 获取主题配色
     private ChatBubbleTheme.Colors c() {
         return ChatBubbleTheme.DARK.colors();
     }
@@ -89,39 +91,54 @@ public class ChatBubbleConfigScreen extends Screen {
 
     private ChatBubbleConfig snapshot;
 
+    // 改动跟踪接口
     private interface Tracked {
+        // 是否已改动
         boolean changed();
+        // 还原改动
         void revert();
     }
     private final List<Tracked> tracked = new ArrayList<>();
 
     private ButtonWidget doneBtn, exitBtn, saveBtn;
 
+    // 控件工厂接口
     private interface WidgetFactory {
+        // 创建控件
         ClickableWidget create(int y);
     }
 
+    // 多控件工厂接口
     private interface WidgetsFactory {
+        // 创建控件列表
         List<ClickableWidget> create(int y);
     }
 
+    // 选项包装
     private record Opt(String key, WidgetFactory factory, WidgetsFactory multiFactory,
                        int rows, Supplier<String> previewColor, Ref<?> value) {
+        // 构造精简选项
         Opt(String key, WidgetFactory factory, Supplier<String> previewColor) {
             this(key, factory, null, 1, previewColor, null);
         }
+        // 构造带值选项
         Opt(String key, WidgetFactory factory, Supplier<String> previewColor, Ref<?> value) {
             this(key, factory, null, 1, previewColor, value);
         }
+        // 创建标题项
         static Opt header(String key) { return new Opt(key, null, null, 1, null, null); }
+        // 创建多控件项
         static Opt multi(String key, WidgetsFactory f, int rows) { return new Opt(key, null, f, rows, null, null); }
+        // 是否为标题项
         boolean isHeader() { return factory == null && multiFactory == null; }
     }
 
+    // 分类定义
     private record Cat(String key, List<Opt> opts) {}
 
     private List<Cat> cats;
 
+    // 定位气泡字体子项
     private int bubbleFontSub() {
         int s = 0;
         for (Opt o : cats.get(0).opts()) {
@@ -133,14 +150,17 @@ public class ChatBubbleConfigScreen extends Screen {
         return -1;
     }
 
+    // 是否显示预览
     private boolean showPreview() {
         return selectedCat == 0 && selectedSub == bubbleFontSub();
     }
 
+    // 保存配置快照
     private void snapshotAll() {
         snapshot = ChatBubbleClientSetup.config();
     }
 
+    // 创建改动跟踪
     private <T> Tracked track(java.util.function.Supplier<T> getter, java.util.function.Consumer<T> setter) {
         T snap = getter.get();
         return new Tracked() {
@@ -149,6 +169,7 @@ public class ChatBubbleConfigScreen extends Screen {
         };
     }
 
+    // 注册配置跟踪项
     @SuppressWarnings({"rawtypes", "unchecked"})
     private void trackConfigFields() {
         tracked.clear();
@@ -161,16 +182,19 @@ public class ChatBubbleConfigScreen extends Screen {
         tracked.add(track(() -> new ArrayList<>(blockedPlayers), v -> blockedPlayers = new ArrayList<>(v)));
     }
 
+    // 统计改动数量
     private int changeCount() {
         int n = 0;
         for (Tracked t : tracked) if (t.changed()) n++;
         return n;
     }
 
+    // 还原全部改动
     private void revertAll() {
         for (Tracked t : tracked) t.revert();
     }
 
+    // 保存全部配置
     private void saveAll() {
         ChatBubbleClientSetup.saveConfig(new ChatBubbleConfig(
             enabled, theme.name().toLowerCase(), redDotEnabled, hideChatIcon, hudIconX, hudIconY, animationEnabled,
@@ -194,6 +218,7 @@ public class ChatBubbleConfigScreen extends Screen {
             panelBgImage, panelBgOpacity, panelBgCrop));
     }
 
+    // 从配置加载数据
     private void loadFromConfig() {
         var cfg = ChatBubbleClientSetup.config();
         try { theme = ChatBubbleTheme.valueOf(cfg.theme().toUpperCase()); } catch (Exception e) { theme = ChatBubbleTheme.DARK; }
@@ -244,38 +269,51 @@ public class ChatBubbleConfigScreen extends Screen {
         hideRepeatedAvatars = cfg.hideRepeatedAvatars() != null && cfg.hideRepeatedAvatars();
     }
 
+    // 计算滚动条滑块高
     private static int sbThumbH(int trackH, int totalH) {
         return Math.max(8, (int) ((long) trackH * trackH / totalH));
     }
+    // 计算滑块纵向位置
     private static int sbThumbY(int top, int trackH, int th, int offset, int maxScroll) {
         if (maxScroll <= 0 || trackH <= th) return top;
         return top + (int) ((long) (trackH - th) * offset / maxScroll);
     }
+    // 判断是否悬停滑块
     private static boolean sbHovering(int mx, int my, int tx, int ty, int th) {
         return mx >= tx && mx < tx + SCROLLBAR_W && my >= ty && my < ty + th;
     }
 
+    // 右侧滚动条X坐标
     private int rTrackX() { return width - SCROLLBAR_W; }
+    // 右侧滚动条轨道高
     private int rTrackH() { return viewBottom() - viewTop(); }
+    // 右侧滚动内容总高
     private int rTotalH() { return calcMaxScroll() + rTrackH(); }
+    // 树形滚动条X坐标
     private int tTrackX() { return dividerX - SCROLLBAR_W - 2; }
+    // 树形滚动条轨道高
     private int tTrackH() { return viewBottom() - START_Y; }
+    // 树形滚动内容总高
     private int tTotalH() { return calcTreeMaxScroll() + tTrackH(); }
 
+    // 触发右侧滚动动画
     private void startR(float target, int dur) {
         rightPane.animateTo(target, calcMaxScroll(), dur);
     }
 
+    // 触发树形滚动动画
     private void startT(float target, int dur) {
         treePane.animateTo(target, calcTreeMaxScroll(), dur);
     }
 
+    // 推进滚动动画
     private void tickAnims() {
         rightPane.tick(calcMaxScroll());
         treePane.tick(calcTreeMaxScroll());
         relayoutWidgets();
     }
 
+    // 绘制滚动条
     private void drawBar(DrawContext g, int trackX, int top, int bot,
                          int totalH, int offset, int maxScroll,
                          double mx, double my, boolean dragging) {
@@ -293,6 +331,7 @@ public class ChatBubbleConfigScreen extends Screen {
             trackX, ty, SCROLLBAR_W, th, base / 255f);
     }
 
+    // 重新布局控件
     private void relayoutWidgets() {
         int y = viewTop() - rightPane.offset();
         int wi = 0;
@@ -316,11 +355,16 @@ public class ChatBubbleConfigScreen extends Screen {
         }
     }
 
+    // 选项区域宽度
     private int optAreaW() { return previewX - optLabelX - 4; }
+    // 调色板起始X坐标
     private int paletteX() { return inputX - 8 - PALETTE_W; }
+    // 滚动区域顶部
     private int viewTop() { return showPreview() ? START_Y + PREVIEW_H + PREVIEW_GAP : START_Y; }
+    // 滚动区域底部
     private int viewBottom() { return height - 40; }
 
+    // 最大滚动距离
     private int calcMaxScroll() {
         int total = 0;
         for (Opt opt : visibleOpts())
@@ -328,6 +372,7 @@ public class ChatBubbleConfigScreen extends Screen {
         return Math.max(0, viewTop() + total - viewBottom());
     }
 
+    // 树形最大滚动距离
     private int calcTreeMaxScroll() {
         int total = 0;
         for (int i = 0; i < cats.size(); i++) {
@@ -337,58 +382,77 @@ public class ChatBubbleConfigScreen extends Screen {
         return Math.max(0, START_Y + total - viewBottom());
     }
 
+    // 选项类型
     private enum Kind { BOOL, INT, SLIDER, HEX, TEXT, PATTERN, ENUM_CYCLE, THEME_CYCLE, TIME_SEP, BG_IMAGE }
 
+    // 配置读写引用
     private record Ref<T>(java.util.function.Supplier<T> getter, java.util.function.Consumer<T> setter) {
+        // 布尔引用
         static Ref<Boolean> b(java.util.function.BooleanSupplier g, java.util.function.Consumer<Boolean> s) {
             return new Ref<>(g::getAsBoolean, s);
         }
+        // 整数引用
         static Ref<Integer> i(java.util.function.IntSupplier g, java.util.function.IntConsumer s) {
             return new Ref<>(g::getAsInt, s::accept);
         }
+        // 字符串引用
         static Ref<String> s(java.util.function.Supplier<String> g, java.util.function.Consumer<String> s) {
             return new Ref<>(g, s);
         }
+        // 字符串列表引用
         static Ref<List<String>> l(java.util.function.Supplier<List<String>> g, java.util.function.Consumer<List<String>> s) {
             return new Ref<>(g, s);
         }
     }
 
+    // 选项定义
     private record OptionDef(String key, Kind kind, Ref<?> ref,
                              int min, int max, int maxLen, Supplier<String> previewColor) {
+        // 布尔选项
         static OptionDef bool(String key, Ref<Boolean> r) {
             return new OptionDef(key, Kind.BOOL, r, 0, 0, 0, null);
         }
+        // 整数输入选项
         static OptionDef intBox(String key, Ref<Integer> r, int min, int max, int maxLen) {
             return new OptionDef(key, Kind.INT, r, min, max, maxLen, null);
         }
+        // 滑块选项
         static OptionDef slider(String key, Ref<Integer> r, int min, int max) {
             return new OptionDef(key, Kind.SLIDER, r, min, max, 0, null);
         }
+        // 颜色选项
         static OptionDef hex(String key, Ref<String> r) {
             return new OptionDef(key, Kind.HEX, r, 0, 0, 7, () -> r.getter().get());
         }
+        // 文本选项
         static OptionDef text(String key, Ref<String> r) {
             return new OptionDef(key, Kind.TEXT, r, 0, 0, 0, null);
         }
+        // 模式列表选项
         static OptionDef pattern(String key, Ref<List<String>> r) {
             return new OptionDef(key, Kind.PATTERN, r, 0, 0, 0, null);
         }
+        // 枚举循环选项
         static OptionDef enumCycle(String key, Ref<String> r) {
             return new OptionDef(key, Kind.ENUM_CYCLE, r, 0, 0, 0, null);
         }
+        // 主题循环选项
         static OptionDef themeCycle(String key, Ref<ChatBubbleTheme> r) {
             return new OptionDef(key, Kind.THEME_CYCLE, r, 0, 0, 0, null);
         }
+        // 时间分隔选项
         static OptionDef timeSep(String key, Ref<Integer> r) {
             return new OptionDef(key, Kind.TIME_SEP, r, 0, 0, 0, null);
         }
+        // 背景图片选项
         static OptionDef bgImage(String key, Ref<String> r) {
             return new OptionDef(key, Kind.BG_IMAGE, r, 0, 0, 0, null);
         }
     }
 
+    // 分组定义
     private record SectionDef(String key, List<OptionDef> opts) {
+        // 创建分组
         static SectionDef of(String key, OptionDef... opts) { return new SectionDef(key, List.of(opts)); }
     }
 
@@ -484,6 +548,7 @@ public class ChatBubbleConfigScreen extends Screen {
         "e33chat.config.cat.sidebar", "e33chat.config.cat.advanced",
     };
 
+    // 构建分类列表
     private void buildCats() {
         cats = new ArrayList<>();
         for (int i = 0; i < CAT_KEYS.length; i++) {
@@ -497,6 +562,7 @@ public class ChatBubbleConfigScreen extends Screen {
         }
     }
 
+    // 构建屏蔽玩家行
     private void buildBlockedRows(List<Opt> chat) {
         chat.add(Opt.header("e33chat.config.section.blocked"));
         for (int i = 0; i < blockedPlayers.size(); i++) {
@@ -528,6 +594,7 @@ public class ChatBubbleConfigScreen extends Screen {
         }, 1));
     }
 
+    // 转换选项为控件
     @SuppressWarnings("unchecked")
     private Opt optOf(OptionDef d) {
         return switch (d.kind()) {
@@ -572,6 +639,7 @@ public class ChatBubbleConfigScreen extends Screen {
         };
     }
 
+    // 构造配置界面
     public ChatBubbleConfigScreen(Screen lastScreen) {
         super(Text.translatable("e33chat.config.title"));
         this.lastScreen = lastScreen;
@@ -580,6 +648,7 @@ public class ChatBubbleConfigScreen extends Screen {
         trackConfigFields();
     }
 
+    // 初始化界面
     @Override
     protected void init() {
         var cfgNow = ChatBubbleClientSetup.config();
@@ -622,6 +691,7 @@ public class ChatBubbleConfigScreen extends Screen {
             .position(width / 2 + 4, height - 32).size(100, 20).build());
     }
 
+    // 切换分类
     private void switchCategory(int idx) {
         boolean same = idx == selectedCat && selectedSub == -1;
         selectedCat = idx;
@@ -630,6 +700,7 @@ public class ChatBubbleConfigScreen extends Screen {
         if (!same) rebuild();
     }
 
+    // 选择子分类
     private void selectSub(int catIdx, int sub) {
         boolean same = catIdx == selectedCat && sub == selectedSub;
         selectedCat = catIdx;
@@ -638,6 +709,7 @@ public class ChatBubbleConfigScreen extends Screen {
         if (!same) rebuild();
     }
 
+    // 重建界面
     private void rebuild() {
         rightPane.setOffset(0);
         setFocused(null);
@@ -645,6 +717,7 @@ public class ChatBubbleConfigScreen extends Screen {
         init();
     }
 
+    // 获取可见选项
     private List<Opt> visibleOpts() {
         List<Opt> all = cats.get(selectedCat).opts();
         if (selectedSub < 0) return all;
@@ -663,6 +736,7 @@ public class ChatBubbleConfigScreen extends Screen {
         return out;
     }
 
+    // 创建主题按钮
     private ButtonWidget mkThemeButton(int y) {
         return ButtonWidget.builder(
             Text.translatable("e33chat.theme." + theme.name().toLowerCase()),
@@ -674,6 +748,7 @@ public class ChatBubbleConfigScreen extends Screen {
         ).position(inputX, y).size(INPUT_W, 20).build();
     }
 
+    // 创建动画风格按钮
     private ButtonWidget mkStyleButton(int y, java.util.function.Supplier<String> getter, java.util.function.Consumer<String> setter) {
         return ButtonWidget.builder(
             Text.translatable("e33chat.config.anim_style." + getter.get()),
@@ -686,11 +761,13 @@ public class ChatBubbleConfigScreen extends Screen {
         ).position(inputX, y).size(INPUT_W, 20).build();
     }
 
+    // 设置颜色值
     @SuppressWarnings("unchecked")
     private static void setHexValue(Ref<?> ref, String hex) {
         ((Ref<String>) ref).setter().accept(hex);
     }
 
+    // 创建开关按钮
     private ButtonWidget mkBoolButton(int y, java.util.function.BooleanSupplier getter, java.util.function.Consumer<Boolean> setter) {
         boolean v = getter.getAsBoolean();
         return ButtonWidget.builder(
@@ -703,14 +780,17 @@ public class ChatBubbleConfigScreen extends Screen {
         ).position(inputX, y).size(INPUT_W, 20).build();
     }
 
+    // 创建整数滑块
     private SliderWidget mkIntSlider(int y, java.util.function.IntSupplier getter, java.util.function.IntConsumer setter, int min, int max) {
         return new IntSlider(inputX, y, INPUT_W, 20, getter, setter, min, max);
     }
 
+    // 整数滑块控件
     private static class IntSlider extends SliderWidget {
         private final java.util.function.IntSupplier getter;
         private final java.util.function.IntConsumer setter;
         private final int min, max;
+        // 构造滑块
         IntSlider(int x, int y, int w, int h, java.util.function.IntSupplier getter, java.util.function.IntConsumer setter, int min, int max) {
             super(x, y, w, h, Text.literal(String.valueOf(getter.getAsInt())),
                 (getter.getAsInt() - min) / (double) (max - min));
@@ -719,10 +799,12 @@ public class ChatBubbleConfigScreen extends Screen {
             this.min = min;
             this.max = max;
         }
+        // 应用滑块数值
         @Override
         protected void applyValue() {
             setter.accept((int) Math.round(min + value * (max - min)));
         }
+        // 更新滑块文本
         @Override
         protected void updateMessage() {
             setMessage(Text.literal(String.valueOf(getter.getAsInt())));
@@ -731,6 +813,7 @@ public class ChatBubbleConfigScreen extends Screen {
 
     private static final int[] TIME_SEP_PRESETS = {1, 5, 10, 15, 30, 0};
 
+    // 创建时间分隔按钮
     private ButtonWidget mkTimeSepButton(int y) {
         int cur = timeSeparatorMinutes;
         String label = cur == 0 ? Text.translatable("e33chat.config.time_separator.disable").getString()
@@ -748,6 +831,7 @@ public class ChatBubbleConfigScreen extends Screen {
         }).position(inputX, y).size(INPUT_W, 20).build();
     }
 
+    // 创建背景图控件
     private List<ClickableWidget> mkBgImageWidgets(int y, Ref<String> ref) {
         String cur = ref.getter().get();
         boolean hasImage = cur != null && !cur.isBlank();
@@ -777,6 +861,7 @@ public class ChatBubbleConfigScreen extends Screen {
         return out;
     }
 
+    // 创建颜色输入框
     private TextFieldWidget mkHexBox(int y, String initial, java.util.function.Consumer<String> onChange) {
         TextFieldWidget box = new TextFieldWidget(textRenderer, inputX, y, INPUT_W, 20, Text.literal(""));
         box.setText(initial);
@@ -793,6 +878,7 @@ public class ChatBubbleConfigScreen extends Screen {
         return box;
     }
 
+    // 创建整数输入框
     private TextFieldWidget mkIntBox(int y, String initial, int min, int max, int maxLen, java.util.function.IntConsumer onChange) {
         TextFieldWidget box = new TextFieldWidget(textRenderer, inputX, y, INPUT_W, 20, Text.literal(""));
         box.setText(initial);
@@ -807,6 +893,7 @@ public class ChatBubbleConfigScreen extends Screen {
         return box;
     }
 
+    // 创建模式输入框
     private TextFieldWidget mkPatternBox(int y, List<String> initial, java.util.function.Consumer<List<String>> onChange) {
         TextFieldWidget box = new TextFieldWidget(textRenderer, inputX, y, INPUT_W, 20, Text.literal(""));
         box.setText(String.join(", ", initial));
@@ -822,6 +909,7 @@ public class ChatBubbleConfigScreen extends Screen {
         return box;
     }
 
+    // 渲染界面
     @Override
     public void render(DrawContext g, int mouseX, int mouseY, float partialTick) {
         com.niuqu.chatbubble.texture.ColoredTextureRenderer.drawWithAlpha(g,
@@ -923,6 +1011,7 @@ public class ChatBubbleConfigScreen extends Screen {
             //#endif
     }
 
+    // 绘制气泡预览
     private void drawBubblePreview(DrawContext g) {
         int top = START_Y;
         int other = ChatBubbleConfig.parseHexColor(otherBubbleColor, 0xFF4A4A4A);
@@ -944,12 +1033,14 @@ public class ChatBubbleConfigScreen extends Screen {
             optLabelX - 4, top + PREVIEW_H - 1, optAreaW() + 8, 1, 0f, 0f, 16, 16, 16, 16);
     }
 
+    // 绘制颜色预览
     private void drawPreview(DrawContext g, int y, String hex) {
         int color = ChatBubbleConfig.parseHexColor(hex, 0xFF000000);
         g.fill(previewX, y, previewX + 14, y + 14, c().iconHover());
         g.fill(previewX + 1, y + 1, previewX + 13, y + 13, color);
     }
 
+    // 绘制展开三角
     private void drawTriangle(DrawContext g, int x, int y, boolean down, int color) {
         if (down) {
             g.fill(x, y, x + 5, y + 1, color);
@@ -965,6 +1056,7 @@ public class ChatBubbleConfigScreen extends Screen {
     }
 
     //#if MC >= 12002
+    // 跳过背景渲染
     @Override
     public void renderBackground(DrawContext g, int mouseX, int mouseY, float partialTick) {
     }
@@ -975,6 +1067,7 @@ public class ChatBubbleConfigScreen extends Screen {
     //$$ }
     //#endif
 
+    // 处理鼠标点击
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         //#if MC >= 260300
@@ -1055,6 +1148,7 @@ public class ChatBubbleConfigScreen extends Screen {
     }
 
     //#if MC >= 12002
+    // 处理滚轮滚动
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
     //#else
@@ -1073,6 +1167,7 @@ public class ChatBubbleConfigScreen extends Screen {
         return true;
     }
 
+    // 处理鼠标拖拽
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dx, double dy) {
         if (rightPane.dragging()) {
@@ -1086,6 +1181,7 @@ public class ChatBubbleConfigScreen extends Screen {
         return super.mouseDragged(mouseX, mouseY, button, dx, dy);
     }
 
+    // 处理鼠标释放
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
         rightPane.dragEnd();
@@ -1093,16 +1189,19 @@ public class ChatBubbleConfigScreen extends Screen {
         return super.mouseReleased(mouseX, mouseY, button);
     }
 
+    // 保存并关闭
     private void doClose() {
         saveAll();
         client.setScreen(lastScreen);
     }
 
+    // 放弃改动并关闭
     private void doExit() {
         revertAll();
         client.setScreen(lastScreen);
     }
 
+    // 界面移除处理
     @Override
     public void removed() {
         if (hudHidden) {
@@ -1112,6 +1211,7 @@ public class ChatBubbleConfigScreen extends Screen {
         super.removed();
     }
 
+    // 关闭界面确认
     @Override
     public void close() {
         int changed = changeCount();

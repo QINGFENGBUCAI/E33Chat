@@ -15,6 +15,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 
+// 面板背景裁剪界面
 public class PanelCropScreen extends Screen {
     private static final int PAD = 16;
     private static final int BTN_H = 20;
@@ -31,6 +32,7 @@ public class PanelCropScreen extends Screen {
     private boolean dragging;
     private int lastKnownSize = -1;
 
+    // 构造裁剪界面
     public PanelCropScreen(Screen parent) {
         super(Text.translatable("e33chat.crop.title"));
         this.parent = parent;
@@ -40,6 +42,7 @@ public class PanelCropScreen extends Screen {
         this.zoom = c.zoom();
     }
 
+    // 初始化裁剪界面
     @Override
     protected void init() {
         PanelBackground.ensureLoaded();
@@ -47,6 +50,7 @@ public class PanelCropScreen extends Screen {
         layout();
     }
 
+    // 检测背景尺寸变化
     @Override
     public void tick() {
         if (PanelBackground.available()) {
@@ -60,6 +64,7 @@ public class PanelCropScreen extends Screen {
         super.tick();
     }
 
+    // 计算界面布局
     private void layout() {
         int texW = PanelBackground.imageWidth();
         int texH = PanelBackground.imageHeight();
@@ -81,6 +86,7 @@ public class PanelCropScreen extends Screen {
         btnCancelX = btnConfirmX - BTN_W - 8;
     }
 
+    // 计算裁剪框位置
     private int[] selectionScreenRect() {
         int texW = PanelBackground.imageWidth();
         int texH = PanelBackground.imageHeight();
@@ -98,6 +104,7 @@ public class PanelCropScreen extends Screen {
         return new int[]{sx, sy, sw, sh};
     }
 
+    // 绘制裁剪界面
     @Override
     public void render(DrawContext g, int mouseX, int mouseY, float partialTick) {
         //#if MC >= 26000
@@ -150,6 +157,7 @@ public class PanelCropScreen extends Screen {
             btnConfirmX + (BTN_W - textRenderer.getWidth(confirmLabel)) / 2, btnY + 6, 0xFFFFFFFF, false);
     }
 
+    // 处理鼠标点击
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         //#if MC >= 260300
@@ -174,6 +182,7 @@ public class PanelCropScreen extends Screen {
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
+    // 处理鼠标拖动
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
         if (dragging && dispW > 0 && dispH > 0) {
@@ -184,6 +193,7 @@ public class PanelCropScreen extends Screen {
         return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
     }
 
+    // 处理鼠标释放
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
         dragging = false;
@@ -191,6 +201,7 @@ public class PanelCropScreen extends Screen {
     }
 
     //#if MC >= 12002
+    // 处理滚轮缩放
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         if (scrollY != 0) {
@@ -210,15 +221,18 @@ public class PanelCropScreen extends Screen {
     //$$ }
     //#endif
 
+    // 判断点在矩形内
     private static boolean over(double mx, double my, int x, int y, int w, int h) {
         return mx >= x && mx <= x + w && my >= y && my <= y + h;
     }
 
+    // 关闭裁剪界面
     @Override
     public void close() {
         client.setScreen(parent);
     }
 
+    // 是否暂停游戏
     @Override
     public boolean shouldPause() {
         return false;

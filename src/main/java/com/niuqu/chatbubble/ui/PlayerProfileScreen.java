@@ -19,6 +19,7 @@ import net.minecraft.world.level.GameType;
 //#endif
 import java.util.UUID;
 
+// 玩家资料界面
 public class PlayerProfileScreen extends Screen {
     private static final int PANEL_W = 220;
     private static final int PANEL_H = 196;
@@ -30,12 +31,14 @@ public class PlayerProfileScreen extends Screen {
     private int panelX, panelY;
     private int btnWhisperX, btnCopyX, btnY, btnW;
 
+    // 构造资料界面
     public PlayerProfileScreen(Screen parent, String playerName) {
         super(Text.translatable("e33chat.profile.title"));
         this.parent = parent;
         this.playerName = playerName;
     }
 
+    // 初始化界面控件
     @Override
     protected void init() {
         panelX = (width - PANEL_W) / 2;
@@ -46,6 +49,7 @@ public class PlayerProfileScreen extends Screen {
         btnY = panelY + PANEL_H - 12 - BTN_H;
     }
 
+    // 获取玩家列表信息
     private PlayerListEntry info() {
         MinecraftClient mc = MinecraftClient.getInstance();
         if (mc.player == null) return null;
@@ -57,6 +61,7 @@ public class PlayerProfileScreen extends Screen {
         return null;
     }
 
+    // 绘制资料界面
     @Override
     public void render(DrawContext g, int mouseX, int mouseY, float partialTick) {
         //#if MC >= 26000
@@ -119,6 +124,7 @@ public class PlayerProfileScreen extends Screen {
             btnCopyX + (btnW - textRenderer.getWidth(copyLabel)) / 2, btnY + 4, 0xFFFFFFFF, false);
     }
 
+    // 绘制信息字段
     private int drawField(DrawContext g, String label, String value, int x, int y, int lineH,
                           ChatBubbleTheme.Colors c) {
         g.drawText(textRenderer, label, x, y, c.textSecondary(), false);
@@ -129,10 +135,12 @@ public class PlayerProfileScreen extends Screen {
         return y + lineH;
     }
 
+    // 判断点在矩形内
     private static boolean over(double mx, double my, int x, int y, int w, int h) {
         return mx >= x && mx <= x + w && my >= y && my <= y + h;
     }
 
+    // 处理鼠标点击
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         //#if MC >= 260300
@@ -159,11 +167,13 @@ public class PlayerProfileScreen extends Screen {
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
+    // 关闭资料界面
     @Override
     public void close() {
         MinecraftClient.getInstance().setScreen(parent);
     }
 
+    // 是否暂停游戏
     @Override
     public boolean shouldPause() {
         return false;

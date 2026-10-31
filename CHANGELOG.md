@@ -2,6 +2,15 @@
 
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [SemVer](https://semver.org/lang/zh-CN/)。新条目按 Added / Changed / Fixed / Removed 分类。
 
+## v2.4.24
+
+**26.x 消息判定修复 + 注释规范统一**
+
+- 修复 26.x 服务端系统消息被整体跳过：`handleSystemMessage` 的布尔参数改为服务端/客户端来源，overlay 走独立方法；此前 NCR 等转发的玩家聊天与私聊全部落入【系统消息】
+- 修复 chat_heads 装饰（`[Name head]`）导致玩家名称解析失败
+- 新增出站私聊方向识别：`你悄悄地对 X 说` 不再被记成对方发来的未读私聊
+- 全仓 120 个源文件统一为「类 + 方法」一行功能注释，并写入工程规范第 7 节
+
 ## v2.4.22
 
 **工程规范落地 + 配置清理**

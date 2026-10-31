@@ -6,10 +6,13 @@ import net.minecraft.client.gui.DrawContext;
 //#else
 //$$ import com.niuqu.chatbubble.DrawContext;
 //#endif
+// 面板背景模糊渲染
 public class BlurRenderer {
     private static boolean disconnecting = false;
 
+    // 是否断开连接中
     public static boolean isDisconnecting() { return disconnecting; }
+    // 设置断开标记
     public static void setDisconnecting(boolean v) { disconnecting = v; }
 
     private static int fbo0 = -1, tex0 = -1;
@@ -22,6 +25,7 @@ public class BlurRenderer {
     private static boolean nextFull = true;
     private static boolean recreated = true;
 
+    // 创建帧缓冲纹理
     private static int[] make(int w, int h) {
         w = Math.max(1, w); h = Math.max(1, h);
         int fbo = GL30.glGenFramebuffers();
@@ -39,6 +43,7 @@ public class BlurRenderer {
         return new int[]{fbo, tex};
     }
 
+    // 确保缓冲尺寸匹配
     private static void ensure(int pw, int ph) {
         int mw = pw, mh = ph;
         if (mw == cw && mh == ch) return;
@@ -52,6 +57,7 @@ public class BlurRenderer {
         int[] e = make(mw / 16, mh / 16); fbo4 = e[0]; tex4 = e[1];
     }
 
+    // 销毁全部帧缓冲
     private static void destroy() {
         if (fbo0 != -1) {
             GL30.glDeleteFramebuffers(fbo0); GL30.glDeleteTextures(tex0);
@@ -63,6 +69,7 @@ public class BlurRenderer {
         }
     }
 
+    // 帧缓冲区域拷贝
     private static void blit(int sfbo, int sx0, int sy0, int sx1, int sy1,
                               int dfbo, int dx0, int dy0, int dw, int dh) {
         GL30.glBindFramebuffer(GL30.GL_READ_FRAMEBUFFER, sfbo);
@@ -71,12 +78,14 @@ public class BlurRenderer {
             GL30.GL_COLOR_BUFFER_BIT, GL30.GL_LINEAR);
     }
 
+    // 清理模糊资源
     public static void cleanup() {
         destroy();
         nextFull = true;
         recreated = true;
     }
 
+    // 绘制面板模糊
     public static void blurPanel(DrawContext g, int x, int y, int w, int h) {
         //#if MC >= 12111
         if (g != null) {
@@ -105,6 +114,7 @@ public class BlurRenderer {
         }
     }
 
+    // 执行模糊区域
     private static void blurRegion(MinecraftClient mc, int x, int y, int w, int h) {
         //#if MC >= 12105
         int mainFb = GL30.glGetInteger(GL30.GL_FRAMEBUFFER_BINDING);

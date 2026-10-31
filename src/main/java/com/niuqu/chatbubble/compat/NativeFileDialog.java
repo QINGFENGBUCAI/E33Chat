@@ -12,11 +12,14 @@ import java.awt.Frame;
 import java.io.File;
 import java.util.concurrent.atomic.AtomicReference;
 
+// 原生文件选择封装
 public final class NativeFileDialog {
     private static boolean open;
 
+    // 禁止外部实例化
     private NativeFileDialog() {}
 
+    // 选择图片文件
     public static void pickImage(java.util.function.Consumer<File> callback) {
         if (open) return;
         open = true;

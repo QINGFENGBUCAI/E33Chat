@@ -11,6 +11,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.nio.file.Path;
 
+// 面板背景图片管理
 public final class PanelBackground {
     private static final Identifier ID = Identifier.of("e33chat", "panel_bg_custom");
 
@@ -21,24 +22,29 @@ public final class PanelBackground {
     private static boolean warnedPath;
     private static int texW, texH;
 
+    // 私有构造
     private PanelBackground() {}
 
+    // 是否可用
     public static boolean available() {
         return registered && !failed && texW > 0 && texH > 0;
     }
 
+    // 是否加载中
     public static boolean loading() {
         synchronized (LOCK) {
             return loadedKey != null && !loadedKey.isEmpty() && !registered && !failed;
         }
     }
 
+    // 是否加载失败
     public static boolean failed() {
         synchronized (LOCK) {
             return failed;
         }
     }
 
+    // 按需加载背景
     public static void ensureLoaded() {
         String raw = ChatBubbleClientSetup.config().panelBgImage();
         String key = raw == null ? "" : raw.trim();
@@ -83,6 +89,7 @@ public final class PanelBackground {
         });
     }
 
+    // 应用背景纹理
     private static void apply(String forKey, NativeImage decoded) {
         synchronized (LOCK) {
             if (!forKey.equals(loadedKey)) {
@@ -104,6 +111,7 @@ public final class PanelBackground {
         }
     }
 
+    // 卸载已注册纹理
     private static void unloadLocked() {
         if (registered) {
             try {
@@ -115,6 +123,7 @@ public final class PanelBackground {
         texH = 0;
     }
 
+    // 解析图片路径
     private static File resolve(String path) {
         try {
             Path p = Path.of(path);
@@ -127,10 +136,12 @@ public final class PanelBackground {
         }
     }
 
+    // 裁切参数记录
     public record Crop(float centerX, float centerY, float zoom) {
         public static final Crop DEFAULT = new Crop(0.5f, 0.5f, 1f);
     }
 
+    // 解析裁切参数
     public static Crop parseCrop(String raw) {
         if (raw == null || raw.isBlank()) return Crop.DEFAULT;
         String[] parts = raw.trim().split(",");
@@ -146,15 +157,18 @@ public final class PanelBackground {
         }
     }
 
+    // 格式化裁切参数
     public static String formatCrop(Crop crop) {
         return String.format(java.util.Locale.ROOT, "%.4f,%.4f,%.4f",
             crop.centerX(), crop.centerY(), crop.zoom());
     }
 
+    // 数值归一到零一
     private static float clamp01(float v) {
         return v < 0f ? 0f : (v > 1f ? 1f : v);
     }
 
+    // 计算采样区域
     public static int[] sourceRect(int texW, int texH, int targetW, int targetH, Crop crop) {
         if (texW <= 0 || texH <= 0 || targetW <= 0 || targetH <= 0) return new int[]{0, 0, 1, 1};
         float targetAspect = (float) targetW / targetH;
@@ -181,14 +195,19 @@ public final class PanelBackground {
         return new int[]{u, v, w, h};
     }
 
+    // 背景图片宽度
     public static int imageWidth() { return texW; }
+    // 背景图片高度
     public static int imageHeight() { return texH; }
 
+    // 背景纹理标识
     public static Identifier textureId() { return available() ? ID : null; }
 
     private static volatile float lastAspect = 0.4f;
+    // 上次目标宽高比
     public static float lastTargetAspect() { return lastAspect; }
 
+    // 绘制面板背景
     public static void draw(net.minecraft.client.gui.DrawContext g,
                             int x, int y, int w, int h, float alpha) {
         if (w > 0 && h > 0) lastAspect = (float) w / h;

@@ -13,6 +13,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import java.util.function.Function;
 
+// 聊天设置菜单
 public class ChatSettingsMenu {
     private static final int W = 100;
     private static final int ROW_H = 18;
@@ -35,19 +36,23 @@ public class ChatSettingsMenu {
     private boolean clearArmed;
     private long clearArmedAt;
 
+    // 请求关闭菜单
     private void requestClose() {
         if (closeRequest != null) closeRequest.run();
         else visible = false;
     }
 
+    // 重置清空确认
     public void resetClearArmed() {
         clearArmed = false;
     }
 
+    // 处理确认过期
     public void maybeExpire(long now) {
         if (clearArmed && now - clearArmedAt >= ARM_MS) clearArmed = false;
     }
 
+    // 绘制设置菜单
     public void render(DrawContext g, int mouseX, int mouseY,
             TextRenderer font, ChatBubbleTheme.Colors c,
             int panelX, int panelW, int barTop,
@@ -91,6 +96,7 @@ public class ChatSettingsMenu {
         }
     }
 
+    // 处理点击事件
     public int handleClick(int mx, int my, int panelX, int panelW, int barTop, int iconS) {
         if (!visible) return -1;
         int gearX = panelX + 4;

@@ -6,7 +6,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.minecraft.text.Text;
 
+// 第三方机器人解析
 public final class EasyBotParser {
+    // 私有构造
     private EasyBotParser() {}
 
     private static final Pattern RELAY_FORMAT = Pattern.compile(
@@ -23,6 +25,7 @@ public final class EasyBotParser {
         "系统", "公告", "服务器", "广播", "提示", "通知",
         "system", "server", "notice", "broadcast", "announcement", "alert");
 
+    // 是否系统类标签
     private static boolean isSystemLikeLabel(String label) {
         if (label == null || label.isBlank()) return true;
         String s = label.trim().toLowerCase(java.util.Locale.ROOT);
@@ -32,6 +35,7 @@ public final class EasyBotParser {
         return s.endsWith("系统") || s.endsWith("插件") || s.endsWith("助手");
     }
 
+    // 解析机器人消息
     public static ChatMessageStore.SenderMeta tryParse(Text message, String text) {
         if (text == null || text.isEmpty()) return null;
         Matcher angle = RELAY_FORMAT.matcher(text);
@@ -46,6 +50,7 @@ public final class EasyBotParser {
         return null;
     }
 
+    // 构建发送者元数据
     private static ChatMessageStore.SenderMeta build(Text message, Matcher m, boolean allowStepAside) {
         String groupName = m.group(1) == null ? "" : m.group(1).trim();
         String nameArea = m.group(2) == null ? "" : m.group(2).trim();
@@ -82,6 +87,7 @@ public final class EasyBotParser {
             rawPlayerName, false, null);
     }
 
+    // 解析玩家 UUID
     private static UUID resolveUuid(String name) {
         try {
             net.minecraft.client.MinecraftClient mc = net.minecraft.client.MinecraftClient.getInstance();
@@ -98,6 +104,7 @@ public final class EasyBotParser {
         return seen != null ? seen : new UUID(0, 0);
     }
 
+    // 是否已知玩家
     private static boolean isKnownPlayer(String displayName) {
         try {
             if (ChatMessageStore.knownNameVariants().contains(displayName)) return true;
@@ -114,6 +121,7 @@ public final class EasyBotParser {
         return false;
     }
 
+    // 是否广播标签
     private static boolean isBroadcastLabel(String s) {
         String zone = s.trim();
         while (zone.length() >= 2) {

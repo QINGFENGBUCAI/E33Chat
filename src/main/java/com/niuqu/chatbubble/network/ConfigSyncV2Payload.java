@@ -9,6 +9,7 @@ import net.minecraft.util.Identifier;
 import java.util.ArrayList;
 import java.util.List;
 
+// 配置同步V2包
 //#if MC >= 12005
 public record ConfigSyncV2Payload(boolean useTpa, List<String> chatTemplates,
                                   List<String> whisperTemplates, boolean templateDebug)
@@ -73,6 +74,7 @@ public record ConfigSyncV2Payload(boolean useTpa, List<String> chatTemplates,
 
     static final int MAX_LIST_ENTRIES = 256;
 
+    // 读取字符串列表
     static List<String> readList(PacketByteBuf buf) {
         int count = Math.min(Math.max(buf.readInt(), 0), MAX_LIST_ENTRIES);
         List<String> out = new ArrayList<>(count);
@@ -80,16 +82,19 @@ public record ConfigSyncV2Payload(boolean useTpa, List<String> chatTemplates,
         return out;
     }
 
+    // 写入字符串列表
     static void writeList(PacketByteBuf buf, List<String> list) {
         buf.writeInt(list.size());
         for (String s : list) buf.writeString(s);
     }
 
+    // 获取包标识
     //#if MC >= 12005
     @Override
     public Id<ConfigSyncV2Payload> getId() { return ID; }
     //#endif
 
+    // 应用配置同步
     public static void handle(ConfigSyncV2Payload payload) {
         ChatMessageStore.setServerConfig(
             payload.useTpa(), payload.chatTemplates(), payload.whisperTemplates(), payload.templateDebug());

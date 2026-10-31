@@ -7,6 +7,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 
+// 表情短码兼容适配
 public final class ModernUIEmojiCompat {
     private static final Pattern SHORTCODE_PATTERN = Pattern.compile(":[A-Za-z0-9_+\\-]+:");
 
@@ -16,8 +17,10 @@ public final class ModernUIEmojiCompat {
     private static Object manager;
     private static Method lookupMethod;
 
+    // 禁止外部实例化
     private ModernUIEmojiCompat() {}
 
+    // 解析表情接口
     private static void resolve() {
         if (resolved) return;
         resolved = true;
@@ -39,11 +42,13 @@ public final class ModernUIEmojiCompat {
         }
     }
 
+    // 判断功能是否启用
     public static boolean isEnabled() {
         resolve();
         return available && enabledFlag;
     }
 
+    // 查询表情短码
     public static String lookup(String shortcode) {
         resolve();
         if (!available || shortcode == null) return null;
@@ -55,6 +60,7 @@ public final class ModernUIEmojiCompat {
         }
     }
 
+    // 替换输入框短码
     public static boolean replaceIn(TextFieldWidget field) {
         if (!isEnabled() || field == null) return false;
         String text = field.getText();
@@ -80,6 +86,7 @@ public final class ModernUIEmojiCompat {
         return any;
     }
 
+    // 替换全部短码
     static String replaceAll(String text, Function<String, String> lookup) {
         Matcher matcher = SHORTCODE_PATTERN.matcher(text);
         StringBuilder sb = new StringBuilder(text.length());

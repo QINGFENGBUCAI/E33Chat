@@ -7,6 +7,7 @@ import net.minecraft.network.packet.CustomPayload;
 //#endif
 import net.minecraft.util.Identifier;
 
+// EasyBot兼容配置包
 //#if MC >= 12005
 public record EasyBotConfigPayload(boolean easyBotCompat) implements CustomPayload {
 //#else
@@ -42,11 +43,13 @@ public record EasyBotConfigPayload(boolean easyBotCompat) implements CustomPaylo
     //$$     return buf;
     //$$ }
     //#endif
+    // 获取包标识
     //#if MC >= 12005
     @Override
     public Id<EasyBotConfigPayload> getId() { return ID; }
     //#endif
 
+    // 应用兼容配置
     public static void handle(EasyBotConfigPayload payload) {
         ChatMessageStore.setEasyBotCompat(payload.easyBotCompat());
     }

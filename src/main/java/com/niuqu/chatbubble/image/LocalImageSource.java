@@ -15,10 +15,12 @@ import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
 import javax.imageio.stream.ImageOutputStream;
 
+// 本地图片读取与编码
 public final class LocalImageSource {
     public static final int MAX_EDGE = 1280;
 
     public record PreparedImage(byte[] bytes, String fileName, String contentType) {
+        // 默认PNG构造
         public PreparedImage(byte[] bytes, String fileName) {
             this(bytes, fileName, "image/png");
         }
@@ -29,8 +31,10 @@ public final class LocalImageSource {
         record Rejected(AnimatedImageLoader.OverBudget reason) implements Prep {}
     }
 
+    // 禁止实例化
     private LocalImageSource() {}
 
+    // 读取文件并编码
     public static PreparedImage fromFile(File f) {
         if (f == null || !f.isFile()) return null;
         try {
@@ -46,6 +50,7 @@ public final class LocalImageSource {
         }
     }
 
+    // 准备上传图片
     public static Prep prepare(File f) {
         if (f == null || !f.isFile()) return new Prep.Ok(null, false);
         byte[] raw;
@@ -65,6 +70,7 @@ public final class LocalImageSource {
         return new Prep.Ok(fromFile(f), false);
     }
 
+    // 读取剪贴板图片
     public static PreparedImage fromClipboard() {
         try {
             Object data = Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.imageFlavor);
@@ -76,6 +82,7 @@ public final class LocalImageSource {
         }
     }
 
+    // 编码并缩放图片
     private static PreparedImage encode(BufferedImage src, String name) {
         int w = src.getWidth();
         int h = src.getHeight();
@@ -100,6 +107,7 @@ public final class LocalImageSource {
             jpeg ? "image/jpeg" : "image/png");
     }
 
+    // 编码为PNG
     private static byte[] toPng(BufferedImage img) {
         try {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -110,6 +118,7 @@ public final class LocalImageSource {
         }
     }
 
+    // 编码为JPEG
     private static byte[] toJpeg(BufferedImage img) {
         try {
             BufferedImage rgb = new BufferedImage(img.getWidth(), img.getHeight(), BufferedImage.TYPE_INT_RGB);
@@ -137,15 +146,18 @@ public final class LocalImageSource {
         }
     }
 
+    // 清理文件名
     private static String sanitize(String name) {
         return name.replaceAll("[^A-Za-z0-9._-]", "_");
     }
 
+    // 补全PNG扩展名
     private static String sanitizePng(String name) {
         String n = sanitize(name);
         return n.endsWith(".png") || n.endsWith(".jpg") || n.endsWith(".jpeg") ? n : n + ".png";
     }
 
+    // 补全动图扩展名
     private static String sanitizeAnimated(String name, String format) {
         String n = sanitize(name);
         String ext = "." + format;

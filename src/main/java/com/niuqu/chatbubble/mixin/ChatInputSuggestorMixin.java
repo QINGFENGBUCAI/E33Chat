@@ -15,9 +15,11 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+// 候选窗跟随气泡布局
 @Mixin(value = ChatInputSuggestor.class, priority = 500)
 public class ChatInputSuggestorMixin {
     //#if MC >= 26000
+    // 渲染时重定位候选窗
     @Inject(method = "extractRenderState(Lnet/minecraft/client/gui/GuiGraphicsExtractor;II)V",
             at = @At("HEAD"))
     private void onRenderMessages(DrawContext context, int mouseX, int mouseY, CallbackInfo ci) {
@@ -29,6 +31,7 @@ public class ChatInputSuggestorMixin {
     //$$     repositionForChatBubble();
     //$$ }
     //#endif
+    // 重定位候选窗口
     private void repositionForChatBubble() {
         if (!(MinecraftClient.getInstance().currentScreen instanceof ChatBubbleScreen)) return;
         //#if MC >= 26000
@@ -46,6 +49,7 @@ public class ChatInputSuggestorMixin {
     }
 
     //#if MC >= 26000
+    // 显示后重定位
     @Inject(method = "showSuggestions(Z)V", at = @At("TAIL"))
     private void afterShow(CallbackInfo ci) {
         repositionForChatBubble();

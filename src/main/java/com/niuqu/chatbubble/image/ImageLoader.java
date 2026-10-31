@@ -20,6 +20,7 @@ import net.minecraft.client.texture.NativeImageBackedTexture;
 import net.minecraft.client.texture.TextureManager;
 import net.minecraft.util.Identifier;
 
+// 图片下载与纹理缓存
 public final class ImageLoader {
     private static final Map<String, ImageEntry> CACHE = new ConcurrentHashMap<>();
     private static final Deque<String> LRU = new ArrayDeque<>();
@@ -38,8 +39,10 @@ public final class ImageLoader {
         .followRedirects(HttpClient.Redirect.NORMAL)
         .build();
 
+    // 取HTTP客户端
     public static HttpClient client() { return CLIENT; }
 
+    // 取下载线程池
     public static java.util.concurrent.ExecutorService executor() { return EXEC; }
 
     private static final int MAX_RECEIVE_BYTES = 16 * 1024 * 1024;
@@ -60,10 +63,13 @@ public final class ImageLoader {
 
     public static final java.util.concurrent.atomic.AtomicInteger VERSION = new java.util.concurrent.atomic.AtomicInteger();
 
+    // 禁止实例化
     private ImageLoader() {}
 
+    // 取缓存版本号
     public static int version() { return VERSION.get(); }
 
+    // 启停图片加载
     public static void setEnabled(boolean e) {
         enabled = e;
         if (!e) {
@@ -79,6 +85,7 @@ public final class ImageLoader {
         }
     }
 
+    // 获取或加载图片
     public static ImageEntry getOrLoad(String url) {
         if (!enabled) return null;
         ImageEntry entry = CACHE.get(url);
@@ -96,6 +103,7 @@ public final class ImageLoader {
         return entry;
     }
 
+    // 更新LRU访问顺序
     private static void touchLru(String url) {
         synchronized (LRU) {
             LRU.remove(url);
@@ -104,6 +112,7 @@ public final class ImageLoader {
         evictIfNeeded();
     }
 
+    // 按容量清理缓存
     private static void evictIfNeeded() {
         synchronized (LRU) {
             if (LRU.size() <= CACHE_CAP) return;
@@ -125,6 +134,7 @@ public final class ImageLoader {
         }
     }
 
+    // 校验图片地址
     public static boolean isUsableUrl(String url) {
         if (url == null || url.isBlank()) return false;
         String lower = url.toLowerCase();
@@ -142,6 +152,7 @@ public final class ImageLoader {
         }
     }
 
+    // 计算缩放尺寸
     public static int[] scaledSize(int w, int h) {
         if (w <= 0 || h <= 0) return new int[]{1, 1};
         if (w <= CARD_W && h <= CARD_H) return new int[]{w, h};
@@ -152,12 +163,14 @@ public final class ImageLoader {
         };
     }
 
+    // 创建条目并加载
     private static ImageEntry startLoad(String url) {
         ImageEntry entry = new ImageEntry(url);
         startLoadInto(url, entry);
         return entry;
     }
 
+    // 提交加载任务
     private static void startLoadInto(String url, ImageEntry entry) {
         if (!isUsableUrl(url)) {
             entry.markFailed("bad url");
@@ -176,6 +189,7 @@ public final class ImageLoader {
         }
     }
 
+    // 尝试获取限流槽
     private static boolean tryAcquireSlot() {
         long now = System.currentTimeMillis();
         synchronized (RECENT_STARTS) {
@@ -188,6 +202,7 @@ public final class ImageLoader {
         }
     }
 
+    // 处理待加载队列
     public static void tick() {
         if (!enabled) return;
         while (true) {
@@ -206,6 +221,7 @@ public final class ImageLoader {
         }
     }
 
+    // 异步执行下载
     private static void launchFetch(String url, ImageEntry entry) {
         CompletableFuture.runAsync(() -> fetchAndDecode(url, entry), EXEC)
             .orTimeout(REQUEST_TIMEOUT_SECONDS + 5, TimeUnit.SECONDS)
@@ -216,6 +232,7 @@ public final class ImageLoader {
             });
     }
 
+    // 下载并解码上传
     private static void fetchAndDecode(String url, ImageEntry entry) {
         long t0 = System.currentTimeMillis();
         try {
@@ -299,16 +316,20 @@ public final class ImageLoader {
         }
     }
 
+    // 计算地址哈希
     private static String hash(String url) {
         return Integer.toHexString(url.hashCode());
     }
 
+    // 暴露缓存供测试
     static Map<String, ImageEntry> cache() { return CACHE; }
+    // 清空缓存供测试
     static void clearCacheForTest() {
         CACHE.clear();
         synchronized (LRU) { LRU.clear(); }
         synchronized (PENDING) { PENDING.clear(); }
         synchronized (RECENT_STARTS) { RECENT_STARTS.clear(); }
     }
+    // 测试限流获取
     static boolean tryAcquireSlotForTest() { return tryAcquireSlot(); }
 }

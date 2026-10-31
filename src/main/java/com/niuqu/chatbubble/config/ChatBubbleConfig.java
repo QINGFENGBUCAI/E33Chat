@@ -2,6 +2,7 @@ package com.niuqu.chatbubble.config;
 import com.google.gson.annotations.SerializedName;
 import java.util.List;
 
+// 聊天气泡客户端配置
 public record ChatBubbleConfig(
     boolean enabled,
     String theme,
@@ -67,6 +68,7 @@ public record ChatBubbleConfig(
     @SerializedName("panel_bg_opacity") Integer panelBgOpacity,
     @SerializedName("panel_bg_crop") String panelBgCrop
 ) {
+    // 生成默认配置
     public static ChatBubbleConfig defaults() {
         return new ChatBubbleConfig(
             true, "dark", true, false, 3, 20, true,
@@ -85,6 +87,7 @@ public record ChatBubbleConfig(
         );
     }
 
+    // 解析十六进制颜色
     public static int parseHexColor(String hex, int defaultColor) {
         if (hex == null) return defaultColor;
         try {
@@ -96,6 +99,7 @@ public record ChatBubbleConfig(
         }
     }
 
+    // 替换主题
     public ChatBubbleConfig withTheme(String theme) {
         return new ChatBubbleConfig(enabled, theme, redDotEnabled, hideChatIcon, hudIconX, hudIconY, animationEnabled,
             systemChatAsBubble, antiSpam,
@@ -109,6 +113,7 @@ public record ChatBubbleConfig(
             "", 100, null);
     }
 
+    // 替换快捷短语
     public ChatBubbleConfig withQuickChatPhrases(List<String> phrases) {
         return new ChatBubbleConfig(enabled, theme, redDotEnabled, hideChatIcon, hudIconX, hudIconY, animationEnabled,
             systemChatAsBubble, antiSpam,
@@ -121,18 +126,7 @@ public record ChatBubbleConfig(
             uploadUrl, uploadField, uploadExtra, uploadResponse, messageGap, avatarSize, hideRepeatedAvatars, closeChatOnSend, bannerOpacity, bubbleSize, panelBgImage, panelBgOpacity, panelBgCrop);
     }
 
-    public ChatBubbleConfig withSidebarHidePatterns(List<String> patterns) {
-        return new ChatBubbleConfig(enabled, theme, redDotEnabled, hideChatIcon, hudIconX, hudIconY, animationEnabled,
-            systemChatAsBubble, antiSpam,
-            chatHistoryEnabled, historyRetentionDays, timeSeparatorMinutes,
-            panelWidth, panelFullscreen, bubbleCornerRadius, ownBubbleColor, otherBubbleColor, ownTextColor, otherTextColor,
-            soundPublic, soundSystem, soundWhisper, debugLog, preserveInput, colorCodes, patterns, blockedPlayers, quickChatPhrases,
-            mentionBannerEnabled, systemBannerEnabled, mentionBannerDuration, mentionSoundEnabled, mentionRequireAt, mentionWhisperBanner,
-            blurEnabled, panelOpacity, soundVolume, ownMentionNotify, ownQuoteNotify, ownWhisperNotify, bannerCornerRadius, bannerOffsetX, bannerOffsetY, bannerMaxStack,
-            panelAnimStyle, bannerAnimStyle, popupAnimStyle, messageAnimStyle, imageRenderEnabled, receiveImages,
-            uploadUrl, uploadField, uploadExtra, uploadResponse, messageGap, avatarSize, hideRepeatedAvatars, closeChatOnSend, bannerOpacity, bubbleSize, panelBgImage, panelBgOpacity, panelBgCrop);
-    }
-
+    // 替换屏蔽玩家
     public ChatBubbleConfig withBlockedPlayers(List<String> blocked) {
         return new ChatBubbleConfig(enabled, theme, redDotEnabled, hideChatIcon, hudIconX, hudIconY, animationEnabled,
             systemChatAsBubble, antiSpam,
@@ -145,6 +139,7 @@ public record ChatBubbleConfig(
             uploadUrl, uploadField, uploadExtra, uploadResponse, messageGap, avatarSize, hideRepeatedAvatars, closeChatOnSend, bannerOpacity, bubbleSize, panelBgImage, panelBgOpacity, panelBgCrop);
     }
 
+    // 替换面板背景
     public ChatBubbleConfig withPanelBg(String image, Integer opacity, String crop) {
         return new ChatBubbleConfig(enabled, theme, redDotEnabled, hideChatIcon, hudIconX, hudIconY, animationEnabled,
             systemChatAsBubble, antiSpam,
@@ -158,10 +153,12 @@ public record ChatBubbleConfig(
             image, opacity, crop);
     }
 
+    // 替换背景裁剪
     public ChatBubbleConfig withPanelBgCrop(String crop) {
         return withPanelBg(panelBgImage, panelBgOpacity, crop);
     }
 
+    // 判断玩家是否隐藏
     public boolean isSidebarHidden(String playerName) {
         if (sidebarHidePatterns == null || sidebarHidePatterns.isEmpty()) return false;
         String lowerName = playerName.toLowerCase();

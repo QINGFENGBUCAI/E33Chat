@@ -2,13 +2,16 @@ package com.niuqu.chatbubble.compat;
 import com.niuqu.chatbubble.E33Log;
 import java.lang.reflect.Method;
 
+// 输入法兼容适配
 public final class IMBlockerCompat {
     private static boolean resolved = false;
     private static boolean available = false;
     private static Method setPreferredEnglishState;
 
+    // 禁止外部实例化
     private IMBlockerCompat() {}
 
+    // 解析兼容接口
     private static void resolve() {
         if (resolved) return;
         resolved = true;
@@ -21,6 +24,7 @@ public final class IMBlockerCompat {
         }
     }
 
+    // 设置命令输入模式
     public static void setCommandMode(Object textField, boolean command) {
         resolve();
         if (!available || textField == null) return;

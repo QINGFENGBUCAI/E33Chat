@@ -18,6 +18,7 @@ import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import java.util.*;
 
+// 提及通知横幅
 public class MentionNotificationBanner {
     public static final MentionNotificationBanner INSTANCE = new MentionNotificationBanner();
 
@@ -43,8 +44,10 @@ public class MentionNotificationBanner {
     private final List<ActiveBanner> banners = new ArrayList<>();
     private final List<ExitingBanner> exiting = new ArrayList<>();
 
+    // 私有构造
     private MentionNotificationBanner() {}
 
+    // 加入横幅队列
     public void enqueue(UUID senderUUID, Text senderName, Text content,
                         int messageIndex, NotificationType type) {
         MinecraftClient mc = MinecraftClient.getInstance();
@@ -90,8 +93,10 @@ public class MentionNotificationBanner {
         addBanner(pb);
     }
 
+    // 待显示横幅数量
     public int pendingCount() { return banners.size() + exiting.size(); }
 
+    // 更新横幅状态
     public void tick() {
         long now = System.currentTimeMillis();
         List<ActiveBanner> expired = new ArrayList<>();
@@ -121,6 +126,7 @@ public class MentionNotificationBanner {
         }
     }
 
+    // 渲染全部横幅
     public void render(DrawContext g, int screenW, int screenH) {
         if (!ChatBubbleClientSetup.config().mentionBannerEnabled()) return;
         if (banners.isEmpty() && exiting.isEmpty()) return;
@@ -155,10 +161,7 @@ public class MentionNotificationBanner {
         }
     }
 
-    public int currentMessageIndex() {
-        return banners.isEmpty() ? -1 : banners.get(0).data.messageIndex;
-    }
-
+    // 添加横幅
     private void addBanner(PendingBanner pb) {
         long now = System.currentTimeMillis();
         int maxStack = maxStack();
@@ -182,16 +185,19 @@ public class MentionNotificationBanner {
         }
     }
 
+    // 可见持续时长
     private long visibleDurationMs() {
         return (long) ChatBubbleClientSetup.config().mentionBannerDuration() * VISIBLE_MS_PERIOD;
     }
 
+    // 最大堆叠数量
     private int maxStack() {
         Integer v = ChatBubbleClientSetup.config().bannerMaxStack();
         int value = v != null ? v : 3;
         return Math.max(1, Math.min(5, value));
     }
 
+    // 目标纵向位置
     private float targetY(int index, ActiveBanner b) {
         float y = ChatBubbleClientSetup.config().bannerOffsetY();
         for (int i = 0; i < index; i++) {
@@ -202,10 +208,12 @@ public class MentionNotificationBanner {
         return y;
     }
 
+    // 目标缩放比例
     private float targetScale(int index) {
         return index == 0 ? 1f : COMPACT_SCALE;
     }
 
+    // 当前纵向位置
     private float currentY(ActiveBanner b, long now) {
         int i = banners.indexOf(b);
         if (i < 0) return ChatBubbleClientSetup.config().bannerOffsetY();
@@ -230,6 +238,7 @@ public class MentionNotificationBanner {
         return target;
     }
 
+    // 当前缩放比例
     private float currentScale(ActiveBanner b, long now) {
         int i = banners.indexOf(b);
         if (i < 0) return 1f;
@@ -252,6 +261,7 @@ public class MentionNotificationBanner {
         return target;
     }
 
+    // 当前透明度
     private float currentAlpha(ActiveBanner b, long now) {
         if (b.pushStartMs >= 0) return 1f;
         int i = banners.indexOf(b);
@@ -268,6 +278,7 @@ public class MentionNotificationBanner {
         return 1f;
     }
 
+    // 渲染单个横幅
     private void renderBanner(DrawContext g, PendingBanner b, int screenW,
                               float y, float scale, float alpha) {
         if (alpha <= 0.003f) return;
@@ -330,10 +341,12 @@ public class MentionNotificationBanner {
         if (scale != 1f) g.getMatrices().pop();
     }
 
+    // 退出淡出曲线
     private static float exitFade(float raw) {
         return raw * (2f - raw);
     }
 
+    // 按宽度截断富文本
     private static Text truncateStyled(Text src, int maxWidth,
                                        net.minecraft.client.font.TextRenderer font, String suffix) {
         int budget = maxWidth - font.getWidth(suffix);
@@ -363,6 +376,7 @@ public class MentionNotificationBanner {
         long pushStartMs = -1;
         float fromY;
         float fromScale;
+        // 构造活动横幅
         ActiveBanner(PendingBanner data, long bornMs, long totalVisibleMs, long enterStartMs) {
             this.data = data;
             this.bornMs = bornMs;
@@ -376,6 +390,7 @@ public class MentionNotificationBanner {
         final long startMs;
         final float y;
         final float scale;
+        // 构造退出横幅
         ExitingBanner(PendingBanner data, long startMs, float y, float scale) {
             this.data = data;
             this.startMs = startMs;

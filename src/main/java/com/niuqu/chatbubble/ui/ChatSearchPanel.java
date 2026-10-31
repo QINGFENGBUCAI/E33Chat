@@ -13,6 +13,7 @@ import net.minecraft.text.Text;
 import java.util.List;
 import com.niuqu.chatbubble.texture.UiElement;
 
+// 聊天搜索面板
 public class ChatSearchPanel {
     static final int PANEL_W = 180;
     static final int PANEL_H = 22;
@@ -21,16 +22,19 @@ public class ChatSearchPanel {
 
     public boolean visible;
 
+    // 限制面板横坐标
     static int clampX(int px, int pw, int panelX, int panelW) {
         int screenW = net.minecraft.client.MinecraftClient.getInstance().getWindow().getScaledWidth();
         int max = Math.min(panelX + panelW - pw - 2, screenW - pw - 2);
         return net.minecraft.util.math.MathHelper.clamp(px, Math.min(panelX + 2, max), max);
     }
 
+    // 计算面板宽度
     private static int fitW(int panelWidth) {
         return Math.max(100, Math.min(PANEL_W, panelWidth - 4));
     }
 
+    // 绘制搜索面板
     public void render(DrawContext g, int mouseX, int mouseY,
             TextRenderer font, ChatBubbleTheme.Colors c,
             int panelX, int panelW, int barTop,
@@ -82,6 +86,7 @@ public class ChatSearchPanel {
         }
     }
 
+    // 判断点击面板
     public boolean isClickOnPanel(int mx, int my, int panelX, int panelW, int barTop) {
         if (!visible) return false;
         int w = fitW(panelW);

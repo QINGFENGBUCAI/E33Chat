@@ -10,8 +10,10 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+// 命令执行钩子
 @Mixin(CommandManager.class)
 public class CommandManagerMixin {
+    // 消费私聊引用
     //#if MC >= 26000
     @Inject(method = "performCommand(Lcom/mojang/brigadier/ParseResults;Ljava/lang/String;)V",
         at = @At("HEAD"))

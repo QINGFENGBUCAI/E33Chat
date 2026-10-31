@@ -5,6 +5,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+// 群组频道状态
 public final class GroupChannelState {
     public static final String TAB_ALL = "#all";
     public static final String TAB_WORLD = "#world";
@@ -17,16 +18,20 @@ public final class GroupChannelState {
 
     private static String active = TAB_ALL;
 
+    // 私有构造
     private GroupChannelState() {}
 
+    // 是否支持群组
     public static boolean supported() {
         return enabled;
     }
 
+    // 当前频道
     public static String active() {
         return enabled ? active : null;
     }
 
+    // 设置当前频道
     public static boolean setActive(String tab) {
         if (tab == null) tab = TAB_ALL;
         if (tab.equals(active)) return false;
@@ -34,6 +39,7 @@ public final class GroupChannelState {
         return true;
     }
 
+    // 应用频道目录
     public static void applyDirectory(List<String> names, List<Integer> counts, List<String> mine) {
         knownGroups.clear();
         if (names != null) knownGroups.addAll(names);
@@ -44,6 +50,7 @@ public final class GroupChannelState {
         }
     }
 
+    // 重置状态
     public static void reset() {
         enabled = false;
         knownGroups.clear();
@@ -51,10 +58,12 @@ public final class GroupChannelState {
         active = TAB_ALL;
     }
 
+    // 是否伪频道
     public static boolean isPseudoTab(String tab) {
         return TAB_WORLD.equals(tab) || TAB_SYSTEM.equals(tab);
     }
 
+    // 取消息所属频道
     public static String channelOf(ChatMessage msg) {
         if (msg == null) return TAB_WORLD;
         if (msg.group() != null && !msg.group().isEmpty()) return msg.group();
@@ -62,6 +71,7 @@ public final class GroupChannelState {
         return TAB_WORLD;
     }
 
+    // 按频道过滤消息
     public static List<ChatMessage> filterMessages(List<ChatMessage> publicMessages, String activeTab) {
         if (activeTab == null) return publicMessages;
         if (TAB_ALL.equals(activeTab)) {

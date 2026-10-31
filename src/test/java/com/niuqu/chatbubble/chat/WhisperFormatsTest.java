@@ -98,4 +98,20 @@ class WhisperFormatsTest {
     @Test void noSeparatorTrims() {
         assertEquals("hi there", MessagePresentation.extractWhisperContent("Steve hi there", "Steve"));
     }
+
+    @Test void outgoingWhisperPartnerChinese() {
+        assertEquals("Steve", MessagePresentation.outgoingWhisperPartner("你悄悄地对Steve说：hi"));
+        assertEquals("Steve", MessagePresentation.outgoingWhisperPartner("你悄悄地对[Steve head]Steve说：hi"));
+        assertEquals("Steve", MessagePresentation.outgoingWhisperPartner("[私聊] 你悄悄地对Steve说：hi"));
+    }
+
+    @Test void outgoingWhisperPartnerEnglish() {
+        assertEquals("Steve", MessagePresentation.outgoingWhisperPartner("You whisper to Steve: hi"));
+    }
+
+    @Test void incomingWhisperIsNotOutgoing() {
+        assertNull(MessagePresentation.outgoingWhisperPartner("Steve悄悄地对你说：hi"));
+        assertNull(MessagePresentation.outgoingWhisperPartner("Steve whispers to you: hi"));
+        assertNull(MessagePresentation.outgoingWhisperPartner("Steve: 你悄悄地对我说"));
+    }
 }

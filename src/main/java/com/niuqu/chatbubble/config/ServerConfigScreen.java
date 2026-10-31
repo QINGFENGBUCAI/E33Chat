@@ -30,6 +30,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 
+// 服务端配置界面
 public class ServerConfigScreen extends Screen {
     private final Screen lastScreen;
 
@@ -98,11 +99,13 @@ public class ServerConfigScreen extends Screen {
     private final com.niuqu.chatbubble.render.SmoothScrollPane rightPane = new com.niuqu.chatbubble.render.SmoothScrollPane();
     private final com.niuqu.chatbubble.render.SmoothScrollPane treePane = new com.niuqu.chatbubble.render.SmoothScrollPane();
 
+    // 界面行定义
     private record Row(Text label, List<Element> widgets,
                        String extraText, int height, String tooltipKey, boolean title) {}
     private final List<Row> rows = new ArrayList<>();
     private ButtonWidget doneBtn, exitBtn, saveBtn;
 
+    // 构造服务端配置界面
     public ServerConfigScreen(Screen lastScreen, boolean useTpa, boolean history, boolean debug,
                               boolean mediaEnabled, boolean mediaAutoClean, boolean easyBotCompat,
                               boolean groupsEnabled,
@@ -129,39 +132,55 @@ public class ServerConfigScreen extends Screen {
         whisperV.addAll(whisper);
     }
 
+    // 获取主题配色
     private ChatBubbleTheme.Colors c() { return ChatBubbleTheme.DARK.colors(); }
 
+    // 分隔线X坐标
     private int dividerX() { return CAT_X + CAT_W + 12; }
+    // 选项标签X坐标
     private int optLabelX() { return dividerX() + 14; }
+    // 预览区X坐标
     private int previewX() { return width - 26; }
+    // 输入框X坐标
     private int inputX() { return previewX() - 8 - INPUT_W; }
+    // 选项区域宽度
     private int optAreaW() { return previewX() - optLabelX() - 4; }
 
+    // 右侧区域宽度
     private int rightAreaW() { return previewX() - 8 - optLabelX(); }
 
+    // 右按钮X坐标
     private int btnRight() { return previewX() - 8 - BUTTON_W; }
+    // 左按钮X坐标
     private int btnLeft() { return btnRight() - 4 - BUTTON_W; }
+    // 滚动区域顶部
     private int viewTop() { return START_Y; }
+    // 滚动区域底部
     private int viewBottom() { return height - 40; }
 
+    // 行列表总高度
     private int totalRowsH() {
         int total = 0;
         for (Row r : rows) total += r.height();
         return total;
     }
 
+    // 最大滚动距离
     private int calcMaxScroll() {
         return Math.max(0, viewTop() + totalRowsH() - viewBottom());
     }
 
+    // 树形最大滚动距离
     private int calcTreeMaxScroll() {
         return Math.max(0, START_Y + CAT_ROW_H * CAT_KEYS.length - viewBottom());
     }
 
+    // 注册控件
     private <T extends net.minecraft.client.gui.widget.ClickableWidget> T reg(T w) {
         return addDrawableChild(w);
     }
 
+    // 创建行
     private Row row(Text label, List<Element> widgets, String extraText, String tooltipKey) {
         for (Element w : widgets) {
             if (w instanceof net.minecraft.client.gui.widget.ClickableWidget cw) addDrawableChild(cw);
@@ -169,14 +188,17 @@ public class ServerConfigScreen extends Screen {
         return new Row(label, widgets, extraText, ROW_H, tooltipKey, false);
     }
 
+    // 创建文本行
     private Row textRow(Text label, int height) {
         return new Row(label, List.of(), null, height, null, false);
     }
 
+    // 创建标题行
     private Row titleRow(Text label) {
         return new Row(label, List.of(), null, ROW_H, null, true);
     }
 
+    // 构建配置行
     private void buildRows() {
         rows.clear();
         switch (selectedCat) {
@@ -202,6 +224,7 @@ public class ServerConfigScreen extends Screen {
         }
     }
 
+    // 构建模板行
     private void buildTemplateRows(List<String> list, boolean chat) {
         for (int i = 0; i < list.size(); i++) {
             int idx = i;
@@ -261,6 +284,7 @@ public class ServerConfigScreen extends Screen {
             chat ? previewChatResult : previewWhisperResult, "e33chat.server.preview"));
     }
 
+    // 构建教程行
     private void buildTutorialRows() {
         for (String key : List.of("quick", "concept", "fields", "faq", "why")) {
             rows.add(titleRow(Text.translatable("e33chat.tutorial." + key + ".title")));
@@ -277,6 +301,7 @@ public class ServerConfigScreen extends Screen {
         }
     }
 
+    // 按宽度换行
     private List<String> wrapText(String raw) {
         List<String> out = new ArrayList<>();
         StringBuilder cur = new StringBuilder();
@@ -302,12 +327,14 @@ public class ServerConfigScreen extends Screen {
         return out;
     }
 
+    // 截断过长文本
     private String truncate(String s, int maxWidth) {
         if (textRenderer.getWidth(s) <= maxWidth) return s;
         String cut = textRenderer.trimToWidth(s, maxWidth - 6);
         return cut + "…";
     }
 
+    // 从消息生成模板
     private void generateFromMessage() {
         String inferred = TemplateMatcher.inferFromMessage(genText, knownNames()).orElse(null);
         if (inferred == null) {
@@ -323,6 +350,7 @@ public class ServerConfigScreen extends Screen {
         rebuild();
     }
 
+    // 收集已知玩家名
     private List<String> knownNames() {
         LinkedHashSet<String> names = new LinkedHashSet<>();
         var player = MinecraftClient.getInstance().player;
@@ -335,6 +363,7 @@ public class ServerConfigScreen extends Screen {
         return new ArrayList<>(names);
     }
 
+    // 运行模板预览
     private String runPreview(String text, List<String> raws, boolean whisper) {
         if (text == null || text.isBlank()) return "";
         List<TemplateMatcher.CompiledTemplate> tpls = new ArrayList<>();
@@ -350,6 +379,7 @@ public class ServerConfigScreen extends Screen {
         return Text.translatable("e33chat.server.preview_hit", name, t.content()).getString();
     }
 
+    // 创建开关按钮
     private ButtonWidget mkToggle(java.util.function.BooleanSupplier current,
                                   java.util.function.Consumer<Boolean> apply) {
         return ButtonWidget.builder(current.getAsBoolean() ? ScreenTexts.ON : ScreenTexts.OFF,
@@ -360,12 +390,14 @@ public class ServerConfigScreen extends Screen {
             }).dimensions(btnRight(), 0, BUTTON_W, 20).build();
     }
 
+    // 创建输入框
     private TextFieldWidget mkBox(int x, int w) {
         TextFieldWidget box = new TextFieldWidget(textRenderer, x, 0, w, 20, Text.literal(""));
         box.setMaxLength(200);
         return box;
     }
 
+    // 是否存在改动
     private boolean changed() {
         return useTpaV != initUseTpa || historyV != initHistory || debugV != initDebug
             || mediaV != initMedia || autoCleanV != initAutoClean || easyBotV != initEasyBot
@@ -373,6 +405,7 @@ public class ServerConfigScreen extends Screen {
             || !Objects.equals(chatV, initChat) || !Objects.equals(whisperV, initWhisper);
     }
 
+    // 保存并发送配置
     private void save() {
         String err = validate("chat", chatV);
         if (err == null) err = validate("whisper", whisperV);
@@ -393,6 +426,7 @@ public class ServerConfigScreen extends Screen {
         doClose();
     }
 
+    // 校验模板列表
     private static String validate(String kind, List<String> templates) {
         for (int i = 0; i < templates.size(); i++) {
             TemplateMatcher.CompileResult result = TemplateMatcher.compile(templates.get(i));
@@ -404,10 +438,12 @@ public class ServerConfigScreen extends Screen {
         return null;
     }
 
+    // 关闭界面
     private void doClose() {
         if (client != null) client.setScreen(lastScreen);
     }
 
+    // 界面移除处理
     @Override
     public void removed() {
         if (hudHidden) {
@@ -417,6 +453,7 @@ public class ServerConfigScreen extends Screen {
         super.removed();
     }
 
+    // 关闭界面确认
     @Override
     public void close() {
         if (changed()) {
@@ -431,6 +468,7 @@ public class ServerConfigScreen extends Screen {
         }
     }
 
+    // 统计改动数量
     private int changeCount() {
         int n = 0;
         if (useTpaV != initUseTpa) n++;
@@ -445,6 +483,7 @@ public class ServerConfigScreen extends Screen {
         return n;
     }
 
+    // 初始化界面
     @Override
     protected void init() {
         if (!hudHidden) {
@@ -463,6 +502,7 @@ public class ServerConfigScreen extends Screen {
         relayoutWidgets();
     }
 
+    // 重建界面
     private void rebuild() {
         rightPane.setOffset(0);
         setFocused(null);
@@ -471,12 +511,14 @@ public class ServerConfigScreen extends Screen {
         init();
     }
 
+    // 切换分类
     private void switchCategory(int idx) {
         if (idx == selectedCat) return;
         selectedCat = idx;
         rebuild();
     }
 
+    // 重新布局控件
     private void relayoutWidgets() {
         int y = viewTop() - rightPane.offset();
         for (Row row : rows) {
@@ -490,38 +532,51 @@ public class ServerConfigScreen extends Screen {
         }
     }
 
+    // 计算滚动条滑块高
     private static int sbThumbH(int trackH, int totalH) {
         return Math.max(8, (int) ((long) trackH * trackH / totalH));
     }
+    // 计算滑块纵向位置
     private static int sbThumbY(int top, int trackH, int th, int offset, int maxScroll) {
         if (maxScroll <= 0 || trackH <= th) return top;
         return top + (int) ((long) (trackH - th) * offset / maxScroll);
     }
+    // 判断是否悬停滑块
     private static boolean sbHovering(int mx, int my, int tx, int ty, int th) {
         return mx >= tx && mx < tx + SCROLLBAR_W && my >= ty && my < ty + th;
     }
 
+    // 右侧滚动条X坐标
     private int rTrackX() { return width - SCROLLBAR_W; }
+    // 右侧滚动条轨道高
     private int rTrackH() { return viewBottom() - viewTop(); }
+    // 右侧滚动内容总高
     private int rTotalH() { return calcMaxScroll() + rTrackH(); }
+    // 树形滚动条X坐标
     private int tTrackX() { return dividerX() - SCROLLBAR_W - 2; }
+    // 树形滚动条轨道高
     private int tTrackH() { return viewBottom() - START_Y; }
+    // 树形滚动内容总高
     private int tTotalH() { return calcTreeMaxScroll() + tTrackH(); }
 
+    // 触发右侧滚动动画
     private void startR(float target, int dur) {
         rightPane.animateTo(target, calcMaxScroll(), dur);
     }
 
+    // 触发树形滚动动画
     private void startT(float target, int dur) {
         treePane.animateTo(target, calcTreeMaxScroll(), dur);
     }
 
+    // 推进滚动动画
     private void tickAnims() {
         rightPane.tick(calcMaxScroll());
         treePane.tick(calcTreeMaxScroll());
         relayoutWidgets();
     }
 
+    // 绘制滚动条
     private void drawBar(DrawContext g, int trackX, int top, int bot,
                          int totalH, int offset, int maxScroll,
                          double mx, double my, boolean dragging) {
@@ -539,20 +594,7 @@ public class ServerConfigScreen extends Screen {
             trackX, ty, SCROLLBAR_W, th, base / 255f);
     }
 
-    private void drawTriangle(DrawContext g, int x, int y, boolean down, int color) {
-        if (down) {
-            g.fill(x, y, x + 5, y + 1, color);
-            g.fill(x + 1, y + 1, x + 4, y + 2, color);
-            g.fill(x + 2, y + 2, x + 3, y + 3, color);
-        } else {
-            g.fill(x, y, x + 1, y + 1, color);
-            g.fill(x, y + 1, x + 2, y + 2, color);
-            g.fill(x, y + 2, x + 3, y + 3, color);
-            g.fill(x, y + 3, x + 2, y + 4, color);
-            g.fill(x, y + 4, x + 1, y + 5, color);
-        }
-    }
-
+    // 处理鼠标点击
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         //#if MC >= 260300
@@ -592,6 +634,7 @@ public class ServerConfigScreen extends Screen {
     }
 
     //#if MC >= 12002
+    // 处理滚轮滚动
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
     //#else
@@ -610,6 +653,7 @@ public class ServerConfigScreen extends Screen {
         return true;
     }
 
+    // 处理鼠标拖拽
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
         if (rightPane.dragging()) {
@@ -623,6 +667,7 @@ public class ServerConfigScreen extends Screen {
         return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
     }
 
+    // 处理鼠标释放
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
         rightPane.dragEnd();
@@ -630,6 +675,7 @@ public class ServerConfigScreen extends Screen {
         return super.mouseReleased(mouseX, mouseY, button);
     }
 
+    // 渲染界面
     @Override
     public void render(DrawContext g, int mouseX, int mouseY, float partialTick) {
         g.drawTexture(UiTextureManager.rl(UiElement.CONFIG_BG, ChatBubbleTheme.DARK),
@@ -714,6 +760,7 @@ public class ServerConfigScreen extends Screen {
     }
 
     //#if MC >= 12002
+    // 跳过背景渲染
     @Override
     public void renderBackground(DrawContext g, int mouseX, int mouseY, float partialTick) {
     }
@@ -724,6 +771,7 @@ public class ServerConfigScreen extends Screen {
     //$$ }
     //#endif
 
+    // 关闭时是否暂停
     @Override
     public boolean shouldPause() { return true; }
 }

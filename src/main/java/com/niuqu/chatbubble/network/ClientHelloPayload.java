@@ -7,6 +7,7 @@ import net.minecraft.network.packet.CustomPayload;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 
+// 客户端握手包
 //#if MC >= 12005
 public record ClientHelloPayload() implements CustomPayload {
 //#else
@@ -41,6 +42,7 @@ public record ClientHelloPayload() implements CustomPayload {
     //$$     return buf;
     //$$ }
     //#endif
+    // 获取包标识
     //#if MC >= 12005
     @Override
     public CustomPayload.Id<? extends CustomPayload> getId() {
@@ -48,6 +50,7 @@ public record ClientHelloPayload() implements CustomPayload {
     }
     //#endif
 
+    // 发送握手包
     public static void send() {
         //#if MC >= 12005
         if (!net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.canSend(ID)) {
@@ -73,6 +76,7 @@ public record ClientHelloPayload() implements CustomPayload {
         //#endif
     }
 
+    // 服务端处理握手
     public static void handleServer(ClientHelloPayload payload, ServerPlayerEntity player) {
         com.niuqu.chatbubble.server.GroupManager.onClientHello(player);
     }

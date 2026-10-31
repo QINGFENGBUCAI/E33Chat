@@ -12,12 +12,14 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.lang.reflect.Field;
 
+// 屏幕切换接管
 //#if MC >= 260200
 @Mixin(net.minecraft.client.gui.Gui.class)
 //#else
 //$$ @Mixin(MinecraftClient.class)
 //#endif
 public class MinecraftClientMixin {
+    // 接管聊天与睡眠界面
     //#if MC >= 11800
     @Inject(method = "setScreen", at = @At("HEAD"), cancellable = true)
     //#else
@@ -39,6 +41,7 @@ public class MinecraftClientMixin {
         }
     }
 
+    // 读取聊天初始文本
     private static String getChatInitialText(ChatScreen chatScreen) {
         try {
             Field f = ChatScreen.class.getDeclaredField("initial");

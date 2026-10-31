@@ -12,6 +12,7 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.MathHelper;
 
+// 表情面板
 public class ChatEmojiPanel {
     private static final int PANEL_H = 132;
     private static final int TAB_H = 18;
@@ -25,6 +26,7 @@ public class ChatEmojiPanel {
 
     private static final java.util.Map<String, Boolean> EMOTE_ANIMATED = new java.util.HashMap<>();
 
+    // 判断动态表情
     private static boolean isAnimatedEmote(java.io.File f) {
         String key = f.getPath() + "|" + f.lastModified();
         Boolean cached = EMOTE_ANIMATED.get(key);
@@ -36,14 +38,17 @@ public class ChatEmojiPanel {
         return animated;
     }
 
+    // 计算面板宽度
     private static int fitWidth(int natural, int panelW) {
         return Math.max(100, Math.min(natural, panelW - 4));
     }
 
+    // 计算网格列数
     private static int gridCols(int pw) {
         return Math.max(1, (pw - 8) / SLOT);
     }
 
+    // 限制面板横坐标
     private static int clampX(int px, int pw, int panelX, int panelW) {
         int screenW = net.minecraft.client.MinecraftClient.getInstance().getWindow().getScaledWidth();
         int max = Math.min(panelX + panelW - pw - 2, screenW - pw - 2);
@@ -86,11 +91,13 @@ public class ChatEmojiPanel {
 
     public Runnable closeRequest;
 
+    // 请求关闭面板
     private void requestClose() {
         if (closeRequest != null) closeRequest.run();
         else visible = false;
     }
 
+    // 绘制表情面板
     public void render(DrawContext g, int mouseX, int mouseY,
             TextRenderer font, ChatBubbleTheme.Colors c,
             int panelX, int panelW, int barTop, int iconS, int pad, float alpha) {
@@ -142,6 +149,7 @@ public class ChatEmojiPanel {
         }
     }
 
+    // 绘制自定义表情
     private void renderEmoteGrid(DrawContext g, int mouseX, int mouseY,
             TextRenderer font, ChatBubbleTheme.Colors c,
             int px, int cy, int pw, int ch, float alpha) {
@@ -202,6 +210,7 @@ public class ChatEmojiPanel {
         g.disableScissor();
     }
 
+    // 绘制表情网格
     private void renderEmojiGrid(DrawContext g, int mouseX, int mouseY,
             TextRenderer font, ChatBubbleTheme.Colors c,
             int px, int cy, int pw, int ch, int cols, float alpha) {
@@ -231,6 +240,7 @@ public class ChatEmojiPanel {
         g.disableScissor();
     }
 
+    // 绘制颜文字列表
     private void renderKaomojiList(DrawContext g, int mouseX, int mouseY,
             TextRenderer font, ChatBubbleTheme.Colors c,
             int px, int cy, int pw, int ch, float alpha) {
@@ -259,6 +269,7 @@ public class ChatEmojiPanel {
         g.disableScissor();
     }
 
+    // 处理点击事件
     public String handleClick(int mx, int my,
             TextRenderer font, ChatBubbleTheme.Colors c,
             int panelX, int panelW, int barTop, int iconS, int pad) {
@@ -322,6 +333,7 @@ public class ChatEmojiPanel {
         return null;
     }
 
+    // 处理滚动事件
     public void handleScroll(double scrollY) {
         boolean isKaomoji = tab == 1;
         boolean isCustom = tab == 2;

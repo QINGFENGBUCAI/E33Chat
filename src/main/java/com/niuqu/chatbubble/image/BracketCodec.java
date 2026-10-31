@@ -9,18 +9,22 @@ import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
+// 图片占位符编解码
 public final class BracketCodec {
     private static final Pattern BRACKET = Pattern.compile(
         "\\[\\[(ChatUpgrade|CICode|E33Emote),([^\\]]+)\\]\\]", Pattern.CASE_INSENSITIVE);
 
     public record ImageRef(String url, String name, boolean emote) {
+        // 默认非表情构造
         public ImageRef(String url, String name) { this(url, name, false); }
     }
 
     public record ParseResult(Text textWithoutImages, List<ImageRef> images) {}
 
+    // 禁止实例化
     private BracketCodec() {}
 
+    // 解析文本内嵌图片
     public static ParseResult parse(Text text) {
         if (text == null) return new ParseResult(text, List.of());
         String plain = text.getString();
@@ -57,6 +61,7 @@ public final class BracketCodec {
         return new ParseResult(out, images);
     }
 
+    // 解析或提取悬浮图
     public static ParseResult parseOrExtract(Text text) {
         ParseResult r = parse(text);
         if (!r.images().isEmpty() || text == null) return r;
@@ -75,6 +80,7 @@ public final class BracketCodec {
         return new ParseResult(out, refs);
     }
 
+    // 转为占位文本
     public static Text toPlaceholderText(Text text) {
         if (text == null) return null;
         Matcher m = BRACKET.matcher(text.getString());
@@ -100,6 +106,7 @@ public final class BracketCodec {
         return out;
     }
 
+    // 解析属性参数
     private static ImageRef parseAttrs(String attrs, String tag) {
         String url = null;
         String name = null;
@@ -122,6 +129,7 @@ public final class BracketCodec {
         return new ImageRef(url, name, tag.equalsIgnoreCase("E33Emote"));
     }
 
+    // 从悬浮事件提取
     public static List<ImageRef> extractFromHover(Text text) {
         if (text == null) return List.of();
         List<ImageRef> out = new ArrayList<>();
@@ -138,6 +146,7 @@ public final class BracketCodec {
         return out;
     }
 
+    // 从悬停文本提取
     public static List<ImageRef> extractFromShowTextHover(Text text) {
         if (text == null) return List.of();
         List<ImageRef> out = new ArrayList<>();
@@ -158,6 +167,7 @@ public final class BracketCodec {
         return out;
     }
 
+    // 判断易Bot图片悬浮
     private static boolean isEasyBotCICodeHover(net.minecraft.text.HoverEvent hover) {
         try {
             if (hover.getAction() != net.minecraft.text.HoverEvent.Action.SHOW_TEXT) return false;
@@ -168,6 +178,7 @@ public final class BracketCodec {
         }
     }
 
+    // 读取悬浮提示文本
     private static String hoverText(net.minecraft.text.HoverEvent hover) {
         try {
             Text show = com.niuqu.chatbubble.compat.StyleCompat.hoverShowText(hover);
@@ -181,6 +192,7 @@ public final class BracketCodec {
         return null;
     }
 
+    // 判断聊天图片悬浮
     private static boolean isChatImageHover(net.minecraft.text.HoverEvent hover) {
         try {
             if (String.valueOf(hover.getAction()).toLowerCase(java.util.Locale.ROOT).contains("chatimage")) return true;
@@ -192,6 +204,7 @@ public final class BracketCodec {
         }
     }
 
+    // 从悬浮事件读URL
     private static String readUrlFromHover(net.minecraft.text.HoverEvent hover) {
         try {
             Object value = com.niuqu.chatbubble.compat.StyleCompat.hoverValue(hover);
@@ -214,6 +227,7 @@ public final class BracketCodec {
         return null;
     }
 
+    // 规范化图片地址
     static String normalizeUrl(String s) {
         if (s == null || s.isBlank()) return null;
         String fromCode = urlFromCodeText(s);
@@ -223,6 +237,7 @@ public final class BracketCodec {
         return (lower.startsWith("http://") || lower.startsWith("https://")) ? trimmed : null;
     }
 
+    // 从代码文本取URL
     static String urlFromCodeText(String s) {
         if (s == null || s.isEmpty()) return null;
         Matcher m = BRACKET.matcher(s);

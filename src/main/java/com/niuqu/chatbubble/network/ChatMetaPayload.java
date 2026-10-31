@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+// 主聊天消息元数据包
 //#if MC >= 12005
 public record ChatMetaPayload(UUID senderUUID, String senderName, String messageHash,
                                String quoteSender, String quoteContent, List<String> mentionTargets)
@@ -85,11 +86,13 @@ public record ChatMetaPayload(UUID senderUUID, String senderName, String message
 
     private static final int MAX_MENTION_TARGETS = 200;
 
+    // 写入提及名单
     private static void writeMentions(PacketByteBuf buf, List<String> list) {
         buf.writeVarInt(list.size());
         for (String s : list) buf.writeString(s);
     }
 
+    // 读取提及名单
     private static List<String> readMentions(PacketByteBuf buf) {
         int count = Math.min(Math.max(buf.readVarInt(), 0), MAX_MENTION_TARGETS);
         List<String> out = new ArrayList<>(count);
@@ -97,6 +100,7 @@ public record ChatMetaPayload(UUID senderUUID, String senderName, String message
         return out;
     }
 
+    // 获取包标识
     //#if MC >= 12005
     @Override
     public Id<ChatMetaPayload> getId() { return ID; }

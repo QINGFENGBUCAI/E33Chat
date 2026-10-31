@@ -6,6 +6,7 @@ import net.minecraft.network.packet.CustomPayload;
 //#endif
 import net.minecraft.util.Identifier;
 
+// 媒体分块响应包
 //#if MC >= 12005
 public record MediaResponsePayload(String mediaId, int index, int totalChunks, byte[] chunk)
         implements CustomPayload {
@@ -65,6 +66,7 @@ public record MediaResponsePayload(String mediaId, int index, int totalChunks, b
     //$$     return buf;
     //$$ }
     //#endif
+    // 获取包标识
     //#if MC >= 12005
     @Override
     public Id<MediaResponsePayload> getId() { return ID; }

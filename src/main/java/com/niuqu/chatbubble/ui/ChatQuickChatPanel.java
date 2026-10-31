@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import com.niuqu.chatbubble.texture.UiElement;
 
+// 快捷聊天面板
 public class ChatQuickChatPanel {
     private static final int W = 140;
     private static final int ROW_H = 14;
@@ -27,11 +28,13 @@ public class ChatQuickChatPanel {
 
     public Runnable closeRequest;
 
+    // 请求关闭面板
     private void requestClose() {
         if (closeRequest != null) closeRequest.run();
         else visible = false;
     }
 
+    // 绘制快捷聊天面板
     public void render(DrawContext g, int mouseX, int mouseY,
             TextRenderer font, ChatBubbleTheme.Colors c,
             int panelX, int panelW, int barTop,
@@ -116,6 +119,7 @@ public class ChatQuickChatPanel {
         input.setVisible(true);
     }
 
+    // 判断点击输入框
     public static boolean isInsideInput(int mx, int my, int panelX, int panelW, int barTop, int totalPhrases) {
         int visiblePhrases = Math.min(totalPhrases, MAX_VISIBLE);
         int listH = visiblePhrases * ROW_H;
@@ -128,6 +132,7 @@ public class ChatQuickChatPanel {
         return mx >= inputX && mx <= inputX + W - 10 && my >= inputY && my <= inputY + 14;
     }
 
+    // 处理点击事件
     public int handleClick(int mx, int my,
             TextRenderer font, ChatBubbleTheme.Colors c,
             int panelX, int panelW, int barTop,
@@ -170,6 +175,7 @@ public class ChatQuickChatPanel {
         return -1;
     }
 
+    // 处理滚动事件
     public void handleScroll(double scrollY) {
         var phrases = ChatBubbleClientSetup.config().quickChatPhrases();
         int maxScroll = Math.max(0, phrases.size() - MAX_VISIBLE);

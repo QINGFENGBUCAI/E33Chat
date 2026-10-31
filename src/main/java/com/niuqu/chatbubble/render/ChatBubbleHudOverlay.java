@@ -5,7 +5,6 @@ import com.niuqu.chatbubble.ChatBubbleScreen;
 import com.niuqu.chatbubble.ChatBubbleMod;
 import com.niuqu.chatbubble.config.ChatBubbleConfig;
 import com.niuqu.chatbubble.render.ChatBubbleTheme;
-import com.niuqu.chatbubble.render.Appearance;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.niuqu.chatbubble.chat.notification.MentionNotificationBanner;
 import com.niuqu.chatbubble.config.ChatBubbleConfig;
@@ -19,6 +18,7 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
+// HUD 聊天图标覆盖层
 public class ChatBubbleHudOverlay {
     private static final int ICON_S = 16;
     private static final int SRC_U = 6;
@@ -26,19 +26,21 @@ public class ChatBubbleHudOverlay {
     private static final int SRC_S = 4;
     private static final int TIP_DISP = 4;
 
+    // 读取配置
     private static ChatBubbleConfig cfg() { return ChatBubbleClientSetup.config(); }
 
+    // 聊天图标纹理
     private static Identifier chatIconTex() {
         String theme = cfg().theme().toLowerCase();
         return Identifier.of("e33chat", "textures/gui/" + theme + "/chat_icon.png");
     }
 
+    // 当前主题
     private static ChatBubbleTheme theme() {
         return "light".equalsIgnoreCase(cfg().theme()) ? ChatBubbleTheme.LIGHT : ChatBubbleTheme.DARK;
     }
 
-    private static ChatBubbleTheme.Colors c() { return Appearance.snapshot(); }
-
+    // 渲染 HUD 覆盖层
     public static void render(DrawContext g) {
         MinecraftClient mc = MinecraftClient.getInstance();
         if (mc.player == null || mc.options == null) return;
@@ -77,6 +79,7 @@ public class ChatBubbleHudOverlay {
         g.getMatrices().pop();
     }
 
+    // 渲染屏幕通知横幅
     public static void renderBannerForScreen(DrawContext g) {
         MinecraftClient mc = MinecraftClient.getInstance();
         if (mc.player == null || mc.options == null) return;
@@ -92,6 +95,7 @@ public class ChatBubbleHudOverlay {
         }
     }
 
+    // 判断是否悬停图标
     public static boolean isMouseOverIcon(double mx, double my) {
         if (cfg().hideChatIcon()) return false;
         MinecraftClient mc = MinecraftClient.getInstance();
@@ -101,10 +105,12 @@ public class ChatBubbleHudOverlay {
         return mx >= cfg().hudIconX() && mx <= cfg().hudIconX() + ICON_S && my >= iconY && my <= iconY + ICON_S + mc.textRenderer.fontHeight + 2;
     }
 
+    // 绘制聊天图标
     private static void drawIcon(DrawContext g, int x, int y) {
         g.drawTexture(chatIconTex(), x, y, 0.0F, 0.0F, ICON_S, ICON_S, ICON_S, ICON_S);
     }
 
+    // 绘制红点提示
     private static void drawScaledTip(DrawContext g, int x, int y, int disp) {
         Identifier tex = ChatBubbleScreen.iconTex("private_tip");
         g.drawTexture(tex, x, y, disp, disp, (float) SRC_U, (float) SRC_V, SRC_S, SRC_S, 16, 16);

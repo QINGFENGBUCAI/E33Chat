@@ -1,6 +1,4 @@
 {
-  "e33chat.screen.title": "聊天",
-  "e33chat.description": "以聊天APP风格重铸原版聊天框",
   "e33chat.config.title": "E33Chat 设置",
   "e33chat.config.save": "保存",
   "e33chat.config.exit": "退出",
@@ -92,7 +90,6 @@
   "e33chat.config.time_separator.desc": "每隔一段时间在消息间插入时间标签（0 为关闭）",
   "e33chat.config.time_separator.minute": "分钟",
   "e33chat.config.time_separator.disable": "关闭",
-  "e33chat.config.quick_chat_phrases": "常用语列表",
   "e33chat.config.blocked_players": "屏蔽玩家",
   "e33chat.config.blocked_players.desc": "被屏蔽玩家的消息完全消失：原版聊天框、气泡、横幅与音效（逐行编辑精确名字）",
   "e33chat.config.blocked_add": "添加玩家",
@@ -117,7 +114,6 @@
   "e33chat.menu.clear_confirm": "确认清空？",
   "e33chat.search.placeholder": "搜索聊天记录...",
   "e33chat.search.no_match": "无匹配",
-  "e33chat.search.match": "匹配",
   "e33chat.emoji.tab_emoji": "😊 Emoji",
   "e33chat.emoji.tab_kaomoji": "✧ 颜文字",
   "e33chat.sender.system": "系统",

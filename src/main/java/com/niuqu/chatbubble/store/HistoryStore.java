@@ -22,24 +22,29 @@ import net.minecraft.text.MutableText;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+// 历史存储工具
 public final class HistoryStore {
+    // 私有构造
     private HistoryStore() {}
 
     private static final Gson GSON = new Gson();
 
     public static java.util.function.Supplier<java.io.File> gameDirSupplier = null;
 
+    // 获取游戏目录
     private static java.io.File gameDir() {
         if (gameDirSupplier != null) return gameDirSupplier.get();
         return MinecraftClient.getInstance().runDirectory;
     }
 
+    // 获取历史文件
     public static File getHistoryFile(String worldKey) {
         String safe = worldKey.replaceAll("[\\\\/:*?\"<>|\\p{Cntrl}]", "_");
         return new File(gameDir(),
             "e33chat/history/" + safe + "_" + sha256Short(worldKey) + ".json");
     }
 
+    // 获取旧版历史文件
     public static File getLegacyHistoryFile(String worldKey) {
         String safe = worldKey.replaceAll("[^a-zA-Z0-9_.\\-]", "_");
         String hash = Integer.toHexString(worldKey.hashCode());
@@ -47,6 +52,7 @@ public final class HistoryStore {
             "e33chat/history/" + safe + "_" + hash + ".json");
     }
 
+    // 计算短哈希
     static String sha256Short(String s) {
         try {
             byte[] d = java.security.MessageDigest.getInstance("SHA-256")
@@ -59,6 +65,7 @@ public final class HistoryStore {
         }
     }
 
+    // 判断敏感命令
     public static boolean isSensitiveCommand(String text) {
         if (text == null) return false;
         String s = Formatting.strip(text);
@@ -78,6 +85,7 @@ public final class HistoryStore {
         }
     }
 
+    // 序列化消息行
     public static String toLine(ChatMessageStore.ChatMessage msg) {
         if (isSensitiveCommand(msg.content().getString())) return null;
         java.util.Map<String, Object> obj = new java.util.LinkedHashMap<>();
@@ -108,6 +116,7 @@ public final class HistoryStore {
         return GSON.toJson(obj);
     }
 
+    // 反序列化消息行
     public static ChatMessageStore.ChatMessage fromLine(String line) {
         if (line.startsWith("{")) return fromJsonLine(line);
         String[] parts = line.split("\t", -1);
@@ -141,6 +150,7 @@ public final class HistoryStore {
         );
     }
 
+    // 解析JSON消息行
     static ChatMessageStore.ChatMessage fromJsonLine(String line) {
         Map<String, Object> obj;
         try {
@@ -174,6 +184,7 @@ public final class HistoryStore {
         );
     }
 
+    // 解析文本组件
     static Text componentFrom(Map<String, Object> obj, String jsonKey, String textKey) {
         String json = (String) obj.get(jsonKey);
         if (json != null) {
@@ -190,6 +201,7 @@ public final class HistoryStore {
         return text != null ? parseStyledText(text) : null;
     }
 //#if MC >= 12100
+// 获取注册表
 static net.minecraft.registry.RegistryWrapper.WrapperLookup registries() {
         MinecraftClient mc = MinecraftClient.getInstance();
         if (mc != null) {
@@ -226,10 +238,12 @@ static net.minecraft.registry.RegistryWrapper.WrapperLookup registries() {
 //$$ static Object registries() { return null; }
 //#endif
 
+    // 转义字段
     static String escapeField(String s) {
         return s.replace("\\", "\\\\").replace("\t", "\\t").replace("\r", "\\r").replace("\n", "\\n");
     }
 
+    // 还原转义字段
     static String unescapeField(String s) {
         if (s.indexOf('\\') < 0) return s;
         StringBuilder out = new StringBuilder(s.length());
@@ -247,6 +261,7 @@ static net.minecraft.registry.RegistryWrapper.WrapperLookup registries() {
         return out.toString();
     }
 
+    // 解析带样式文本
     public static Text parseStyledText(String s) {
         MutableText out = Text.empty();
         Style style = Style.EMPTY;
@@ -273,6 +288,7 @@ static net.minecraft.registry.RegistryWrapper.WrapperLookup registries() {
         return out;
     }
 
+    // 应用颜色代码
     static Style applySectionCode(Style style, char code) {
         switch (Character.toLowerCase(code)) {
             case '0': return style.withColor(Formatting.BLACK.getColorValue() != null ? Formatting.BLACK.getColorValue() : null);
@@ -301,6 +317,7 @@ static net.minecraft.registry.RegistryWrapper.WrapperLookup registries() {
         }
     }
 
+    // 加载旧版历史
     public static List<ChatMessageStore.ChatMessage> loadLegacyFile(File f) {
         List<ChatMessage> out = new ArrayList<>();
         try (Reader r = new InputStreamReader(new FileInputStream(f), StandardCharsets.UTF_8)) {
@@ -352,6 +369,7 @@ static net.minecraft.registry.RegistryWrapper.WrapperLookup registries() {
         return out;
     }
 
+    // 判断历史是否过期
     public static boolean isExpired(long fileMtime, long now, int retentionDays) {
         return retentionDays > 0 && now - fileMtime > retentionDays * 24L * 3600_000L;
     }

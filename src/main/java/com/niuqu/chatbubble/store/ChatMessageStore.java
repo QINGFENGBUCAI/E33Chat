@@ -13,12 +13,19 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
+// 聊天消息存储
 public class ChatMessageStore {
+    // 消息效果观察者
     public interface MessageEffectObserver {
+        // 提及引用回调
         void onMentionOrQuote(Text content, SenderMeta meta, int index, String replySender);
+        // 私聊接收回调
         void onWhisperReceived(UUID senderUUID, Text senderName, Text content, int index);
+        // 系统消息回调
         void onSystemMessage(Text content, int index);
+        // 公开消息音效
         void onPublicChatSound();
+        // 引用音效回调
         void onQuoteSound();
     }
 
@@ -31,6 +38,7 @@ public class ChatMessageStore {
     };
     private static MessageEffectObserver effectObserver = NOOP_OBSERVER;
 
+    // 设置消息效果观察者
     public static void setMessageEffectObserver(MessageEffectObserver observer) {
         effectObserver = observer != null ? observer : NOOP_OBSERVER;
     }
@@ -38,11 +46,11 @@ public class ChatMessageStore {
     private static final int MAX = 10000;
     private static final List<ChatMessage> messages = new ArrayList<>();
     private static int unreadCount = 0;
-    private static boolean hasUnreadMentionFlag;
     private static boolean screenOpen = false;
     private static String pendingReplyContent;
     private static String pendingReplySender;
 
+    // 判断转发是否重复
     public static boolean isRepostDuplicate(String lastRepostText, long lastRepostTime, String newText, long now) {
         return EchoTracker.isRepostDuplicate(lastRepostText, lastRepostTime, newText, now);
     }
@@ -60,7 +68,9 @@ public class ChatMessageStore {
     };
 
     private static volatile boolean serverUseTpa = false;
+    // 设置使用TPA
     public static void setServerUseTpa(boolean v) { serverUseTpa = v; }
+    // 是否使用TPA
     public static boolean useTpa() { return serverUseTpa; }
 
     private static volatile List<com.niuqu.chatbubble.chat.TemplateMatcher.CompiledTemplate> serverChatTemplates = List.of();
@@ -69,9 +79,12 @@ public class ChatMessageStore {
 
     private static volatile boolean easyBotCompat = true;
 
+    // 设置EasyBot兼容
     public static void setEasyBotCompat(boolean v) { easyBotCompat = v; }
+    // 是否EasyBot兼容
     public static boolean isEasyBotCompat() { return easyBotCompat; }
 
+    // 设置服务端配置
     public static void setServerConfig(boolean useTpa, List<String> chatTemplates,
                                        List<String> whisperTemplates, boolean templateDebug) {
         serverUseTpa = useTpa;
@@ -80,6 +93,7 @@ public class ChatMessageStore {
         serverTemplateDebug = templateDebug;
     }
 
+    // 编译服务端模板
     private static List<com.niuqu.chatbubble.chat.TemplateMatcher.CompiledTemplate> compileTemplates(List<String> raws) {
         if (raws == null || raws.isEmpty()) return List.of();
         List<com.niuqu.chatbubble.chat.TemplateMatcher.CompiledTemplate> out = new ArrayList<>();
@@ -98,16 +112,20 @@ public class ChatMessageStore {
         return out;
     }
 
+    // 获取聊天模板
     public static List<com.niuqu.chatbubble.chat.TemplateMatcher.CompiledTemplate> serverChatTemplates() {
         return serverChatTemplates;
     }
 
+    // 获取私聊模板
     public static List<com.niuqu.chatbubble.chat.TemplateMatcher.CompiledTemplate> serverWhisperTemplates() {
         return serverWhisperTemplates;
     }
 
+    // 是否模板调试
     public static boolean serverTemplateDebug() { return serverTemplateDebug; }
 
+    // 记录玩家名称
     public static void rememberPlayer(UUID uuid, String profileName, String displayName) {
         if (uuid == null || uuid.equals(new UUID(0, 0)) || profileName == null || profileName.isEmpty()) return;
         SeenPlayer existing = seenPlayers.get(uuid);
@@ -116,6 +134,7 @@ public class ChatMessageStore {
         seenPlayers.put(uuid, new SeenPlayer(uuid, profileName, newDisplay));
     }
 
+    // 获取已知名称变体
     public static List<String> knownNameVariants() {
         Set<String> out = new LinkedHashSet<>();
         for (SeenPlayer sp : seenPlayers.values()) {
@@ -133,6 +152,7 @@ public class ChatMessageStore {
         return new ArrayList<>(out);
     }
 
+    // 按名称查找UUID
     public static UUID findSeenUuid(String name) {
         if (name == null || name.isEmpty()) return null;
         String stripped = name.replaceAll("§.", "");
@@ -143,6 +163,7 @@ public class ChatMessageStore {
         return null;
     }
 
+    // 匹配已记录名称
     private static boolean matchesSeenName(String raw, String stripped, String stored) {
         if (stored == null || stored.isEmpty()) return false;
         if (raw.equals(stored)) return true;
@@ -151,6 +172,7 @@ public class ChatMessageStore {
         return raw.equals(storedStripped) || (!stripped.isEmpty() && stripped.equals(storedStripped));
     }
 
+    // 判断是否为已知玩家
     public static boolean isKnownPlayerName(String name) {
         if (name == null || name.isEmpty()) return false;
         var player = net.minecraft.client.MinecraftClient.getInstance().player;
@@ -176,79 +198,98 @@ public class ChatMessageStore {
                              String rawPlayerName,
                              boolean whisper, String whisperPartner) {}
 
+    // 设置待处理元数据
     public static void setPendingMeta(SenderMeta meta) {
         EchoTracker.setPendingMeta(meta);
     }
 
+    // 取出待处理元数据
     public static SenderMeta consumePendingMeta() {
         return EchoTracker.consumePendingMeta();
     }
 
+    // 标记私聊回声
     public static void markPendingWhisperEcho(String target) {
         EchoTracker.markPendingWhisperEcho(target);
     }
 
+    // 标记抑制捕获
     public static void markSuppressCapture() {
         EchoTracker.markSuppressCapture();
     }
 
+    // 取出抑制引用标记
     public static boolean consumeSuppressQuoted() {
         return EchoTracker.consumeSuppressQuoted();
     }
 
+    // 清理过期私聊回声
     private static void purgeStaleWhisperEchoes() {
         EchoTracker.purgeStaleWhisperEchoes();
     }
 
+    // 是否存在私聊回声
     public static boolean hasPendingWhisperEcho() {
         return EchoTracker.hasPendingWhisperEcho();
     }
 
+    // 获取私聊回声目标
     public static String getPendingWhisperTarget() {
         return EchoTracker.getPendingWhisperTarget();
     }
 
+    // 消耗私聊回声
     public static void consumeWhisperEcho() {
         EchoTracker.consumeWhisperEcho();
     }
 
+    // 取出抑制捕获标记
     public static boolean consumeSuppressCapture() {
         return EchoTracker.consumeSuppressCapture();
     }
 
+    // 清理过期回声
     private static void purgeStaleEchoes() {
         EchoTracker.purgeStaleEchoes();
     }
 
+    // 记录待匹配回声
     public static void incrementPendingEcho(String sentText) {
         EchoTracker.incrementPendingEcho(sentText);
     }
 
+    // 按系统聊天匹配回声
     public static EchoTracker.EchoMatch consumeEchoBySystemChat(String incomingText) {
         return EchoTracker.consumeEchoBySystemChat(incomingText);
     }
 
+    // 调试日志输出
     public static void debugLog(java.util.function.Supplier<String> msg) {
         if (ChatBubbleClientSetup.config().debugLog())
             E33Log.info(msg.get());
     }
 
+    // 调试日志输出
     public static void debugLog(String msg) {
         debugLog(() -> msg);
     }
 
+    // 按发送者匹配回声
     public static EchoTracker.EchoMatch consumeEchoIfSenderMatches(UUID senderUUID, Text senderName, String incomingText) {
         return EchoTracker.consumeEchoIfSenderMatches(senderUUID, senderName, incomingText);
     }
 
+    // 判断包含完整名称
     public static boolean containsWholeName(String haystack, String needle) {
         return EchoTracker.containsWholeName(haystack, needle);
     }
 
+    // 判断名称字符
     public static boolean isNamePart(char c) {
         return EchoTracker.isNamePart(c);
     }
 
+    // 更新己方发送者名
     public static void updateLatestOwnSenderName(Text senderName) {
         for (int i = messages.size() - 1; i >= 0 && i >= messages.size() - 5; i--) {
             ChatMessage m = messages.get(i);
@@ -261,6 +302,7 @@ public class ChatMessageStore {
         }
     }
 
+    // 判断近期重复消息
     public static boolean isRecentDuplicate(String content) {
         int size = messages.size();
         for (int i = size - 1; i >= 0 && i >= size - 2; i--) {
@@ -285,16 +327,19 @@ public class ChatMessageStore {
         String whisperPartner,
         String group
     ) {
+        // 替换发送者名称
         public ChatMessage withSenderName(Text newSenderName) {
             return new ChatMessage(senderUUID, newSenderName, content, time,
                 isOwn, isSystem, replyContent, replySender, messageHash, duplicateCount,
                 rawPlayerName, whisper, whisperPartner, group);
         }
+        // 生成合并消息
         public ChatMessage withMerge(String newReplyContent, String newReplySender, long newTime, int newDupCount) {
             return new ChatMessage(senderUUID, senderName, content, newTime,
                 isOwn, isSystem, newReplyContent, newReplySender, messageHash, newDupCount,
                 rawPlayerName, whisper, whisperPartner, group);
         }
+        // 生成带引用消息
         public ChatMessage withReply(String newReplyContent, String newReplySender) {
             return new ChatMessage(senderUUID, senderName, content, time,
                 isOwn, isSystem, newReplyContent, newReplySender, messageHash, duplicateCount,
@@ -302,6 +347,7 @@ public class ChatMessageStore {
         }
     }
 
+    // 判断是否同一发送者
     private static boolean isSameSender(ChatMessage last, Text senderName, String rawPlayerName) {
         if (rawPlayerName != null && !rawPlayerName.isEmpty()
             && last.rawPlayerName() != null && !last.rawPlayerName().isEmpty()) {
@@ -310,6 +356,7 @@ public class ChatMessageStore {
         return last.senderName().getString().equals(senderName.getString());
     }
 
+    // 清除被屏蔽消息
     public static void purgeBlocked(List<? extends String> blocked) {
         if (blocked == null || blocked.isEmpty()) return;
         messages.removeIf(m -> !m.isOwn() && !m.isSystem()
@@ -317,18 +364,15 @@ public class ChatMessageStore {
         bumpListVersion();
     }
 
-    private static boolean isBlockedMessage(ChatMessage m) {
-        return BlockList.isPlayerBlocked(m.rawPlayerName(), m.senderName(),
-            ChatBubbleClientSetup.config().blockedPlayers());
-    }
-
     public static java.util.function.Supplier<net.minecraft.entity.player.PlayerEntity> localPlayerSupplier =
         () -> net.minecraft.client.MinecraftClient.getInstance().player;
 
+    // 添加聊天消息
     public static void addMessage(Text content, UUID senderUUID, Text senderName, boolean isSystem, String rawPlayerName, boolean whisper, String whisperPartner, boolean localSend) {
         addMessage(content, senderUUID, senderName, isSystem, rawPlayerName, whisper, whisperPartner, localSend, null);
     }
 
+    // 添加群组消息
     public static void addGroupMessage(Text content, UUID senderUUID, Text senderName,
                                        String group, String quoteSender, String quoteContent) {
         if (group != null && !group.isEmpty()) {
@@ -342,6 +386,7 @@ public class ChatMessageStore {
             false, null, false, group);
     }
 
+    // 添加聊天消息
     public static void addMessage(Text content, UUID senderUUID, Text senderName, boolean isSystem, String rawPlayerName, boolean whisper, String whisperPartner, boolean localSend, String group) {
         String messageHash = String.valueOf(content.getString().hashCode());
         if (content.getString().isBlank()) return;
@@ -426,7 +471,6 @@ public class ChatMessageStore {
                 content.getString(), playerName,
                 ChatBubbleClientSetup.config().mentionRequireAt(), replySender);
         if (isMentionOrQuote) {
-            if (!screenOpen) hasUnreadMentionFlag = true;
             effectObserver.onMentionOrQuote(
                 content, new SenderMeta(senderUUID, senderName, content, isSystem,
                     rawPlayerName, whisper, whisperPartner),
@@ -454,6 +498,7 @@ public class ChatMessageStore {
         }
     }
 
+    // 截取带样式文本
     public static Text sliceStyled(Text src, int start, int end) {
         MutableText out = Text.empty();
         int[] pos = {0};
@@ -468,10 +513,12 @@ public class ChatMessageStore {
         return out;
     }
 
+    // 转为单行文本
     public static String singleLine(String s) {
         return stripControls(s);
     }
 
+    // 移除控制字符
     private static String stripControls(String s) {
         StringBuilder sb = new StringBuilder(s.length());
         for (int i = 0; i < s.length(); i++) {
@@ -481,11 +528,13 @@ public class ChatMessageStore {
         return sb.toString();
     }
 
+    // 获取全部消息
     public static List<ChatMessage> getMessages() {
         return messages;
     }
 
     private static int listVersion = 0;
+    // 递增列表版本
     private static void bumpListVersion() { listVersion++; }
 
     private static int publicCacheVersion = -1;
@@ -494,8 +543,10 @@ public class ChatMessageStore {
     private static final Map<String, List<ChatMessage>> whisperCache = new HashMap<>();
     private static int whisperCacheVersion = -1;
 
+    // 获取列表版本
     public static int listVersion() { return listVersion; }
 
+    // 获取私聊消息
     public static List<ChatMessage> getWhisperMessages(String partnerName) {
         if (whisperCacheVersion != listVersion) {
             whisperCache.clear();
@@ -514,6 +565,7 @@ public class ChatMessageStore {
         return result;
     }
 
+    // 获取公开消息
     public static List<ChatMessage> getPublicMessages() {
         if (publicCacheVersion == listVersion) return publicCache;
         List<ChatMessage> result = new ArrayList<>();
@@ -527,6 +579,7 @@ public class ChatMessageStore {
         return result;
     }
 
+    // 获取最近私聊
     public static ChatMessage getLatestWhisperWith(String partnerName) {
         for (int i = messages.size() - 1; i >= 0; i--) {
             ChatMessage msg = messages.get(i);
@@ -537,6 +590,7 @@ public class ChatMessageStore {
         return null;
     }
 
+    // 获取最近公开消息
     public static ChatMessage getLatestPublicMessage() {
         for (int i = messages.size() - 1; i >= 0; i--) {
             ChatMessage msg = messages.get(i);
@@ -549,67 +603,57 @@ public class ChatMessageStore {
 
     private static final Set<String> unreadWhisperPartners = new java.util.HashSet<>();
 
+    // 标记私聊未读
     public static void markWhisperUnread(String partner) {
         if (partner != null) unreadWhisperPartners.add(partner);
     }
 
+    // 清除私聊未读
     public static void clearUnreadWhisper(String partner) {
         unreadWhisperPartners.remove(partner);
     }
 
+    // 判断私聊未读
     public static boolean hasUnreadWhisper(String partner) {
         return unreadWhisperPartners.contains(partner);
     }
 
+    // 获取未读数量
     public static int getUnreadCount() {
         return unreadCount;
     }
 
-    public static void markAllRead() {
-        unreadCount = 0;
-        hasUnreadMentionFlag = false;
-    }
-
+    // 设置界面打开状态
     public static void setScreenOpen(boolean open) {
         screenOpen = open;
         if (open) {
             unreadCount = 0;
-            hasUnreadMentionFlag = false;
         }
     }
 
-    public static boolean hasUnreadMention(String playerName) {
-        return hasUnreadMentionFlag;
-    }
-
-    public static Text quoteMessage(int index) {
-        if (index < 0 || index >= messages.size()) return Text.literal("");
-        ChatMessage msg = messages.get(index);
-        String qName = (msg.rawPlayerName() != null && !msg.rawPlayerName().isEmpty())
-            ? msg.rawPlayerName() : msg.senderName().getString();
-        MutableText quote = Text.literal("> " + qName + ": ");
-        quote.append(msg.content());
-        return quote;
-    }
-
+    // 按索引获取消息
     public static ChatMessage getMessageAt(int index) {
         if (index < 0 || index >= messages.size()) return null;
         return messages.get(index);
     }
 
+    // 设置待引用回复
     public static void setPendingReply(String content, String sender) {
         pendingReplyContent = content;
         pendingReplySender = sender;
         EchoTracker.markQuoteSent();
     }
 
+    // 获取待回复发送者
     public static String getPendingReplySender() { return pendingReplySender; }
 
+    // 生成时间分组键
     public static String timeKey(long timeMillis, int interval) {
         if (interval <= 0) return "";
         return String.valueOf(timeMillis / (interval * 60_000L));
     }
 
+    // 格式化时间
     public static String formatTime(long timeMillis) {
         var dt = java.time.Instant.ofEpochMilli(timeMillis)
             .atZone(java.time.ZoneId.systemDefault()).toLocalDateTime();
@@ -619,14 +663,17 @@ public class ChatMessageStore {
         return dt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
     }
 
+    // 判断引用是否近期
     public static boolean wasRecentQuoteAt(long quoteSendTime, long now) {
         return EchoTracker.wasRecentQuoteAt(quoteSendTime, now);
     }
 
+    // 判断是否近期引用
     public static boolean wasRecentQuote() {
         return EchoTracker.wasRecentQuote();
     }
 
+    // 提取私聊内容
     public static String extractWhisperContent(String text, SenderMeta meta) {
         if (meta != null && meta.rawContent() != null) {
             String rc = meta.rawContent().getString();
@@ -640,6 +687,7 @@ public class ChatMessageStore {
         return text.substring(start).trim();
     }
 
+    // 提取私聊显示名
     public static Text extractWhisperDisplayName(Text fullLine, Text fallback) {
         String fullStr = fullLine.getString();
         int qiaoIdx = fullStr.indexOf("悄悄地对你说");
@@ -679,6 +727,7 @@ public class ChatMessageStore {
         return fallback;
     }
 
+    // 移除斜体样式
     private static Text stripItalic(Text src) {
         MutableText out = Text.empty();
         src.visit((style, text) -> {
@@ -690,6 +739,7 @@ public class ChatMessageStore {
 
     private static Text ownDecoratedName;
 
+    // 获取己方显示名
     public static Text ownDisplayName() {
         var player = net.minecraft.client.MinecraftClient.getInstance().player;
         if (player != null && player.networkHandler != null) {
@@ -725,10 +775,7 @@ public class ChatMessageStore {
         return player != null ? player.getName() : Text.literal("?");
     }
 
-    public static Text cachedOwnDisplayName() {
-        return ownDecoratedName;
-    }
-
+    // 缓存己方装饰名
     public static void cacheOwnDecoratedName(Text senderName) {
         var player = net.minecraft.client.MinecraftClient.getInstance().player;
         String bare = player != null ? player.getName().getString() : "";
@@ -737,10 +784,12 @@ public class ChatMessageStore {
         if (!sn.isEmpty() && !sn.equals(bare)) ownDecoratedName = senderName;
     }
 
+    // 获取消息数量
     public static int size() {
         return messages.size();
     }
 
+    // 切换当前世界
     public static void setCurrentWorld(String name) {
         if (java.util.Objects.equals(name, currentWorldKey)) return;
         boolean wasFallback = "world".equals(currentWorldKey);
@@ -752,7 +801,6 @@ public class ChatMessageStore {
         currentWorldKey = name;
         cleanupOldHistory();
         if (isRefinement || hasPendingMessages) {
-            hasUnreadMentionFlag = false;
             if (ChatBubbleClientSetup.config().chatHistoryEnabled() && isWorldSpecific(currentWorldKey)) {
                 List<ChatMessage> early = new ArrayList<>(messages);
                 Map<String, Integer> skipKeys = usableSkips(backlogKeys, mergeCountsOf(early));
@@ -768,63 +816,76 @@ public class ChatMessageStore {
         backlogKeys.clear();
         bumpListVersion();
         unreadCount = 0;
-        hasUnreadMentionFlag = false;
         if (ChatBubbleClientSetup.config().chatHistoryEnabled() && isWorldSpecific(currentWorldKey))
             loadMessages(currentWorldKey, java.util.Collections.emptyMap());
     }
 
+    // 判断是否具体世界
     private static boolean isWorldSpecific(String key) {
         return key != null && (key.startsWith("SP:") || key.startsWith("MP:"));
     }
 
+    // 获取历史文件
     private static File getHistoryFile(String worldKey) {
         return HistoryStore.getHistoryFile(worldKey);
     }
 
+    // 获取旧版历史文件
     private static File getLegacyHistoryFile(String worldKey) {
         return HistoryStore.getLegacyHistoryFile(worldKey);
     }
 
+    // 计算短哈希
     private static String sha256Short(String s) {
         return HistoryStore.sha256Short(s);
     }
 
+    // 判断敏感命令
     public static boolean isSensitiveCommand(String text) {
         return HistoryStore.isSensitiveCommand(text);
     }
 
+    // 序列化消息行
     public static String toLine(ChatMessage msg) {
         return HistoryStore.toLine(msg);
     }
 
+    // 反序列化消息行
     public static ChatMessage fromLine(String line) {
         return HistoryStore.fromLine(line);
     }
 
+    // 解析JSON消息行
     private static ChatMessage fromJsonLine(String line) {
         return HistoryStore.fromJsonLine(line);
     }
 
+    // 解析文本组件
     private static Text componentFrom(Map<String, Object> obj, String jsonKey, String textKey) {
         return HistoryStore.componentFrom(obj, jsonKey, textKey);
     }
 
+    // 转义字段
     private static String escapeField(String s) {
         return HistoryStore.escapeField(s);
     }
 
+    // 还原转义字段
     private static String unescapeField(String s) {
         return HistoryStore.unescapeField(s);
     }
 
+    // 解析带样式文本
     public static Text parseStyledText(String s) {
         return HistoryStore.parseStyledText(s);
     }
 
+    // 应用颜色代码
     private static Style applySectionCode(Style style, char code) {
         return HistoryStore.applySectionCode(style, code);
     }
 
+    // 加载旧版历史
     private static List<ChatMessage> loadLegacyFile(File f) {
         return HistoryStore.loadLegacyFile(f);
     }
@@ -836,6 +897,7 @@ public class ChatMessageStore {
             return t;
         });
 
+    // 保存消息历史
     private static void saveMessages(String worldKey) {
         if (messages.isEmpty()) return;
         List<ChatMessage> snapshot = new ArrayList<>(messages);
@@ -876,6 +938,7 @@ public class ChatMessageStore {
         });
     }
 
+    // 是否有可清理历史
     public static boolean hasHistoryToClear() {
         if (!messages.isEmpty()) return true;
         if (currentWorldKey == null) return false;
@@ -883,12 +946,12 @@ public class ChatMessageStore {
             || getLegacyHistoryFile(currentWorldKey).exists();
     }
 
+    // 清除当前世界历史
     public static void clearCurrentWorldHistory() {
         messages.clear();
         backlogKeys.clear();
         bumpListVersion();
         unreadCount = 0;
-        hasUnreadMentionFlag = false;
         unreadWhisperPartners.clear();
         historyDirty = false;
         historyGeneration++;
@@ -913,10 +976,12 @@ public class ChatMessageStore {
 
     private static volatile long historyGeneration;
 
+    // 判断历史是否过期
     public static boolean isExpired(long fileMtime, long now, int retentionDays) {
         return HistoryStore.isExpired(fileMtime, now, retentionDays);
     }
 
+    // 清理过期历史
     private static void cleanupOldHistory() {
         int days = ChatBubbleClientSetup.config().historyRetentionDays();
         if (days <= 0) return;
@@ -934,6 +999,7 @@ public class ChatMessageStore {
         }
     }
 
+    // 必要时自动保存
     public static void maybeAutoSave() {
         long now = System.currentTimeMillis();
         if (currentWorldKey == null || !historyDirty || now - lastAutoSave < AUTO_SAVE_MS) return;
@@ -942,6 +1008,7 @@ public class ChatMessageStore {
         saveMessages(currentWorldKey);
     }
 
+    // 加载消息历史
     private static void loadMessages(String worldKey, Map<String, Integer> skipCounts) {
         skipCounts = skipCounts.isEmpty() ? java.util.Collections.<String, Integer>emptyMap()
             : new HashMap<>(skipCounts);
@@ -1003,6 +1070,7 @@ public class ChatMessageStore {
 
     private static final Map<String, Integer> backlogKeys = new HashMap<>();
 
+    // 生成合并键
     private static String mergeKey(String senderName, String content, String group) {
         String name = senderName == null ? ""
             : MERGE_NAME_COLOR.matcher(senderName).replaceAll("").trim().toLowerCase(Locale.ROOT);
@@ -1010,6 +1078,7 @@ public class ChatMessageStore {
             + "\0" + (group == null ? "" : group);
     }
 
+    // 生成消息合并键
     private static String mergeKeyOf(ChatMessage m) {
         String name = m.rawPlayerName() != null && !m.rawPlayerName().isEmpty()
             ? m.rawPlayerName()
@@ -1017,6 +1086,7 @@ public class ChatMessageStore {
         return mergeKey(name, m.content().getString(), m.group());
     }
 
+    // 统计合并计数
     private static Map<String, Integer> mergeCountsOf(List<ChatMessage> rows) {
         Map<String, Integer> counts = new HashMap<>();
         for (ChatMessage m : rows)
@@ -1024,6 +1094,7 @@ public class ChatMessageStore {
         return counts;
     }
 
+    // 计算可用跳过数
     private static Map<String, Integer> usableSkips(Map<String, Integer> recorded,
                                                     Map<String, Integer> present) {
         Map<String, Integer> out = new HashMap<>();
@@ -1035,6 +1106,7 @@ public class ChatMessageStore {
         return out;
     }
 
+    // 取出一个未重复项
     private static boolean takeFresh(Map<String, Integer> counts, String key) {
         Integer left = counts.get(key);
         if (left != null && left > 0) {
@@ -1044,6 +1116,7 @@ public class ChatMessageStore {
         return true;
     }
 
+    // 添加历史消息
     public static void addHistoryMessages(List<com.niuqu.chatbubble.network.HistoryPayload.HistoryEntry> entries) {
         if (entries == null || entries.isEmpty()) return;
         Map<String, Integer> seen = mergeCountsOf(messages);
@@ -1085,6 +1158,7 @@ public class ChatMessageStore {
         bumpListVersion();
     }
 
+    // 应用聊天引用元数据
     public static void applyChatMeta(UUID senderUUID, String senderName, String messageHash,
                                       String quoteSender, String quoteContent, List<String> mentionTargets) {
         for (int i = messages.size() - 1; i >= 0; i--) {

@@ -6,9 +6,12 @@ import java.util.UUID;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.Text;
 
+// 私聊点击检测
 public final class TellClickDetector {
+    // 私有构造
     private TellClickDetector() {}
 
+    // 检测点击私聊
     public static ChatMessageStore.SenderMeta detectByTellClick(Text message, String text) {
         if (ChatClassifier.isVanillaBroadcast(message)) return null;
         var player = MinecraftClient.getInstance().player;

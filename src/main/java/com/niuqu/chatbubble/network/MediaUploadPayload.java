@@ -6,6 +6,7 @@ import net.minecraft.network.packet.CustomPayload;
 //#endif
 import net.minecraft.util.Identifier;
 
+// 媒体分块上传包
 //#if MC >= 12005
 public record MediaUploadPayload(long uploadId, int index, int totalChunks,
                                  int totalBytes, String contentType, byte[] chunk)
@@ -77,6 +78,7 @@ public record MediaUploadPayload(long uploadId, int index, int totalChunks,
     //$$     return buf;
     //$$ }
     //#endif
+    // 获取包标识
     //#if MC >= 12005
     @Override
     public Id<MediaUploadPayload> getId() { return ID; }

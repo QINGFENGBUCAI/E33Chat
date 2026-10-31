@@ -8,9 +8,12 @@ import java.util.UUID;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.Text;
 
+// 聊天解析流程
 public final class ChatPipeline {
+    // 私有构造
     private ChatPipeline() {}
 
+    // 提取装饰名字
     public static Text extractDecoratedName(Text fullLine, String contentStr,
                                                  String rawName, Text fallback) {
         if (contentStr == null || contentStr.isEmpty()) return fallback;
@@ -20,6 +23,7 @@ public final class ChatPipeline {
         return cleanNameArea(fullLine, 0, idx, rawName, fallback);
     }
 
+    // 清理名字区域
     public static Text cleanNameArea(Text fullLine, int a, int b,
                                           String rawName, Text fallback) {
         String fullStr = fullLine.getString();
@@ -50,6 +54,7 @@ public final class ChatPipeline {
         return nameArea;
     }
 
+    // 解析玩家发言行
     public static ChatMessageStore.SenderMeta tryParsePlayerLine(
             Text message, String text, String logTag) {
         var self = MinecraftClient.getInstance().player;

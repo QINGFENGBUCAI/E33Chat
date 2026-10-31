@@ -15,6 +15,7 @@ import net.minecraft.text.Text;
 import java.util.ArrayList;
 import java.util.List;
 
+// 分组浏览面板
 public class GroupBrowserPanel {
     public static final int ACT_NONE = 0;
     public static final int ACT_JOIN = 101;
@@ -38,15 +39,18 @@ public class GroupBrowserPanel {
     private int[] leaveBtn = null;
     private int[] createBtn = null;
 
+    // 计算可见行数
     private static int visibleRows(int groupCount) {
         return Math.min(groupCount, MAX_ROWS);
     }
 
+    // 计算面板高度
     public static int panelHeight(int groupCount) {
         int rows = visibleRows(groupCount);
         return TITLE_H + 4 + rows * (ROW_H + 2) + 4 + INPUT_H + 6;
     }
 
+    // 绘制分组面板
     public void render(DrawContext g, int mouseX, int mouseY, TextRenderer font, ChatBubbleTheme.Colors c,
                        int panelX, int panelW, int barTop, TextFieldWidget createInput, float alpha) {
         if (!visible) return;
@@ -137,6 +141,7 @@ public class GroupBrowserPanel {
         createBtn = new int[]{bx, y, bx + bw, y + INPUT_H};
     }
 
+    // 处理点击事件
     public int handleClick(double mx, double my, TextRenderer font,
                            int panelX, int panelW, int barTop, TextFieldWidget createInput) {
         if (!visible) return ACT_NONE;
@@ -164,6 +169,7 @@ public class GroupBrowserPanel {
         return -1;
     }
 
+    // 查找离开按钮行
     private int leaveRowIndex() {
         if (leaveBtn == null) return -1;
         for (int i = 0; i < rowRects.size(); i++) {
@@ -174,10 +180,12 @@ public class GroupBrowserPanel {
         return -1;
     }
 
+    // 判断点击面板
     public boolean isClickOnPanel(double mx, double my) {
         return visible && mx >= px && mx <= px + w && my >= py && my <= py + h;
     }
 
+    // 判断点在矩形内
     private static boolean over(double mx, double my, int[] r) {
         return mx >= r[0] && mx <= r[2] && my >= r[1] && my <= r[3];
     }

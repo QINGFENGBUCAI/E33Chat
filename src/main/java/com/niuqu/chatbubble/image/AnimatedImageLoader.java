@@ -24,6 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+// 动图加载与缓存
 public final class AnimatedImageLoader {
     private static final Map<String, Entry> CACHE = new ConcurrentHashMap<>();
     private static final int MAX_FRAMES = 120;
@@ -41,6 +42,7 @@ public final class AnimatedImageLoader {
 
     private static final long IDLE_EVICT_MS = 5 * 60_000;
 
+    // 更新LRU访问顺序
     private static void touchLru(String url) {
         synchronized (LRU) {
             LRU.remove(url);
@@ -49,6 +51,7 @@ public final class AnimatedImageLoader {
         evictIfNeeded();
     }
 
+    // 按容量清理缓存
     private static void evictIfNeeded() {
         synchronized (LRU) {
             long now = System.currentTimeMillis();
@@ -75,11 +78,13 @@ public final class AnimatedImageLoader {
         }
     }
 
+    // 取动图帧数
     private static int frameCount(Entry e) {
         Identifier[] frames = e.frames;
         return frames == null ? 0 : frames.length;
     }
 
+    // 销毁条目纹理
     private static void destroyEntryTextures(Entry e) {
         Identifier[] frames = e.frames;
         e.frames = null;
@@ -103,8 +108,10 @@ public final class AnimatedImageLoader {
             return t;
         });
 
+    // 禁止实例化
     private AnimatedImageLoader() {}
 
+    // 判断是否为动图
     public static boolean looksAnimated(String url, String nameHint) {
         String lower = (url + " " + (nameHint == null ? "" : nameHint))
             .toLowerCase(java.util.Locale.ROOT);
@@ -115,21 +122,19 @@ public final class AnimatedImageLoader {
             || lower.endsWith(".apng") || formatHint;
     }
 
+    // 获取或加载动图
     public static Entry getOrLoad(String url, String nameHint) {
         if (url == null || url.isBlank() || !looksAnimated(url, nameHint)) return null;
         return cachedOrStart(url);
     }
 
+    // 加载任意图片
     public static Entry getOrLoadAny(String url, String nameHint) {
         if (url == null || url.isBlank()) return null;
         return cachedOrStart(url);
     }
 
-    public static Entry getOrLoadFile(java.io.File file) {
-        if (file == null || !file.isFile()) return null;
-        return getOrLoad(file.toURI().toString(), file.getName());
-    }
-
+    // 推进动图帧播放
     public static void tick() {
         long now = System.currentTimeMillis();
         for (Entry entry : CACHE.values()) {
@@ -139,6 +144,7 @@ public final class AnimatedImageLoader {
         evictIfNeeded();
     }
 
+    // 取缓存或开始加载
     private static Entry cachedOrStart(String url) {
         Entry current = CACHE.get(url);
         if (current != null && current.failed
@@ -156,12 +162,14 @@ public final class AnimatedImageLoader {
         return entry;
     }
 
+    // 创建条目并加载
     private static Entry start(String url) {
         Entry entry = new Entry(url);
         EXEC.execute(() -> load(entry));
         return entry;
     }
 
+    // 加载并解码动图
     private static void load(Entry entry) {
         try {
             byte[] bytes;
@@ -234,6 +242,7 @@ public final class AnimatedImageLoader {
 
     public enum OverBudget { TOO_MANY_FRAMES, TOO_LARGE_DIMENSION, TOO_LARGE_BYTES }
 
+    // 探测动图信息
     public static Probe probe(byte[] bytes) {
         if (bytes == null || bytes.length == 0) return null;
         try (ImageInputStream input = ImageIO.createImageInputStream(new ByteArrayInputStream(bytes))) {
@@ -271,6 +280,7 @@ public final class AnimatedImageLoader {
         }
     }
 
+    // 校验动图预算
     public static OverBudget checkBudget(Probe probe, long byteCount) {
         if (probe == null) return null;
         if (probe.frames() > MAX_FRAMES) return OverBudget.TOO_MANY_FRAMES;
@@ -281,6 +291,7 @@ public final class AnimatedImageLoader {
         return null;
     }
 
+    // 格式转MIME类型
     public static String mimeType(String format) {
         if (format == null) return "application/octet-stream";
         return switch (format.toLowerCase(java.util.Locale.ROOT)) {
@@ -292,6 +303,7 @@ public final class AnimatedImageLoader {
         };
     }
 
+    // 按像素算帧上限
     private static int framesWithinBudget(int width, int height) {
         long px = (long) Math.max(1, width) * Math.max(1, height);
         if (px <= 0) return MAX_FRAMES;
@@ -300,6 +312,7 @@ public final class AnimatedImageLoader {
         return (int) Math.max(1, cap);
     }
 
+    // 解码动图帧序列
     private static Decoded decode(byte[] bytes) {
         try (ImageInputStream input = ImageIO.createImageInputStream(new ByteArrayInputStream(bytes))) {
             if (input == null) return null;
@@ -352,6 +365,7 @@ public final class AnimatedImageLoader {
         }
     }
 
+    // 猜测图片格式
     private static String formatHint(byte[] bytes) {
         if (bytes == null || bytes.length < 6) return "unknown";
         if (bytes[0] == 'G' && bytes[1] == 'I' && bytes[2] == 'F') return "gif";
@@ -360,6 +374,7 @@ public final class AnimatedImageLoader {
         return "animated-image";
     }
 
+    // 合成GIF帧
     private static Decoded decodeGif(ImageReader reader, int count) throws Exception {
         int canvasW = Math.max(1, reader.getWidth(0));
         int canvasH = Math.max(1, reader.getHeight(0));
@@ -427,6 +442,7 @@ public final class AnimatedImageLoader {
         }
     }
 
+    // 读取GIF帧信息
     private static FrameInfo frameInfo(ImageReader reader, IIOMetadata metadata, int index) throws Exception {
         int left = 0, top = 0, width = reader.getWidth(index), height = reader.getHeight(index), delay = 100, disposal = 0;
         if (metadata != null) {
@@ -451,12 +467,14 @@ public final class AnimatedImageLoader {
         return new FrameInfo(left, top, Math.max(1, width), Math.max(1, height), delay, disposal);
     }
 
+    // 复制图像
     private static BufferedImage copy(BufferedImage source) {
         BufferedImage target = new BufferedImage(source.getWidth(), source.getHeight(), BufferedImage.TYPE_INT_ARGB);
         copyInto(source, target);
         return target;
     }
 
+    // 复制图像内容
     private static void copyInto(BufferedImage source, BufferedImage target) {
         Graphics2D graphics = target.createGraphics();
         try {
@@ -467,6 +485,7 @@ public final class AnimatedImageLoader {
         }
     }
 
+    // 清空指定区域
     private static void clear(BufferedImage image, int x, int y, int width, int height) {
         Graphics2D graphics = image.createGraphics();
         try {
@@ -477,6 +496,7 @@ public final class AnimatedImageLoader {
         }
     }
 
+    // 安全解析整数
     private static int parseInt(String value, int fallback) {
         try {
             return value == null || value.isBlank() ? fallback : Integer.parseInt(value);
@@ -485,6 +505,7 @@ public final class AnimatedImageLoader {
         }
     }
 
+    // 关闭全部帧
     private static void closeFrames(ArrayList<NativeImage> frames) {
         for (NativeImage image : frames) {
             try { image.close(); } catch (Throwable ignored) {}
@@ -492,6 +513,7 @@ public final class AnimatedImageLoader {
         frames.clear();
     }
 
+    // 读取帧延迟
     private static int frameDelay(IIOMetadata metadata) {
         if (metadata == null) return 100;
         try {
@@ -522,27 +544,35 @@ public final class AnimatedImageLoader {
         private volatile long frameStart;
         private volatile int frameIndex;
         private volatile long lastAccessMs = System.currentTimeMillis();
+        // 构造条目
         private Entry(String url) {
             this.url = url;
         }
+        // 是否可播放
         public boolean ready() {
             return ready && frames != null && frames.length > 1;
         }
+        // 是否加载失败
         public boolean failed() {
             return failed;
         }
+        // 是否为静态图
         public boolean staticImage() {
             return staticImage;
         }
+        // 取图片字节大小
         public long sizeBytes() {
             return sizeBytes;
         }
+        // 取图片宽度
         public int width() {
             return width;
         }
+        // 取图片高度
         public int height() {
             return height;
         }
+        // 取当前帧纹理
         public Identifier texture() {
             lastAccessMs = System.currentTimeMillis();
             Identifier[] current = frames;
@@ -550,6 +580,7 @@ public final class AnimatedImageLoader {
             advance(System.currentTimeMillis());
             return current[Math.max(0, Math.min(frameIndex, current.length - 1))];
         }
+        // 推进播放帧
         private synchronized void advance(long now) {
             Identifier[] current = frames;
             int[] currentDelays = delays;
@@ -562,6 +593,7 @@ public final class AnimatedImageLoader {
                 frameStart = now - elapsed;
             }
         }
+        // 标记加载失败
         private void markFailed() {
             failed = true;
             failedAt = System.currentTimeMillis();

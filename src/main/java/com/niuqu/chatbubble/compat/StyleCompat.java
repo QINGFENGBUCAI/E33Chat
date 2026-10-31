@@ -3,9 +3,12 @@ import net.minecraft.text.ClickEvent;
 import net.minecraft.text.HoverEvent;
 import net.minecraft.text.Text;
 
+// 文本样式版本适配
 public final class StyleCompat {
+    // 禁止外部实例化
     private StyleCompat() {}
 
+    // 提取点击事件值
     public static String clickValue(ClickEvent click) {
         if (click == null) return null;
         //#if MC >= 12105
@@ -20,6 +23,7 @@ public final class StyleCompat {
         //#endif
     }
 
+    // 创建打开链接事件
     public static ClickEvent openUrl(String url) {
         if (url == null) return null;
         //#if MC >= 12105
@@ -33,6 +37,7 @@ public final class StyleCompat {
         //#endif
     }
 
+    // 创建文本悬停事件
     public static HoverEvent showText(Text text) {
         if (text == null) return null;
         //#if MC >= 12105
@@ -42,6 +47,7 @@ public final class StyleCompat {
         //#endif
     }
 
+    // 提取悬停文本
     public static Text hoverShowText(HoverEvent hover) {
         if (hover == null || hover.getAction() != HoverEvent.Action.SHOW_TEXT) return null;
         //#if MC >= 12105
@@ -52,6 +58,7 @@ public final class StyleCompat {
         //#endif
     }
 
+    // 提取悬停事件值
     public static Object hoverValue(HoverEvent hover) {
         if (hover == null) return null;
         //#if MC >= 12105
@@ -70,10 +77,5 @@ public final class StyleCompat {
         //$$     return null;
         //$$ }
         //#endif
-    }
-
-    public static String hoverPayloadClassName(HoverEvent hover) {
-        Object value = hoverValue(hover);
-        return value != null ? value.getClass().getName() : "";
     }
 }

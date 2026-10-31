@@ -7,9 +7,12 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 //#endif
 import net.minecraft.server.network.ServerPlayerEntity;
 
+// 媒体传输服务
 public final class MediaService {
+    // 工具类私有构造
     private MediaService() {}
 
+    // 处理媒体分块请求
     public static void handleRequest(ServerPlayerEntity sender, DiskMediaStore store, String mediaId) {
         if (!store.allowTransfer(sender.getName().getString())) {
             sendNotFound(sender, mediaId);
@@ -36,6 +39,7 @@ public final class MediaService {
         }
     }
 
+    // 回复未找到
     private static void sendNotFound(ServerPlayerEntity sender, String mediaId) {
         //#if MC >= 12005
         ServerPlayNetworking.send(sender, new MediaResponsePayload(mediaId, 0, 1, new byte[0]));
@@ -45,6 +49,7 @@ public final class MediaService {
         //#endif
     }
 
+    // 处理媒体分块上传
     public static void handleUpload(ServerPlayerEntity sender, DiskMediaStore store, boolean mediaEnabled,
                                     boolean autoClean, long uploadId, int index, int totalChunks,
                                     int totalBytes, String contentType, byte[] chunk) {

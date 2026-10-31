@@ -6,6 +6,7 @@ import net.minecraft.network.packet.CustomPayload;
 //#endif
 import net.minecraft.util.Identifier;
 
+// 引用同步包
 //#if MC >= 12005
 public record QuoteSyncPayload(String quotedSenderName, String quotedContent, String messageHash)
         implements CustomPayload {
@@ -52,6 +53,7 @@ public record QuoteSyncPayload(String quotedSenderName, String quotedContent, St
     //$$     return buf;
     //$$ }
     //#endif
+    // 获取包标识
     //#if MC >= 12005
     @Override
     public Id<QuoteSyncPayload> getId() { return ID; }

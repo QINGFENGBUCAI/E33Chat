@@ -4,12 +4,14 @@ import com.niuqu.chatbubble.ChatBubbleScreen;
 import com.niuqu.chatbubble.store.ChatMessageStore;
 import com.niuqu.chatbubble.chat.MentionDetector;
 import com.niuqu.chatbubble.chat.notification.MentionNotificationBanner.NotificationType;
+import com.niuqu.chatbubble.image.BracketCodec;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import java.util.*;
 
+// 提及通知控制
 public class MentionNotificationController {
     public static final MentionNotificationController INSTANCE = new MentionNotificationController();
 
@@ -19,8 +21,10 @@ public class MentionNotificationController {
         }
     };
 
+    // 私有构造
     private MentionNotificationController() {}
 
+    // 处理提及消息
     public void onMessageCaptured(Text content, ChatMessageStore.SenderMeta meta,
                                    int messageIndex, String replySender) {
         MinecraftClient mc = MinecraftClient.getInstance();
@@ -56,6 +60,7 @@ public class MentionNotificationController {
         }
     }
 
+    // 处理收到私聊
     public void onWhisperReceived(UUID senderUUID, Text senderName, Text content,
                                    int messageIndex) {
         MinecraftClient mc = MinecraftClient.getInstance();
@@ -80,6 +85,7 @@ public class MentionNotificationController {
         }
     }
 
+    // 处理系统消息
     public void onSystemMessage(Text content, int messageIndex) {
         if (MinecraftClient.getInstance().player == null) return;
         if (!ChatBubbleClientSetup.config().systemBannerEnabled()) return;
@@ -87,9 +93,11 @@ public class MentionNotificationController {
             NotificationType.SYSTEM);
     }
 
+    // 去重后加入横幅
     private void enqueueDeduped(UUID uuid, Text name, Text content, int index,
                                  NotificationType type) {
-        String fp = uuid + "\0" + content.getString();
+        Text bannerContent = BracketCodec.toPlaceholderText(content);
+        String fp = uuid + "\0" + bannerContent.getString();
         long now = System.currentTimeMillis();
         Long last = recentFingerprints.get(fp);
         if (last != null && now - last < 1000) {
@@ -98,7 +106,7 @@ public class MentionNotificationController {
             return;
         }
         recentFingerprints.put(fp, now);
-        MentionNotificationBanner.INSTANCE.enqueue(uuid, name, content, index, type);
+        MentionNotificationBanner.INSTANCE.enqueue(uuid, name, bannerContent, index, type);
         ChatMessageStore.debugLog(() -> "[e33chat] Banner enqueued | queueSize="
             + MentionNotificationBanner.INSTANCE.pendingCount());
     }

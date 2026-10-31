@@ -8,8 +8,10 @@ import net.minecraft.client.gui.screen.Screen;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Invoker;
 
+// 屏幕控件操作访问器
 @Mixin(Screen.class)
 public interface ScreenAccessor {
+    // 添加可绘制控件
     //#if MC >= 26000
     //$$ @Invoker("addRenderableWidget")
     //#else
@@ -17,6 +19,7 @@ public interface ScreenAccessor {
     //#endif
     <T extends Element & Drawable & Selectable> T e33chat$addDrawableChild(T drawableElement);
 
+    // 清空全部控件
     //#if MC >= 26000
     //$$ @Invoker("clearWidgets")
     //#else

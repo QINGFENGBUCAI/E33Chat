@@ -2,10 +2,12 @@ package com.niuqu.chatbubble.network;
 import net.minecraft.network.PacketByteBuf;
 import java.util.List;
 
+// 服务端配置数据传输对象
 public record ServerConfigDto(boolean useTpa, boolean historyEnabled, boolean templateDebug,
                               boolean mediaEnabled, boolean mediaAutoClean, boolean easyBotCompat,
                               boolean groupsEnabled,
                               List<String> chatTemplates, List<String> whisperTemplates) {
+    // 编码配置数据
     public static void encode(ServerConfigDto dto, PacketByteBuf buf) {
         buf.writeBoolean(dto.useTpa);
         buf.writeBoolean(dto.historyEnabled);
@@ -18,6 +20,7 @@ public record ServerConfigDto(boolean useTpa, boolean historyEnabled, boolean te
         ConfigSyncV2Payload.writeList(buf, dto.whisperTemplates);
     }
 
+    // 解码配置数据
     public static ServerConfigDto decode(PacketByteBuf buf) {
         boolean useTpa = buf.readBoolean();
         boolean history = buf.readBoolean();

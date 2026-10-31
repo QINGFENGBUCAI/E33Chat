@@ -14,6 +14,7 @@ import net.minecraft.util.Identifier;
 import java.util.ArrayList;
 import java.util.List;
 
+// 服务端配置保存包
 //#if MC >= 12005
 public record ServerConfigSavePayload(boolean useTpa, boolean historyEnabled, boolean templateDebug,
                                       boolean mediaEnabled, boolean mediaAutoClean, boolean easyBotCompat,
@@ -70,11 +71,13 @@ public record ServerConfigSavePayload(boolean useTpa, boolean historyEnabled, bo
     //$$     return buf;
     //$$ }
     //#endif
+    // 获取包标识
     //#if MC >= 12005
     @Override
     public Id<ServerConfigSavePayload> getId() { return ID; }
     //#endif
 
+    // 处理配置保存
     public static void handleServer(ServerConfigSavePayload payload, ServerPlayerEntity player,
                                     java.util.function.Consumer<ServerConfig> applyAndSave) {
         Text error = validateTemplates(true, payload.chatTemplates());
@@ -98,6 +101,7 @@ public record ServerConfigSavePayload(boolean useTpa, boolean historyEnabled, bo
         player.sendMessage(Text.translatable("e33chat.server.saved"), false);
     }
 
+    // 校验模板列表
     private static Text validateTemplates(boolean chat, List<String> templates) {
         for (int i = 0; i < templates.size(); i++) {
             TemplateMatcher.CompileResult result = TemplateMatcher.compile(templates.get(i));

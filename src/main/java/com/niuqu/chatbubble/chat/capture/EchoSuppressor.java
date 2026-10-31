@@ -3,9 +3,12 @@ import com.niuqu.chatbubble.chat.WhisperSignal;
 import com.niuqu.chatbubble.store.ChatMessageStore;
 import net.minecraft.client.MinecraftClient;
 
+// 回声消息抑制
 public final class EchoSuppressor {
+    // 私有构造
     private EchoSuppressor() {}
 
+    // 抑制发出的私聊回声
     public static boolean trySuppressOutgoingEcho(String sysText) {
         boolean hasEchoFlag = ChatMessageStore.hasPendingWhisperEcho();
         boolean hasKw = WhisperSignal.containsZh(sysText)

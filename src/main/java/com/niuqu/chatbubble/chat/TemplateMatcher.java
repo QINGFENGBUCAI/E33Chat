@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+// 聊天模板匹配
 public class TemplateMatcher {
     public interface NameResolver { boolean isKnown(String name); }
 
@@ -15,7 +16,9 @@ public class TemplateMatcher {
                                    boolean external, List<String> unknownFields) {}
 
     public record CompileResult(CompiledTemplate template, String error) {
+        // 构建成功结果
         public static CompileResult ok(CompiledTemplate t) { return new CompileResult(t, null); }
+        // 构建失败结果
         public static CompileResult fail(String error) { return new CompileResult(null, error); }
     }
 
@@ -36,6 +39,7 @@ public class TemplateMatcher {
 
     private record Token(String literal, String field) {}
 
+    // 编译模板
     public static CompileResult compile(String raw) {
         if (raw == null || raw.isBlank()) return CompileResult.fail("模板不能为空");
         List<Token> tokens = new ArrayList<>();
@@ -82,6 +86,7 @@ public class TemplateMatcher {
         }
     }
 
+    // 解析模板片段
     private static void parse(String raw, List<Token> tokens, List<String> unknown) {
         int i = 0;
         while (i < raw.length()) {
@@ -100,6 +105,7 @@ public class TemplateMatcher {
         }
     }
 
+    // 匹配消息模板
     public static Optional<TemplateResult> match(String text, List<CompiledTemplate> chatTpls,
             List<CompiledTemplate> whisperTpls, NameResolver resolver) {
         if (text == null || text.isEmpty()) return Optional.empty();
@@ -121,6 +127,7 @@ public class TemplateMatcher {
         return Optional.empty();
     }
 
+    // 从消息推断模板
     public static Optional<String> inferFromMessage(String text, Collection<String> knownNames) {
         if (text == null || text.isBlank()) return Optional.empty();
         var parsed = MessagePresentation.parseDecoratedPlayerLine(text, knownNames);
@@ -138,11 +145,13 @@ public class TemplateMatcher {
         return Optional.of(tpl);
     }
 
+    // 附加确认名字
     private static TemplateResult withVerified(TemplateResult r, String verified) {
         return new TemplateResult(r.template(), r.prefix(), r.displayName(), r.sender(), r.target(),
             r.content(), verified, r.nameStart(), r.nameEnd(), r.contentStart(), r.contentEnd(), r.whisper());
     }
 
+    // 尝试单模板匹配
     private static TemplateResult tryMatch(String text, CompiledTemplate t) {
         Matcher m = t.pattern().matcher(text);
         if (!m.matches()) return null;

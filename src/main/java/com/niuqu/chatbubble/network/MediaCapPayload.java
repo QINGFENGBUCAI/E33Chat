@@ -7,6 +7,7 @@ import net.minecraft.network.packet.CustomPayload;
 //#endif
 import net.minecraft.util.Identifier;
 
+// 媒体能力同步包
 //#if MC >= 12005
 public record MediaCapPayload(boolean mediaEnabled) implements CustomPayload {
 //#else
@@ -42,11 +43,13 @@ public record MediaCapPayload(boolean mediaEnabled) implements CustomPayload {
     //$$     return buf;
     //$$ }
     //#endif
+    // 获取包标识
     //#if MC >= 12005
     @Override
     public Id<MediaCapPayload> getId() { return ID; }
     //#endif
 
+    // 应用媒体开关
     public static void handle(MediaCapPayload payload) {
         MediaClient.setServerEnabled(payload.mediaEnabled());
     }

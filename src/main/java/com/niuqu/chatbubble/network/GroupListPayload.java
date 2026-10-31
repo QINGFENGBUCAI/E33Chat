@@ -7,6 +7,7 @@ import net.minecraft.network.packet.CustomPayload;
 import net.minecraft.util.Identifier;
 import java.util.List;
 
+// 群组列表同步包
 //#if MC >= 12005
 public record GroupListPayload(boolean enabled, List<String> names,
                                List<Integer> memberCounts, List<String> myGroups)
@@ -80,11 +81,13 @@ public record GroupListPayload(boolean enabled, List<String> names,
     //$$ }
     //#endif
 
+    // 写入字符串列表
     private static void writeStringList(PacketByteBuf buf, List<String> list, int maxLen) {
         buf.writeVarInt(list.size());
         for (String s : list) buf.writeString(s, maxLen);
     }
 
+    // 读取字符串列表
     private static List<String> readStringList(PacketByteBuf buf, int maxLen) {
         int n = buf.readVarInt();
         List<String> out = new java.util.ArrayList<>(Math.min(n, 1024));
@@ -92,11 +95,13 @@ public record GroupListPayload(boolean enabled, List<String> names,
         return out;
     }
 
+    // 写入整数列表
     private static void writeVarIntList(PacketByteBuf buf, List<Integer> list) {
         buf.writeVarInt(list.size());
         for (int v : list) buf.writeVarInt(v);
     }
 
+    // 读取整数列表
     private static List<Integer> readVarIntList(PacketByteBuf buf) {
         int n = buf.readVarInt();
         List<Integer> out = new java.util.ArrayList<>(Math.min(n, 1024));
@@ -104,10 +109,12 @@ public record GroupListPayload(boolean enabled, List<String> names,
         return out;
     }
 
+    // 截断列表长度
     private static <T> List<T> cap(List<T> list) {
         return list.size() > MAX_GROUPS ? list.subList(0, MAX_GROUPS) : list;
     }
 
+    // 获取包标识
     //#if MC >= 12005
     @Override
     public CustomPayload.Id<? extends CustomPayload> getId() {
@@ -115,6 +122,7 @@ public record GroupListPayload(boolean enabled, List<String> names,
     }
     //#endif
 
+    // 客户端应用群组列表
     public static void handleClient(GroupListPayload payload) {
         com.niuqu.chatbubble.chat.GroupChannelState.enabled = payload.enabled();
         com.niuqu.chatbubble.chat.GroupChannelState.applyDirectory(

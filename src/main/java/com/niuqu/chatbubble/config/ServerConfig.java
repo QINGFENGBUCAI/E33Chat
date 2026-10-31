@@ -1,6 +1,7 @@
 package com.niuqu.chatbubble.config;
 import java.util.List;
 
+// 服务端配置数据
 public class ServerConfig {
     public boolean use_tpa;
     public boolean history_enabled;
@@ -19,6 +20,7 @@ public class ServerConfig {
     public Integer group_max_members;
     public Boolean group_create_op_only;
 
+    // 生成默认配置
     public static ServerConfig defaults() {
         ServerConfig c = new ServerConfig();
         c.use_tpa = false;

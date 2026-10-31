@@ -6,16 +6,20 @@ import java.util.UUID;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.Text;
 
+// 模板解析层
 public final class TemplateLayer {
+    // 私有构造
     private TemplateLayer() {}
 
     private static long templateMissWindowStart;
     private static int templateMissBurst;
 
+    // 记录模板未命中
     public static void logTemplateMiss(String text) {
         logTemplateMiss(text, "System");
     }
 
+    // 记录模板未命中
     public static void logTemplateMiss(String text, String logTag) {
         if (!ChatMessageStore.serverTemplateDebug()) return;
         long now = System.currentTimeMillis();
@@ -31,6 +35,7 @@ public final class TemplateLayer {
         ChatMessageStore.debugLog(() -> "[e33chat] " + logTag + "(template miss) | text='" + s + "' | templates=" + tpl);
     }
 
+    // 是否模板名字已知
     public static boolean isTemplateNameKnown(String name) {
         if (name == null || name.isEmpty()) return false;
         var player = MinecraftClient.getInstance().player;
@@ -41,10 +46,12 @@ public final class TemplateLayer {
         return ChatClassifier.resolveOnlinePlayer(name) != null || ChatMessageStore.findSeenUuid(name) != null;
     }
 
+    // 按模板匹配
     public static ChatMessageStore.SenderMeta matchByTemplate(Text message, String text) {
         return matchByTemplate(message, text, "System");
     }
 
+    // 按模板匹配
     public static ChatMessageStore.SenderMeta matchByTemplate(Text message, String text, String logTag) {
         var r = TemplateMatcher.match(text, ChatMessageStore.serverChatTemplates(),
             ChatMessageStore.serverWhisperTemplates(), TemplateLayer::isTemplateNameKnown);
@@ -79,6 +86,7 @@ public final class TemplateLayer {
             false, rawName, whisper, partner);
     }
 
+    // 截取模板片段
     public static Text templateSlice(Text message, String text, int from, int to) {
         String sub = text.substring(from, to);
         if (sub.indexOf('§') >= 0) return ChatMessageStore.parseStyledText(sub);

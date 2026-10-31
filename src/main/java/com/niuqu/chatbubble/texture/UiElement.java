@@ -2,6 +2,7 @@ package com.niuqu.chatbubble.texture;
 import com.niuqu.chatbubble.render.ChatBubbleTheme;
 import net.minecraft.util.Identifier;
 
+// UI纹理元素枚举
 public enum UiElement {
     PANEL_BG("panel_bg"),
     TITLE_BAR("title_bar"),
@@ -28,10 +29,12 @@ public enum UiElement {
 
     private final String path;
 
+    // 绑定资源路径
     UiElement(String path) {
         this.path = path;
     }
 
+    // 取主题纹理标识
     public Identifier rl(ChatBubbleTheme theme) {
         return Identifier.of("e33chat",
             "textures/gui/" + theme.name().toLowerCase() + "/" + path + ".png");

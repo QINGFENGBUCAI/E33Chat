@@ -1,9 +1,12 @@
 package com.niuqu.chatbubble.compat;
 import net.minecraft.text.Text;
 
+// 文本序列化版本适配
 public final class TextJsonCompat {
+    // 禁止外部实例化
     private TextJsonCompat() {}
 
+    // 序列化文本为字符串
     public static String toJson(Text text, Object registries) {
         if (text == null) return null;
         //#if MC >= 12106
@@ -26,6 +29,7 @@ public final class TextJsonCompat {
         //#endif
     }
 
+    // 反序列化文本
     public static Text fromJson(String json, Object registries) {
         if (json == null) return null;
         //#if MC >= 12106

@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+// 群组管理器
 public final class GroupManager {
     public static final int MAX_NAME_LEN = 12;
 
@@ -35,9 +36,11 @@ public final class GroupManager {
     private static final int MAX_CONTENT = 1024;
     private static final String FILE_NAME = "e33chat-groups.json";
 
+    // 群组数据
     public static final class Group {
         public UUID owner;
         public LinkedHashSet<UUID> members = new LinkedHashSet<>();
+        // 构造群组数据
         Group(UUID owner, LinkedHashSet<UUID> members) {
             this.owner = owner;
             this.members = members;
@@ -50,8 +53,10 @@ public final class GroupManager {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static MinecraftServer boundServer;
 
+    // 工具类私有构造
     private GroupManager() {}
 
+    // 校验群组名称
     public static boolean isValidGroupName(String name) {
         if (name == null || name.isEmpty() || name.length() > MAX_NAME_LEN) return false;
         if (name.charAt(0) == '#') return false;
@@ -63,6 +68,7 @@ public final class GroupManager {
         return true;
     }
 
+    // 拆分群聊发言
     public static String[] splitSay(String rest) {
         String s = rest == null ? "" : rest.trim();
         for (int i = 0; i < s.length(); i++) {
@@ -73,19 +79,23 @@ public final class GroupManager {
         return new String[]{s, ""};
     }
 
+    // 判断群组是否存在
     public static boolean exists(String name) {
         return name != null && groups.containsKey(name);
     }
 
+    // 判断是否群成员
     public static boolean isMember(String name, UUID id) {
         Group g = name != null ? groups.get(name) : null;
         return g != null && g.members.contains(id);
     }
 
+    // 获取群组快照
     public static Map<String, Group> snapshot() {
         return Collections.unmodifiableMap(groups);
     }
 
+    // 创建群组
     public static void create(ServerPlayerEntity player, String name) {
         if (!guard(player)) return;
         MinecraftServer server = player.getServer();
@@ -107,6 +117,7 @@ public final class GroupManager {
         broadcastGroupList(server);
     }
 
+    // 加入群组
     public static void join(ServerPlayerEntity player, String name) {
         if (!guard(player)) return;
         MinecraftServer server = player.getServer();
@@ -123,6 +134,7 @@ public final class GroupManager {
         broadcastGroupList(server);
     }
 
+    // 退出群组
     public static void leave(ServerPlayerEntity player, String name) {
         if (!guard(player)) return;
         MinecraftServer server = player.getServer();
@@ -146,6 +158,7 @@ public final class GroupManager {
         broadcastGroupList(server);
     }
 
+    // 删除群组
     public static void delete(ServerPlayerEntity player, String name) {
         if (!guard(player)) return;
         MinecraftServer server = player.getServer();
@@ -163,6 +176,7 @@ public final class GroupManager {
         broadcastGroupList(server);
     }
 
+    // 发送群聊消息
     public static void say(ServerPlayerEntity sender, String name, String content) {
         if (!ChatBubbleMod.groupsEnabled()) { fail(sender, "e33chat.group.disabled"); return; }
         MinecraftServer server = sender.getServer();
@@ -205,6 +219,7 @@ public final class GroupManager {
             name));
     }
 
+    // 处理客户端握手
     public static void onClientHello(ServerPlayerEntity player) {
         modClients.add(player.getUuid());
         MinecraftServer server = player.getServer();
@@ -212,11 +227,13 @@ public final class GroupManager {
         sendGroupList(player);
     }
 
+    // 处理玩家退出
     public static void onPlayerLoggedOut(UUID id) {
         modClients.remove(id);
         lastSay.remove(id);
     }
 
+    // 发送群组列表
     public static void sendGroupList(ServerPlayerEntity player) {
         boolean enabled = ChatBubbleMod.groupsEnabled();
         List<String> names = new ArrayList<>(groups.keySet());
@@ -234,6 +251,7 @@ public final class GroupManager {
         //#endif
     }
 
+    // 广播群组列表
     public static void broadcastGroupList(MinecraftServer server) {
         if (server == null) return;
         for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
@@ -241,6 +259,7 @@ public final class GroupManager {
         }
     }
 
+    // 分发群组操作
     public static void handleAction(ServerPlayerEntity player, int action, String name) {
         switch (action) {
             case com.niuqu.chatbubble.network.GroupActionPayload.CREATE -> create(player, name);
@@ -251,11 +270,13 @@ public final class GroupManager {
         }
     }
 
+    // 确保已加载
     private static void ensureLoaded(MinecraftServer server) {
         if (boundServer == server) return;
         load(server);
     }
 
+    // 重置测试状态
     static void resetForTesting() {
         groups.clear();
         modClients.clear();
@@ -263,11 +284,13 @@ public final class GroupManager {
         boundServer = null;
     }
 
+    // 获取存档文件路径
     private static Path file(MinecraftServer server) {
         return server.getSavePath(WorldSavePath.ROOT)
             .resolve("serverconfig").resolve(FILE_NAME);
     }
 
+    // 加载群组数据
     private static void load(MinecraftServer server) {
         groups.clear();
         boundServer = server;
@@ -287,6 +310,7 @@ public final class GroupManager {
         }
     }
 
+    // 保存群组数据
     private static void save(MinecraftServer server) {
         if (server == null) return;
         try {
@@ -306,6 +330,7 @@ public final class GroupManager {
         }
     }
 
+    // 服务端停止处理
     public static void onServerStopping(MinecraftServer server) {
         if (server != null) save(server);
         groups.clear();
@@ -314,24 +339,29 @@ public final class GroupManager {
         boundServer = null;
     }
 
+    // 校验群组开关
     private static boolean guard(ServerPlayerEntity p) {
         if (ChatBubbleMod.groupsEnabled()) return true;
         fail(p, "e33chat.group.disabled");
         return false;
     }
 
+    // 发送成功提示
     private static void ok(ServerPlayerEntity p, String key, Object... args) {
         p.sendMessage(Text.translatable(key, args), false);
     }
 
+    // 发送失败提示
     private static void fail(ServerPlayerEntity p, String key, Object... args) {
         p.sendMessage(Text.translatable(key, args), false);
     }
 
+    // 存档根结构
     public static class Root {
         public Map<String, StoredGroup> groups;
     }
 
+    // 存档群组结构
     public static class StoredGroup {
         public UUID owner;
         public List<UUID> members;

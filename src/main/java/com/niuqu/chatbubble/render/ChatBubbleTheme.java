@@ -1,9 +1,11 @@
 package com.niuqu.chatbubble.render;
 
+// 主题配色枚举
 public enum ChatBubbleTheme {
     DARK,
     LIGHT;
 
+    // 配色字段集合
     public record Colors(
         int panelBg, int titleBg, int barBg,
         int sidebarBg, int sidebarItemHover, int sidebarItemSelected, int sidebarDivider,
@@ -23,6 +25,7 @@ public enum ChatBubbleTheme {
         int bannerBg, int bannerText, int bannerBar
     ) {}
 
+    // 获取当前配色
     public Colors colors() {
         return switch (this) {
             case DARK -> new Colors(
@@ -64,10 +67,12 @@ public enum ChatBubbleTheme {
         };
     }
 
+    // 组装 ARGB 颜色
     public static int argb(int a, int r, int g, int b) {
         return (a << 24) | (r << 16) | (g << 8) | b;
     }
 
+    // 叠加透明度
     public static int alphaBlend(int color, int alpha) {
         return (alpha << 24) | (color & 0x00FFFFFF);
     }

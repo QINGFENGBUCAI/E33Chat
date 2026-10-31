@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+// 聊天历史同步包
 //#if MC >= 12005
 public record HistoryPayload(List<HistoryPayload.HistoryEntry> entries)
         implements CustomPayload {
@@ -28,6 +29,7 @@ public record HistoryPayload(List<HistoryPayload.HistoryEntry> entries)
     //$$ public static final Identifier ID = new Identifier("e33chat", "chat_history");
     //#endif
 
+    // 历史消息行
     public record HistoryEntry(
         UUID senderUUID,
         String senderName,
@@ -89,6 +91,7 @@ public record HistoryPayload(List<HistoryPayload.HistoryEntry> entries)
     //$$ }
     //#endif
 
+    // 写入全部历史
     private static PacketByteBuf writeAll(PacketByteBuf buf, List<HistoryEntry> entries) {
         List<HistoryEntry> rows = new ArrayList<>();
         if (entries != null) {
@@ -105,6 +108,7 @@ public record HistoryPayload(List<HistoryPayload.HistoryEntry> entries)
         return buf;
     }
 
+    // 写入单条历史
     private static void writeEntry(PacketByteBuf buf, HistoryEntry e) {
         buf.writeString((e.senderUUID() != null ? e.senderUUID() : NULL_UUID).toString());
         buf.writeString(e.senderName() != null ? e.senderName() : "");
@@ -116,8 +120,10 @@ public record HistoryPayload(List<HistoryPayload.HistoryEntry> entries)
         buf.writeString(e.group() != null ? e.group() : "");
     }
 
+    // 空串转空值
     private static String nullOrEmpty(String s) { return s == null || s.isEmpty() ? null : s; }
 
+    // 获取包标识
     //#if MC >= 12005
     @Override
     public Id<HistoryPayload> getId() { return ID; }

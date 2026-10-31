@@ -13,7 +13,9 @@ import net.minecraft.client.gui.DrawContext;
 //#else
 //$$ import com.niuqu.chatbubble.DrawContext;
 //#endif
+// 玩家皮肤解析
 public final class SkinResolver {
+    // 私有构造
     private SkinResolver() {}
 
     private static final int CACHE_CAP = 1024;
@@ -32,15 +34,18 @@ public final class SkinResolver {
     private static final Map<UUID, Identifier> byUuid = newLru();
     private static final Map<String, Identifier> byName = newLru();
 
+    // 预加载任务记录
     private record Prewarm(UUID uuid, String name) {}
     private static final java.util.Queue<Prewarm> PREWARM_QUEUE =
         new java.util.concurrent.ConcurrentLinkedQueue<>();
 
+    // 入队预加载皮肤
     public static void enqueuePrewarm(UUID uuid, String name) {
         if (uuid == null || uuid.equals(NIL_UUID) || name == null || name.isEmpty()) return;
         PREWARM_QUEUE.offer(new Prewarm(uuid, name));
     }
 
+    // 逐帧处理预加载
     public static void tickPrewarm() {
         if (PREWARM_QUEUE.isEmpty()) return;
         MinecraftClient client = MinecraftClient.getInstance();
@@ -58,6 +63,7 @@ public final class SkinResolver {
         }
     }
 
+    // 创建 LRU 缓存
     private static <K> Map<K, Identifier> newLru() {
         return new LinkedHashMap<>(16, 0.75f, true) {
             @Override
@@ -70,17 +76,20 @@ public final class SkinResolver {
     private static final java.util.regex.Pattern SECTION_CODE =
         java.util.regex.Pattern.compile("§.");
 
+    // 生成名称缓存键
     private static String nameKey(String name) {
         if (name == null) return null;
         String key = SECTION_CODE.matcher(name).replaceAll("").trim().toLowerCase(Locale.ROOT);
         return key.isEmpty() ? null : key;
     }
 
+    // 是否占位纹理
     private static boolean isPlaceholder(Identifier tex) {
         if (tex == null) return true;
         return "minecraft".equals(tex.getNamespace()) && tex.getPath().startsWith("textures/entity/");
     }
 
+    // 写入皮肤缓存
     private static void remember(UUID uuid, String name, Identifier tex) {
         if (isPlaceholder(tex)) return;
         if (uuid != null && !uuid.equals(NIL_UUID)) byUuid.put(uuid, tex);
@@ -88,6 +97,7 @@ public final class SkinResolver {
         if (key != null) byName.put(key, tex);
     }
 
+    // 查询皮肤缓存
     private static Identifier cached(UUID uuid, String name) {
         if (uuid != null && !uuid.equals(NIL_UUID)) {
             Identifier hit = byUuid.get(uuid);
@@ -97,6 +107,7 @@ public final class SkinResolver {
         return key != null ? byName.get(key) : null;
     }
 
+    // 判断玩家离线
     public static boolean isOffline(UUID uuid, String name) {
         MinecraftClient client = MinecraftClient.getInstance();
         if (BlurRenderer.isDisconnecting() || client.world == null || client.getNetworkHandler() == null) {
@@ -119,6 +130,7 @@ public final class SkinResolver {
         return false;
     }
 
+    // 获取玩家皮肤
     public static Identifier getSkin(UUID uuid, String name) {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.getNetworkHandler() != null && uuid != null && !uuid.equals(NIL_UUID)) {
@@ -140,6 +152,7 @@ public final class SkinResolver {
         return resolved;
     }
 
+    // 绘制玩家头像
     public static void drawAvatar(DrawContext g, UUID uuid, String name,
                                   int x, int y, int baseSize, int hatSize,
                                   float alpha, boolean offline) {
@@ -155,6 +168,7 @@ public final class SkinResolver {
             HAT_U, HAT_V, HEAD_PX, HEAD_PX, SKIN_PX, SKIN_PX, a, level);
     }
 
+    // 提取条目皮肤
     private static Identifier entrySkin(PlayerListEntry info) {
         //#if MC >= 12109
         return info.getSkinTextures().body().texturePath();
@@ -176,6 +190,7 @@ public final class SkinResolver {
     private static final long RESOLVE_RETRY_MS = 1_000L;
     //#endif
 
+    // 在线解析皮肤
     private static Identifier resolveSkin(UUID uuid, String name) {
         MinecraftClient client = MinecraftClient.getInstance();
         UUID id = uuid != null && !uuid.equals(NIL_UUID) ? uuid : NIL_UUID;
@@ -221,6 +236,7 @@ public final class SkinResolver {
         return defaultSkin(id, name);
     }
 
+    // 获取默认皮肤
     private static Identifier defaultSkin(UUID uuid, String name) {
         //#if MC >= 12109
         return net.minecraft.client.util.DefaultSkinHelper.getSkinTextures(

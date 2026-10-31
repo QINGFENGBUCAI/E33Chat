@@ -9,13 +9,16 @@ import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
 import net.minecraft.client.texture.NativeImage;
 
+// 位图解码工具
 public final class RasterImageDecoder {
     public static final int MAX_DIMENSION = 4096;
 
     public record DecodedImage(NativeImage image, int width, int height) {}
 
+    // 禁止实例化
     private RasterImageDecoder() {}
 
+    // 解码为原生图像
     public static DecodedImage decode(byte[] bytes) {
         if (bytes == null || bytes.length == 0) return null;
         try {
@@ -51,6 +54,7 @@ public final class RasterImageDecoder {
         }
     }
 
+    // 转为原生图像
     public static NativeImage fromBufferedImage(BufferedImage bi) {
         int w = bi.getWidth();
         int h = bi.getHeight();

@@ -4,6 +4,7 @@ package com.niuqu.chatbubble.mixin;
 import net.minecraft.client.multiplayer.chat.ChatListener;
 import org.spongepowered.asm.mixin.Mixin;
 
+// 消息处理器访问器
 @Mixin(ChatListener.class)
 public interface MessageHandlerAccessor {
 }

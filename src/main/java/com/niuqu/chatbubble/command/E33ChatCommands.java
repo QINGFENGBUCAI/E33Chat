@@ -23,7 +23,9 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
+// 服务端命令注册器
 public class E33ChatCommands {
+    // 注册全部命令
     public static void register() {
         //#if MC >= 11900
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
@@ -79,6 +81,7 @@ public class E33ChatCommands {
         });
     }
 
+    // 构建分组命令
     private static com.mojang.brigadier.builder.LiteralArgumentBuilder<ServerCommandSource> groupCommands() {
         var cm = net.minecraft.server.command.CommandManager.literal("group");
         cm.then(net.minecraft.server.command.CommandManager.literal("list")
@@ -105,16 +108,19 @@ public class E33ChatCommands {
         return cm;
     }
 
+    // 提取命令名称
     private static String greedyName(com.mojang.brigadier.context.CommandContext<ServerCommandSource> ctx, String key) {
         return StringArgumentType.getString(ctx, key).trim();
     }
 
+    // 获取玩家或空
     private static net.minecraft.server.network.ServerPlayerEntity playerOrNull(ServerCommandSource src) {
         net.minecraft.entity.Entity e = src.getEntity();
         return e instanceof net.minecraft.server.network.ServerPlayerEntity
             ? (net.minecraft.server.network.ServerPlayerEntity) e : null;
     }
 
+    // 列出分组
     private static int groupList(ServerCommandSource src) {
         var p = playerOrNull(src);
         if (p == null) {
@@ -139,6 +145,7 @@ public class E33ChatCommands {
         return 1;
     }
 
+    // 创建分组
     private static int groupCreate(ServerCommandSource src, String name) {
         var p = playerOrNull(src);
         if (p == null) { src.sendError(Text.translatable("e33chat.server.console_only")); return 0; }
@@ -146,6 +153,7 @@ public class E33ChatCommands {
         return 1;
     }
 
+    // 加入分组
     private static int groupJoin(ServerCommandSource src, String name) {
         var p = playerOrNull(src);
         if (p == null) { src.sendError(Text.translatable("e33chat.server.console_only")); return 0; }
@@ -153,6 +161,7 @@ public class E33ChatCommands {
         return 1;
     }
 
+    // 离开分组
     private static int groupLeave(ServerCommandSource src, String name) {
         var p = playerOrNull(src);
         if (p == null) { src.sendError(Text.translatable("e33chat.server.console_only")); return 0; }
@@ -160,6 +169,7 @@ public class E33ChatCommands {
         return 1;
     }
 
+    // 删除分组
     private static int groupDelete(ServerCommandSource src, String name) {
         var p = playerOrNull(src);
         if (p == null) { src.sendError(Text.translatable("e33chat.server.console_only")); return 0; }
@@ -167,6 +177,7 @@ public class E33ChatCommands {
         return 1;
     }
 
+    // 发送分组消息
     private static int groupSay(ServerCommandSource src, String name, String text) {
         var p = playerOrNull(src);
         if (p == null) { src.sendError(Text.translatable("e33chat.server.console_only")); return 0; }
@@ -174,6 +185,7 @@ public class E33ChatCommands {
         return 1;
     }
 
+    // 打开服务端配置界面
     private static int openServerGui(ServerCommandSource src) {
         var player = playerOrNull(src);
         if (player == null) {
@@ -198,10 +210,12 @@ public class E33ChatCommands {
         return 1;
     }
 
+    // 获取模板列表
     private static List<String> templates(boolean chat) {
         return chat ? ChatBubbleMod.chatTemplates() : ChatBubbleMod.whisperTemplates();
     }
 
+    // 列出模板
     private static int list(ServerCommandSource src) {
         src.sendFeedback(() -> Text.translatable("e33chat.server.tpl_list_chat_header", templates(true).size()), false);
         printTemplates(src, templates(true));
@@ -210,6 +224,7 @@ public class E33ChatCommands {
         return 1;
     }
 
+    // 输出模板内容
     private static void printTemplates(ServerCommandSource src, List<String> templates) {
         if (templates.isEmpty()) {
             src.sendFeedback(() -> Text.translatable("e33chat.server.tpl_list_empty"), false);
@@ -222,6 +237,7 @@ public class E33ChatCommands {
         }
     }
 
+    // 添加模板
     private static int set(ServerCommandSource src, boolean chat, String raw) {
         TemplateMatcher.CompileResult result = TemplateMatcher.compile(raw);
         if (result.template() == null) {
@@ -242,6 +258,7 @@ public class E33ChatCommands {
         return 1;
     }
 
+    // 移除模板
     private static int remove(ServerCommandSource src, boolean chat, int index) {
         List<String> next = new ArrayList<>(templates(chat));
         if (index < 1 || index > next.size()) {
@@ -254,6 +271,7 @@ public class E33ChatCommands {
         return 1;
     }
 
+    // 清空模板
     private static int clear(ServerCommandSource src, boolean chat) {
         updateTemplates(src, chat, List.of());
         src.sendFeedback(() -> Text.translatable("e33chat.server.tpl_clear_done",
@@ -261,6 +279,7 @@ public class E33ChatCommands {
         return 1;
     }
 
+    // 测试模板匹配
     private static int test(ServerCommandSource src, boolean chat, int index, String text) {
         List<String> raws = templates(chat);
         if (index < 1 || index > raws.size()) {
@@ -299,6 +318,7 @@ public class E33ChatCommands {
         return 1;
     }
 
+    // 保存模板配置
     private static void updateTemplates(ServerCommandSource src, boolean chat, List<String> next) {
         if (chat) ChatBubbleMod.setTemplates(new ArrayList<>(next), ChatBubbleMod.whisperTemplates(), ChatBubbleMod.templateDebug());
         else ChatBubbleMod.setTemplates(ChatBubbleMod.chatTemplates(), new ArrayList<>(next), ChatBubbleMod.templateDebug());
@@ -315,6 +335,7 @@ public class E33ChatCommands {
         ChatBubbleMod.broadcastServerConfig(server);
     }
 
+    // 判断玩家是否在线
     private static boolean isKnownOnServer(ServerCommandSource src, String name) {
         if (name == null || name.isEmpty()) return false;
         var server = src.getServer();
