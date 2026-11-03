@@ -114,4 +114,12 @@ class WhisperFormatsTest {
         assertNull(MessagePresentation.outgoingWhisperPartner("Steve whispers to you: hi"));
         assertNull(MessagePresentation.outgoingWhisperPartner("Steve: 你悄悄地对我说"));
     }
+
+    @Test void decoratedWhisperLineWithoutSpaces() {
+        assertTrue(MessagePresentation.hasWhisperKeywordBeforeColon("Astrstag悄悄地对你说：你哈"));
+        assertTrue(MessagePresentation.hasWhisperKeywordBeforeColon("[Astrstag head]Astrstag悄悄地对你说：你哈"));
+        assertTrue(MessagePresentation.hasWhisperKeywordBeforeColon("你悄悄地对Astrstag说：你哈"));
+        assertFalse(MessagePresentation.hasWhisperKeywordBeforeColon("MiTao_G> 你哈"));
+        assertFalse(MessagePresentation.hasWhisperKeywordBeforeColon("Astrstag: 私聊"));
+    }
 }

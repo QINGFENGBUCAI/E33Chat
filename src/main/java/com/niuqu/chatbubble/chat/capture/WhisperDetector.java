@@ -11,8 +11,8 @@ public final class WhisperDetector {
     // 私有构造
     private WhisperDetector() {}
 
-    // 检测系统私聊消息
-    public static ChatMessageStore.SenderMeta detectWhisperInSystemMessage(String text, String logTag) {
+    // 检测系统私聊消息并保留样式
+    public static ChatMessageStore.SenderMeta detectWhisperInSystemMessage(Text message, String text, String logTag) {
         var self = MinecraftClient.getInstance().player;
         if (self == null) return null;
         var connection = self.networkHandler;
@@ -26,7 +26,7 @@ public final class WhisperDetector {
             ChatMessageStore.debugLog(() -> "[e33chat] System(" + logTag + "/outgoing) | text='" + clean
                 + "' | partner=" + outgoingPartner + " | content='" + content + "'");
             return new ChatMessageStore.SenderMeta(
-                self.getUuid(), ownName, Text.literal(content),
+                self.getUuid(), ownName, styledContent(message, clean, content),
                 false, ownRaw, true, outgoingPartner);
         }
         for (var info : connection.getPlayerList()) {
@@ -40,8 +40,8 @@ public final class WhisperDetector {
                         ChatMessageStore.debugLog(() -> "[e33chat] System(" + logTag + ") | text='" + clean + "' | name=" + cand + " | content='" + content + "'");
                         return new ChatMessageStore.SenderMeta(
                             senderId,
-                            Text.literal(cand),
-                            Text.literal(content),
+                            styledName(message, clean, idx, cand),
+                            styledContent(message, clean, content),
                             false,
                             profile,
                             true, profile
@@ -60,8 +60,8 @@ public final class WhisperDetector {
                         ChatMessageStore.debugLog(() -> "[e33chat] System(" + logTag + "/cache) | text='" + clean + "' | name=" + sp + " | content='" + content + "'");
                         return new ChatMessageStore.SenderMeta(
                             su,
-                            Text.literal(sp),
-                            Text.literal(content),
+                            styledName(message, clean, idx, sp),
+                            styledContent(message, clean, content),
                             false,
                             sp,
                             true, sp
@@ -71,5 +71,22 @@ public final class WhisperDetector {
             }
         }
         return null;
+    }
+
+    // 截取带样式名字
+    private static Text styledName(Text message, String clean, int idx, String name) {
+        Text decorated = ChatMessageStore.extractWhisperDisplayName(message, Text.literal(name));
+        String decoratedStr = decorated.getString();
+        if (!decoratedStr.isBlank() && decoratedStr.contains(name)) return decorated;
+        Text styled = ChatMessageStore.styledSliceByCleanIndex(message, idx, name.length());
+        return styled != null && styled.getString().equals(name) ? styled : Text.literal(name);
+    }
+
+    // 截取带样式正文
+    private static Text styledContent(Text message, String clean, String content) {
+        int idx = clean.indexOf(content);
+        if (idx < 0) return Text.literal(content);
+        Text styled = ChatMessageStore.styledSliceByCleanIndex(message, idx, content.length());
+        return styled != null ? styled : Text.literal(content);
     }
 }

@@ -20,7 +20,13 @@ public final class ChatPipeline {
         String fullStr = fullLine.getString();
         int idx = fullStr.lastIndexOf(contentStr);
         if (idx <= 0) return fallback;
-        return cleanNameArea(fullLine, 0, idx, rawName, fallback);
+        Text name = cleanNameArea(fullLine, 0, idx, rawName, fallback);
+        if (MessagePresentation.isWhisperDecoration(name.getString())) {
+            ChatMessageStore.debugLog(() -> "[e33chat] Name(skip: whisper decoration) | name='"
+                + name.getString() + "' | line='" + fullStr + "'");
+            return fallback;
+        }
+        return name;
     }
 
     // 清理名字区域
@@ -30,8 +36,18 @@ public final class ChatPipeline {
         while (a < b && Character.isWhitespace(fullStr.charAt(a))) a++;
         while (b > a) {
             char ch = fullStr.charAt(b - 1);
-            if (Character.isWhitespace(ch) || ch == ':' || ch == '：' || ch == '»') b--;
-            else break;
+            if (Character.isWhitespace(ch) || ch == ':' || ch == '：' || ch == '»') { b--; continue; }
+            if (ch == '>') {
+                int open = 0;
+                int close = 0;
+                for (int i = a; i < b; i++) {
+                    char c = fullStr.charAt(i);
+                    if (c == '<') open++;
+                    else if (c == '>') close++;
+                }
+                if (close > open) { b--; continue; }
+            }
+            break;
         }
         if (b <= a) return fallback;
         Text nameArea = ChatMessageStore.sliceStyled(fullLine, a, b);
@@ -94,8 +110,10 @@ public final class ChatPipeline {
             UUID su = ChatMessageStore.findSeenUuid(pl.playerName());
             uid = su != null ? su : new UUID(0, 0);
         }
-        Text displayName = extractDecoratedName(message, pl.content(), pl.playerName(),
-            Text.literal((text.substring(0, nameIdx) + pl.playerName()).trim()));
+        String prefix = (text.substring(0, nameIdx) + pl.playerName()).trim();
+        Text plainFallback = MessagePresentation.isWhisperDecoration(prefix)
+            ? Text.literal(pl.playerName()) : Text.literal(prefix);
+        Text displayName = extractDecoratedName(message, pl.content(), pl.playerName(), plainFallback);
         Text contentComp = ChatMessageStore.sliceStyled(message, contentStart, text.length());
         ChatMessageStore.debugLog(() -> "[e33chat] " + logTag + "(player line) | name=" + pl.playerName() + " | content='" + pl.content() + "'");
         return new ChatMessageStore.SenderMeta(

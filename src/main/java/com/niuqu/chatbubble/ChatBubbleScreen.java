@@ -1,8 +1,6 @@
 package com.niuqu.chatbubble;
-import com.mojang.authlib.GameProfile;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.niuqu.chatbubble.config.ChatBubbleConfig;
-import com.niuqu.chatbubble.GuiCompat;
 import com.niuqu.chatbubble.compat.IMBlockerCompat;
 import com.niuqu.chatbubble.compat.ModernUIEmojiCompat;
 import com.niuqu.chatbubble.compat.NativeFileDialog;
@@ -20,7 +18,6 @@ import com.niuqu.chatbubble.ui.EmoteStore;
 import com.niuqu.chatbubble.image.BracketCodec;
 import com.niuqu.chatbubble.image.ImageEntry;
 import com.niuqu.chatbubble.image.ImageLoader;
-import com.niuqu.chatbubble.image.ImageUploader;
 import com.niuqu.chatbubble.image.LocalImageSource;
 import com.niuqu.chatbubble.render.Appearance;
 import com.niuqu.chatbubble.render.ChatBubbleTheme;
@@ -52,7 +49,6 @@ import net.minecraft.client.gui.screen.ChatInputSuggestor;
 import net.minecraft.client.gui.screen.ChatScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.text.*;
 import net.minecraft.util.Formatting;
@@ -60,7 +56,6 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.Language;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
-import java.io.InputStream;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -2138,7 +2133,7 @@ public class ChatBubbleScreen extends ChatScreen {
                         try {
                             com.mojang.blaze3d.Blaze3D.openUri(openUrl.uri());
                         } catch (Exception e) {
-                            e.printStackTrace();
+                            com.niuqu.chatbubble.E33Log.warn("[e33chat] Failed to open url", e);
                         }
                     }
                     //#else
@@ -2301,6 +2296,16 @@ public class ChatBubbleScreen extends ChatScreen {
         return maxW;
     }
 
+    // 私聊发送者显示名
+    private static Text displaySenderName(ChatMessageStore.ChatMessage msg) {
+        if (msg.whisper() && !msg.isOwn() && msg.rawPlayerName() != null
+            && !msg.rawPlayerName().isEmpty()) {
+            Text cached = ChatMessageStore.decoratedNameFor(msg.rawPlayerName());
+            if (cached != null && cached.getString().contains(msg.rawPlayerName())) return cached;
+        }
+        return msg.senderName();
+    }
+
     // 绘制消息气泡
     private void renderBubble(DrawContext g, ChatMessageStore.ChatMessage msg, int index, int baseY, int mouseX, int mouseY, float alpha, boolean showAvatar) {
         if (msg.isSystem()) {
@@ -2348,7 +2353,7 @@ public class ChatBubbleScreen extends ChatScreen {
         int nameY = baseY;
         if (showAvatar && !isSystemSender(msg) && !msg.senderName().getString().isEmpty()) {
             int maxNameW = panelW - Appearance.avatarSize() - PAD * 2 - 20;
-            Text sn = msg.senderName();
+            Text sn = displaySenderName(msg);
             OrderedText nameSeq;
             if (textRenderer.getWidth(sn) > maxNameW) {
                 var cut = textRenderer.trimToWidth(sn, maxNameW - textRenderer.getWidth("..."));
@@ -2464,7 +2469,7 @@ public class ChatBubbleScreen extends ChatScreen {
             boolean own, float alpha, BracketCodec.ParseResult parsed, List<OrderedText> lines, boolean showAvatar) {
         int avatarX = own ? panelX + panelW - PAD - Appearance.avatarSize() : panelX + PAD;
         if (showAvatar && !isSystemSender(msg) && !msg.senderName().getString().isEmpty()) {            int maxNameW = panelW - Appearance.avatarSize() - PAD * 2 - 20;
-            Text sn = msg.senderName();
+            Text sn = displaySenderName(msg);
             OrderedText nameSeq;
             if (textRenderer.getWidth(sn) > maxNameW) {
                 var cut = textRenderer.trimToWidth(sn, maxNameW - textRenderer.getWidth("..."));
@@ -2583,7 +2588,7 @@ public class ChatBubbleScreen extends ChatScreen {
         int avatarX = own ? panelX + panelW - PAD - Appearance.avatarSize() : panelX + PAD;
         int nameY = baseY;
         if (showAvatar && !isSystemSender(msg) && !msg.senderName().getString().isEmpty()) {            int maxNameW = panelW - Appearance.avatarSize() - PAD * 2 - 20;
-            Text sn = msg.senderName();
+            Text sn = displaySenderName(msg);
             OrderedText nameSeq;
             if (textRenderer.getWidth(sn) > maxNameW) {
                 var cut = textRenderer.trimToWidth(sn, maxNameW - textRenderer.getWidth("..."));

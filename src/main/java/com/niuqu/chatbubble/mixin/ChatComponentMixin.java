@@ -259,8 +259,7 @@ public class ChatComponentMixin {
                 ChatMessageStore.ownDisplayName());
             ChatMessageStore.cacheOwnDecoratedName(name);
             ChatMessageStore.updateLatestOwnSenderName(name);
-            repostToVanilla(name, ChatMessageStore.extractWhisperContent(text, null),
-                ChatMessageStore.consumeSuppressQuoted());
+            ChatMessageStore.consumeSuppressQuoted();
             return;
         }
         SenderMeta meta = ChatMessageStore.consumePendingMeta();
@@ -294,8 +293,11 @@ public class ChatComponentMixin {
             if (wi > 0) {
                 String partner = sn.substring(0, wi).trim();
                 if (!partner.isEmpty()) {
-                    meta = new SenderMeta(meta.senderUUID(), Text.literal(partner),
-                        meta.rawContent(), meta.isSystem(), partner, true, partner);
+                    Text decorated = ChatMessageStore.extractWhisperDisplayName(finalComponent,
+                        Text.literal(partner));
+                    String chatName = decorated.getString().isBlank() ? partner : decorated.getString();
+                    meta = new SenderMeta(meta.senderUUID(), decorated,
+                        meta.rawContent(), meta.isSystem(), chatName, true, chatName);
                 }
             }
         }
@@ -324,9 +326,11 @@ public class ChatComponentMixin {
         }
         EchoTracker.EchoMatch echo = ChatMessageStore.consumeEchoIfSenderMatches(meta.senderUUID(), meta.senderName(), text);
         if (echo.matched()) {
-            if (meta.whisper() || echo.quoted()) {
+            if (meta.whisper()) {
                 ci.cancel();
-                repostToVanilla(meta.senderName(), ChatMessageStore.extractWhisperContent(text, meta), echo.quoted());
+            } else if (echo.quoted()) {
+                ci.cancel();
+                repostToVanilla(meta.senderName(), ChatMessageStore.extractWhisperContent(text, meta), true);
             } else {
                 rewriteVanillaImageCode(finalComponent, ci);
             }
@@ -338,7 +342,6 @@ public class ChatComponentMixin {
         }
         if (meta.whisper()) {
             ci.cancel();
-            repostToVanilla(meta.senderName(), ChatMessageStore.extractWhisperContent(text, meta), false);
         }
         String rawStr = meta.rawContent().getString();
         String finalStr = finalComponent.getString();
@@ -354,7 +357,7 @@ public class ChatComponentMixin {
         Text logComp = finalComponent, logContent = content;
         SenderMeta logMeta = meta;
         ChatMessageStore.debugLog(() -> "[e33chat] Capture | final='" + logComp.getString() + "' | content='" + logContent.getString() + "' | whisper=" + logMeta.whisper() + " | partner=" + logMeta.whisperPartner() + " | isSystem=" + logMeta.isSystem());
-        rewriteVanillaImageCode(finalComponent, ci);
+        if (!meta.whisper()) rewriteVanillaImageCode(finalComponent, ci);
         ChatMessageStore.addMessage(content, meta.senderUUID(), meta.senderName(), meta.isSystem(), meta.rawPlayerName(), meta.whisper(), meta.whisperPartner(), false);
     }
 }

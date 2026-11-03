@@ -2,14 +2,13 @@ package com.niuqu.chatbubble.store;
 import com.niuqu.chatbubble.ChatBubbleClientSetup;
 import com.niuqu.chatbubble.E33Log;
 import com.niuqu.chatbubble.GuiCompat;
-import com.niuqu.chatbubble.config.ChatBubbleConfig;
+import com.niuqu.chatbubble.chat.MessagePresentation;
 import net.minecraft.util.Formatting;import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.Text;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Style;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
@@ -66,6 +65,30 @@ public class ChatMessageStore {
             return size() > SEEN_PLAYERS_CAP;
         }
     };
+
+    private static final Map<String, Text> decoratedNames = new LinkedHashMap<>(16, 0.75f, true) {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<String, Text> eldest) {
+            return size() > SEEN_PLAYERS_CAP;
+        }
+    };
+
+    // 记录玩家装饰名
+    public static void rememberDecoratedName(String rawName, Text decorated) {
+        if (rawName == null || rawName.isEmpty() || decorated == null) return;
+        decoratedNames.put(rawName.toLowerCase(Locale.ROOT), decorated);
+    }
+
+    // 获取玩家装饰名
+    public static Text decoratedNameFor(String rawName) {
+        if (rawName == null || rawName.isEmpty()) return null;
+        return decoratedNames.get(rawName.toLowerCase(Locale.ROOT));
+    }
+
+    // 清空玩家装饰名
+    public static void clearDecoratedNames() {
+        decoratedNames.clear();
+    }
 
     private static volatile boolean serverUseTpa = false;
     // 设置使用TPA
@@ -291,6 +314,7 @@ public class ChatMessageStore {
 
     // 更新己方发送者名
     public static void updateLatestOwnSenderName(Text senderName) {
+        if (senderName == null || MessagePresentation.isWhisperDecoration(senderName.getString())) return;
         for (int i = messages.size() - 1; i >= 0 && i >= messages.size() - 5; i--) {
             ChatMessage m = messages.get(i);
             if (!m.isOwn()) continue;
@@ -399,11 +423,25 @@ public class ChatMessageStore {
                 ? rawPlayerName.equals(playerName)
                 : senderName != null && senderName.getString().equals(playerName);
         }
+        if (own && senderName != null && MessagePresentation.isWhisperDecoration(senderName.getString())) {
+            senderName = ownDisplayName();
+        }
         if (own) cacheOwnDecoratedName(senderName);
+        if (!own && senderName != null && rawPlayerName != null && !rawPlayerName.isEmpty()) {
+            if (!whisper) {
+                rememberDecoratedName(rawPlayerName, senderName);
+            } else {
+                Text cached = decoratedNameFor(rawPlayerName);
+                if (cached != null) senderName = cached;
+            }
+        }
         if (ChatBubbleClientSetup.config().antiSpam() && !messages.isEmpty()) {
             ChatMessage last = messages.get(messages.size() - 1);
             if (!last.isSystem() && isSameSender(last, senderName, rawPlayerName)
-                && last.content().getString().equals(content.getString())) {
+                && last.content().getString().equals(content.getString())
+                && last.whisper() == whisper
+                && Objects.equals(last.whisperPartner(), whisperPartner)
+                && Objects.equals(last.group(), group)) {
                 EchoTracker.PendingMeta pending = EchoTracker.removePendingMeta(messageHash);
                 if (pending != null && System.currentTimeMillis() - pending.createdAt() > 10_000) {
                     pending = null;
@@ -707,6 +745,13 @@ public class ChatMessageStore {
                 return fallback;
             }
         }
+        int arrowIdx = fullStr.indexOf("->");
+        if (arrowIdx < 0) arrowIdx = fullStr.indexOf("→");
+        if (arrowIdx < 0) arrowIdx = fullStr.indexOf("»");
+        if (arrowIdx > 0) {
+            Text area = trimStyledEdges(sliceStyled(fullLine, 0, arrowIdx));
+            if (!area.getString().isBlank()) return stripItalic(area);
+        }
         int toIdx = fullStr.indexOf("whisper to ");
         if (toIdx >= 0) {
             int colonIdx = fullStr.indexOf(":", toIdx);
@@ -725,6 +770,24 @@ public class ChatMessageStore {
             if (!area.getString().isBlank()) return stripItalic(area);
         }
         return fallback;
+    }
+
+    // 裁剪名字区边缘括号
+    private static Text trimStyledEdges(Text src) {
+        String s = src.getString();
+        int a = 0, b = s.length();
+        while (a < b) {
+            char ch = s.charAt(a);
+            if (Character.isWhitespace(ch) || ch == '[' || ch == '【' || ch == '「') a++;
+            else break;
+        }
+        while (b > a) {
+            char ch = s.charAt(b - 1);
+            if (Character.isWhitespace(ch) || ch == ']' || ch == '】' || ch == '」' || ch == '»' || ch == ':' || ch == '：') b--;
+            else break;
+        }
+        if (b <= a) return Text.empty();
+        return sliceStyled(src, a, b);
     }
 
     // 移除斜体样式
@@ -748,7 +811,13 @@ public class ChatMessageStore {
                 return info.getDisplayName();
             }
         }
-        if (ownDecoratedName != null) return ownDecoratedName;
+        if (ownDecoratedName != null) {
+            if (MessagePresentation.isWhisperDecoration(ownDecoratedName.getString())) {
+                ownDecoratedName = null;
+            } else {
+                return ownDecoratedName;
+            }
+        }
         if (player != null && player.getScoreboardTeam() != null) {
             var team = player.getScoreboardTeam();
             //#if MC >= 26000
@@ -775,13 +844,40 @@ public class ChatMessageStore {
         return player != null ? player.getName() : Text.literal("?");
     }
 
+    // 获取己方显示名或候选名
+    public static Text ownDisplayNameOr(Text candidate) {
+        var player = net.minecraft.client.MinecraftClient.getInstance().player;
+        String bare = player != null ? player.getName().getString() : "";
+        if (candidate != null && !bare.isEmpty()) {
+            String s = candidate.getString().replaceAll("§.", "").trim();
+            if (s.contains(bare) && !MessagePresentation.isWhisperDecoration(s)) return candidate;
+        }
+        return ownDisplayName();
+    }
+
     // 缓存己方装饰名
     public static void cacheOwnDecoratedName(Text senderName) {
         var player = net.minecraft.client.MinecraftClient.getInstance().player;
         String bare = player != null ? player.getName().getString() : "";
         if (senderName == null || bare.isEmpty()) return;
         String sn = senderName.getString();
-        if (!sn.isEmpty() && !sn.equals(bare)) ownDecoratedName = senderName;
+        if (!sn.isEmpty() && !sn.equals(bare) && !MessagePresentation.isWhisperDecoration(sn)) {
+            ownDecoratedName = senderName;
+        }
+    }
+
+    // 清除己方装饰名缓存
+    public static void resetOwnDecoratedName() {
+        ownDecoratedName = null;
+    }
+
+    // 按去色索引截取带样式片段
+    public static Text styledSliceByCleanIndex(Text src, int cleanStart, int cleanLen) {
+        if (src == null || cleanLen <= 0) return null;
+        int[] range = MessagePresentation.cleanRangeToRaw(src.getString(), cleanStart, cleanLen);
+        if (range == null) return null;
+        Text out = sliceStyled(src, range[0], range[1]);
+        return out.getString().isBlank() ? null : out;
     }
 
     // 获取消息数量
@@ -799,6 +895,7 @@ public class ChatMessageStore {
         if (ChatBubbleClientSetup.config().chatHistoryEnabled() && isWorldSpecific(currentWorldKey))
             saveMessages(currentWorldKey);
         currentWorldKey = name;
+        clearDecoratedNames();
         cleanupOldHistory();
         if (isRefinement || hasPendingMessages) {
             if (ChatBubbleClientSetup.config().chatHistoryEnabled() && isWorldSpecific(currentWorldKey)) {
@@ -950,6 +1047,7 @@ public class ChatMessageStore {
     public static void clearCurrentWorldHistory() {
         messages.clear();
         backlogKeys.clear();
+        clearDecoratedNames();
         bumpListVersion();
         unreadCount = 0;
         unreadWhisperPartners.clear();

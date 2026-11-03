@@ -15,7 +15,6 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 //#if MC < 12005
 //$$ import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 //#endif
-import net.minecraft.command.CommandSource;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;

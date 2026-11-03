@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble;
-import com.niuqu.chatbubble.config.ChatBubbleConfigScreen;
 import com.niuqu.chatbubble.render.ChatBubbleHudOverlay;
 import com.niuqu.chatbubble.render.RoundRectRenderer;
 import com.niuqu.chatbubble.config.ChatBubbleConfig;
@@ -172,11 +171,13 @@ public class ChatBubbleClientSetup implements ClientModInitializer {
         com.niuqu.chatbubble.image.MediaClient.registerReceivers();
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
             com.niuqu.chatbubble.chat.GroupChannelState.reset();
+            com.niuqu.chatbubble.store.ChatMessageStore.resetOwnDecoratedName();
             com.niuqu.chatbubble.render.BlurRenderer.setDisconnecting(false);
             com.niuqu.chatbubble.network.ClientHelloPayload.send();
         });
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
             com.niuqu.chatbubble.chat.GroupChannelState.reset();
+            com.niuqu.chatbubble.store.ChatMessageStore.resetOwnDecoratedName();
             com.niuqu.chatbubble.render.BlurRenderer.setDisconnecting(true);
             com.niuqu.chatbubble.render.BlurRenderer.cleanup();
         });

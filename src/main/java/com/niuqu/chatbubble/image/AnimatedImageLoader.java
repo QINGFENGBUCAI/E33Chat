@@ -2,7 +2,6 @@ package com.niuqu.chatbubble.image;
 import com.niuqu.chatbubble.E33Log;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.texture.NativeImageBackedTexture;
 import net.minecraft.util.Identifier;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;

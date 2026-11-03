@@ -6,7 +6,6 @@ import com.niuqu.chatbubble.ChatBubbleClientSetup;
 import com.niuqu.chatbubble.store.ChatMessageStore;
 import com.niuqu.chatbubble.store.ChatMessageStore.SenderMeta;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.network.message.MessageType;
 import net.minecraft.network.message.SignedMessage;
 import net.minecraft.text.Text;
@@ -25,40 +24,9 @@ public class ChatListenerMixin {
         return com.niuqu.chatbubble.chat.capture.ChatPipeline.extractDecoratedName(fullLine, contentStr, rawName, fallback);
     }
 
-    // 清理名称区域
-    private static Text cleanNameArea(Text fullLine, int a, int b,
-                                           String rawName, Text fallback) {
-        return com.niuqu.chatbubble.chat.capture.ChatPipeline.cleanNameArea(fullLine, a, b, rawName, fallback);
-    }
-
-    // 生成候选名称
-    private static String[] nameCandidates(net.minecraft.client.network.PlayerListEntry info) {
-        return com.niuqu.chatbubble.chat.capture.ChatClassifier.nameCandidates(info);
-    }
-
-    // 补充名称变体
-    private static void addNameVariants(java.util.Set<String> out, String name) {
-        com.niuqu.chatbubble.chat.capture.ChatClassifier.addNameVariants(out, name);
-    }
-
-    // 判断原版广播
-    private static boolean isVanillaBroadcast(Text message) {
-        return com.niuqu.chatbubble.chat.capture.ChatClassifier.isVanillaBroadcast(message);
-    }
-
     // 判断进出消息
     private static boolean isJoinLeaveMessage(String text) {
         return com.niuqu.chatbubble.chat.capture.ChatClassifier.isJoinLeaveMessage(text);
-    }
-
-    // 参数转文本组件
-    private static Text argAsComponent(Object arg) {
-        return com.niuqu.chatbubble.chat.capture.ChatClassifier.argAsComponent(arg);
-    }
-
-    // 解析在线玩家
-    private static net.minecraft.client.network.PlayerListEntry resolveOnlinePlayer(String displayName) {
-        return com.niuqu.chatbubble.chat.capture.ChatClassifier.resolveOnlinePlayer(displayName);
     }
 
     // 按类型键分类
@@ -71,19 +39,9 @@ public class ChatListenerMixin {
         return com.niuqu.chatbubble.chat.capture.TellClickDetector.detectByTellClick(message, text);
     }
 
-    // 检测系统私聊
-    private static SenderMeta detectWhisperInSystemMessage(String text, String logTag) {
-        return com.niuqu.chatbubble.chat.capture.WhisperDetector.detectWhisperInSystemMessage(text, logTag);
-    }
-
-    // 记录模板未命中
-    private static void logTemplateMiss(String text) {
-        com.niuqu.chatbubble.chat.capture.TemplateLayer.logTemplateMiss(text);
-    }
-
-    // 判断模板名已知
-    private static boolean isTemplateNameKnown(String name) {
-        return com.niuqu.chatbubble.chat.capture.TemplateLayer.isTemplateNameKnown(name);
+    // 检测系统私聊（保留样式）
+    private static SenderMeta detectWhisperInSystemMessage(Text message, String text, String logTag) {
+        return com.niuqu.chatbubble.chat.capture.WhisperDetector.detectWhisperInSystemMessage(message, text, logTag);
     }
 
     // 按模板匹配
@@ -94,11 +52,6 @@ public class ChatListenerMixin {
     // 按模板匹配带日志
     private static SenderMeta matchByTemplate(Text message, String text, String logTag) {
         return com.niuqu.chatbubble.chat.capture.TemplateLayer.matchByTemplate(message, text, logTag);
-    }
-
-    // 截取模板片段
-    private static Text templateSlice(Text message, String text, int from, int to) {
-        return com.niuqu.chatbubble.chat.capture.TemplateLayer.templateSlice(message, text, from, to);
     }
 
     //#if MC < 11903
@@ -141,6 +94,8 @@ public class ChatListenerMixin {
             return;
         }
         String name = gameProfile.getName();
+        Text decoratedText = params.applyChatDecoration(raw);
+        String decoratedStr = decoratedText.getString();
         boolean isWhisper = false;
         boolean isOutgoing = false;
         String whisperPartner = null;
@@ -156,20 +111,18 @@ public class ChatListenerMixin {
         //#else
         //$$ // 1.20.4 and earlier: no MSG_COMMAND_* MessageType, rely on keyword-based whisper detection
         //#endif
-        if (!isWhisper && com.niuqu.chatbubble.chat.MessagePresentation.hasWhisperKeywordBeforeColon(rawStr)) {
+        if (!isWhisper && com.niuqu.chatbubble.chat.MessagePresentation.hasWhisperKeywordBeforeColon(decoratedStr)) {
             isWhisper = true;
             var self = MinecraftClient.getInstance().player;
-            if (self != null && rawStr.contains("对你说")) {
-                whisperPartner = name;
-                isOutgoing = false;
-            } else if (rawStr.contains("你悄悄地对")) {
-                int idx = rawStr.indexOf("对");
-                if (idx >= 0) {
-                    int end = rawStr.indexOf("说", idx);
-                    if (end > idx) {
-                        whisperPartner = rawStr.substring(idx + 1, end).trim();
-                        isOutgoing = true;
-                    }
+            String decoratedLower = decoratedStr.toLowerCase(java.util.Locale.ROOT);
+            if (decoratedStr.contains("对你说") || decoratedLower.contains("whispers to you")) {
+                if (self != null) whisperPartner = name;
+            } else {
+                String outgoingPartner =
+                    com.niuqu.chatbubble.chat.MessagePresentation.outgoingWhisperPartner(decoratedStr);
+                if (outgoingPartner != null) {
+                    whisperPartner = outgoingPartner;
+                    isOutgoing = true;
                 }
             }
         }
@@ -201,11 +154,10 @@ public class ChatListenerMixin {
         Text senderName = Text.literal(name);
         if (isWhisper) {
             playerContent = Text.literal(com.niuqu.chatbubble.chat.MessagePresentation.extractWhisperContent(rawStr, name));
-            Text fallback = isOutgoing ? ChatMessageStore.ownDisplayName() : senderName;
-            senderName = ChatMessageStore.extractWhisperDisplayName(params.applyChatDecoration(raw), fallback);
+            Text fallback = isOutgoing ? ChatMessageStore.ownDisplayNameOr(params.name()) : senderName;
+            senderName = ChatMessageStore.extractWhisperDisplayName(decoratedText, fallback);
         } else {
-            Text fullLine = params.applyChatDecoration(raw);
-            senderName = extractDecoratedName(fullLine, rawStr, name, senderName);
+            senderName = extractDecoratedName(decoratedText, rawStr, name, senderName);
         }
         var self = MinecraftClient.getInstance().player;
         if (senderId != null && self != null && senderId.equals(self.getUuid())) {
@@ -229,6 +181,8 @@ public class ChatListenerMixin {
         }
         boolean hasSender = params.name() != null
             && !params.name().getString().replaceAll("§.", "").trim().isEmpty();
+        Text decoratedLine = params.applyChatDecoration(message);
+        String decoratedStr = decoratedLine.getString();
         boolean isWhisper = false;
         boolean isOutgoing = false;
         String whisperPartner = null;
@@ -245,7 +199,7 @@ public class ChatListenerMixin {
         //$$ // 1.20.4 and earlier: no MSG_COMMAND_* MessageType, rely on keyword-based whisper detection
         //#endif
         if (!isWhisper) {
-            SenderMeta wm = detectWhisperInSystemMessage(msgStr, "disguised");
+            SenderMeta wm = detectWhisperInSystemMessage(decoratedLine, decoratedStr, "disguised");
             if (wm != null) { ChatMessageStore.setPendingMeta(wm); return; }
         }
         if (hasSender) {
@@ -253,11 +207,10 @@ public class ChatListenerMixin {
             Text disSender = params.name();
             if (isWhisper) {
                 disContent = Text.literal(com.niuqu.chatbubble.chat.MessagePresentation.extractWhisperContent(msgStr, params.name().getString()));
-                Text fallback = isOutgoing ? ChatMessageStore.ownDisplayName() : disSender;
-                disSender = ChatMessageStore.extractWhisperDisplayName(message, fallback);
+                Text fallback = isOutgoing ? ChatMessageStore.ownDisplayNameOr(params.name()) : disSender;
+                disSender = ChatMessageStore.extractWhisperDisplayName(decoratedLine, fallback);
             } else {
-                Text fullLine = params.applyChatDecoration(message);
-                disSender = extractDecoratedName(fullLine, msgStr, params.name().getString(), disSender);
+                disSender = extractDecoratedName(decoratedLine, msgStr, params.name().getString(), disSender);
             }
             ChatMessageStore.debugLog("[e33chat] Disguised | raw='" + msgStr + "' | whisper=" + isWhisper + " | partner=" + whisperPartner + " | sender='" + disSender.getString() + "' | content='" + disContent.getString() + "'");
             ChatMessageStore.setPendingMeta(new SenderMeta(
@@ -329,7 +282,7 @@ public class ChatListenerMixin {
                 ChatMessageStore.debugLog(() -> "[e33chat] System(EasyBot miss) | text='" + text + "'");
             }
         }
-        SenderMeta wm = detectWhisperInSystemMessage(text, "whisper");
+        SenderMeta wm = detectWhisperInSystemMessage(message, text, "whisper");
         if (wm != null) { ChatMessageStore.setPendingMeta(wm); return; }
         SenderMeta tc = detectByTellClick(message, text);
         if (tc != null) { ChatMessageStore.setPendingMeta(tc); return; }

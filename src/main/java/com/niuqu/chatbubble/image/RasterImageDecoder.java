@@ -2,7 +2,6 @@ package com.niuqu.chatbubble.image;
 import com.niuqu.chatbubble.E33Log;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.util.Iterator;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;

@@ -1,6 +1,5 @@
 package com.niuqu.chatbubble.network;
 import com.niuqu.chatbubble.config.ServerConfig;
-import com.niuqu.chatbubble.config.ServerConfigManager;
 import com.niuqu.chatbubble.chat.TemplateMatcher;
 import net.minecraft.network.PacketByteBuf;
 //#if MC >= 12005

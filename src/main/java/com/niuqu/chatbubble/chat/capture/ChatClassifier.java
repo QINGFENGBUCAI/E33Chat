@@ -1,6 +1,5 @@
 package com.niuqu.chatbubble.chat.capture;
 import com.niuqu.chatbubble.GuiCompat;
-import com.niuqu.chatbubble.config.ChatBubbleConfig;
 import com.niuqu.chatbubble.store.ChatMessageStore;
 import java.util.UUID;
 import net.minecraft.client.MinecraftClient;
@@ -119,7 +118,7 @@ public final class ChatClassifier {
                 String own = player.getName().getString();
                 ChatMessageStore.debugLog(() -> "[e33chat] Key(whisper out) | partner=" + partner + " | content='" + content.getString() + "'");
                 ChatMessageStore.setPendingMeta(new ChatMessageStore.SenderMeta(player.getUuid(),
-                    Text.literal(own), content, false, own, true, partner));
+                    ChatMessageStore.ownDisplayName(), content, false, own, true, partner));
                 return true;
             }
             return false;

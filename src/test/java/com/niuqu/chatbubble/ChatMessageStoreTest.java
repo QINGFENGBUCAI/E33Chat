@@ -238,6 +238,39 @@ class ChatMessageStoreTest {
         assertEquals("Steve", ChatMessageStore.extractWhisperDisplayName(line, net.minecraft.text.Text.literal("Steve")).getString());
     }
 
+    @Test void decoratedName_rejectsWhisperPrefixSlice() {
+        var line = net.minecraft.text.Text.literal("你悄悄地对MiTao_G说：你哈");
+        var name = com.niuqu.chatbubble.chat.capture.ChatPipeline.extractDecoratedName(
+            line, "你哈", "MiTao_G", net.minecraft.text.Text.literal("MiTao_G"));
+        assertEquals("MiTao_G", name.getString());
+    }
+
+    @Test void decoratedName_keepsNormalPrefixSlice() {
+        var line = net.minecraft.text.Text.literal("[VIP]Steve: hi");
+        var name = com.niuqu.chatbubble.chat.capture.ChatPipeline.extractDecoratedName(
+            line, "hi", "Steve", net.minecraft.text.Text.literal("Steve"));
+        assertEquals("[VIP]Steve", name.getString());
+    }
+
+    @Test void styledSlice_keepsNameColor() {
+        var line = net.minecraft.text.Text.empty()
+            .append(net.minecraft.text.Text.literal("你悄悄地对").formatted(net.minecraft.util.Formatting.GRAY))
+            .append(net.minecraft.text.Text.literal("MiTao_G").formatted(net.minecraft.util.Formatting.AQUA))
+            .append(net.minecraft.text.Text.literal("说：你哈").formatted(net.minecraft.util.Formatting.GRAY));
+        var slice = ChatMessageStore.styledSliceByCleanIndex(line, 5, 7);
+        assertNotNull(slice);
+        assertEquals("MiTao_G", slice.getString());
+        boolean[] aquaSeen = {false};
+        slice.visit((style, part) -> {
+            if (part.contains("MiTao_G") && style.getColor() != null
+                    && style.getColor().getRgb() == net.minecraft.util.Formatting.AQUA.getColorValue()) {
+                aquaSeen[0] = true;
+            }
+            return java.util.Optional.empty();
+        }, net.minecraft.text.Style.EMPTY);
+        assertTrue(aquaSeen[0], "whisper sender name color must survive");
+    }
+
     @Test void repostDedup_sameTextWithinWindowDuplicates() {
         assertTrue(ChatMessageStore.isRepostDuplicate("<A>[私聊] hi", 1000, "<A>[私聊] hi", 1500));
     }
@@ -605,6 +638,87 @@ class ChatMessageStoreTest {
         assertEquals(1, messages.size());
         var merged = messages.get(0);
         assertEquals("A的话", merged.replyContent(), "re-quoted follow-up keeps the quote block");
+    }
+
+    @Test void antiSpamMerge_publicAndWhisperSameTextDoNotMerge() throws Exception {
+        clearMessagesAndMetas();
+        var uuid = java.util.UUID.randomUUID();
+        var sender = net.minecraft.text.Text.literal("Steve");
+        ChatMessageStore.addMessage(net.minecraft.text.Text.literal("hey"),
+            uuid, sender, false, "Steve", false, null, false);
+        ChatMessageStore.addMessage(net.minecraft.text.Text.literal("hey"),
+            uuid, sender, false, "Steve", true, "Steve", false);
+        var field = ChatMessageStore.class.getDeclaredField("messages");
+        field.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        var messages = (List<ChatMessageStore.ChatMessage>) field.get(null);
+        assertEquals(2, messages.size(), "public then whisper must stay separate");
+        assertFalse(messages.get(0).whisper());
+        assertTrue(messages.get(1).whisper());
+    }
+
+    @Test void antiSpamMerge_whisperThenPublicSameTextDoNotMerge() throws Exception {
+        clearMessagesAndMetas();
+        var uuid = java.util.UUID.randomUUID();
+        var sender = net.minecraft.text.Text.literal("Steve");
+        ChatMessageStore.addMessage(net.minecraft.text.Text.literal("hey"),
+            uuid, sender, false, "Steve", true, "Steve", false);
+        ChatMessageStore.addMessage(net.minecraft.text.Text.literal("hey"),
+            uuid, sender, false, "Steve", false, null, false);
+        var field = ChatMessageStore.class.getDeclaredField("messages");
+        field.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        var messages = (List<ChatMessageStore.ChatMessage>) field.get(null);
+        assertEquals(2, messages.size(), "whisper then public must stay separate");
+    }
+
+    @Test void antiSpamMerge_differentWhisperPartnersDoNotMerge() throws Exception {
+        clearMessagesAndMetas();
+        var uuid = java.util.UUID.randomUUID();
+        var sender = net.minecraft.text.Text.literal("Steve");
+        ChatMessageStore.addMessage(net.minecraft.text.Text.literal("hey"),
+            uuid, sender, false, "Steve", true, "Alex", false);
+        ChatMessageStore.addMessage(net.minecraft.text.Text.literal("hey"),
+            uuid, sender, false, "Steve", true, "Steve", false);
+        var field = ChatMessageStore.class.getDeclaredField("messages");
+        field.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        var messages = (List<ChatMessageStore.ChatMessage>) field.get(null);
+        assertEquals(2, messages.size(), "different whisper partners must not merge");
+    }
+
+    @Test void whisperName_arrowKeepsDecoratedPrefix() {
+        var line = net.minecraft.text.Text.empty()
+            .append(net.minecraft.text.Text.literal("["))
+            .append(net.minecraft.text.Text.literal("❤").formatted(net.minecraft.util.Formatting.RED))
+            .append(net.minecraft.text.Text.literal("Steve").formatted(net.minecraft.util.Formatting.AQUA))
+            .append(net.minecraft.text.Text.literal(" -> "))
+            .append(net.minecraft.text.Text.literal("Alex"))
+            .append(net.minecraft.text.Text.literal("] 你好"));
+        assertEquals("❤Steve", ChatMessageStore.extractWhisperDisplayName(
+            line, net.minecraft.text.Text.literal("Steve")).getString());
+    }
+
+    @Test void whisperName_arrowWithoutBrackets() {
+        var line = net.minecraft.text.Text.literal("❤Steve -> Alex 你好");
+        assertEquals("❤Steve", ChatMessageStore.extractWhisperDisplayName(
+            line, net.minecraft.text.Text.literal("Steve")).getString());
+    }
+
+    @Test void whisperName_arrowKeepsNameColor() {
+        var line = net.minecraft.text.Text.empty()
+            .append(net.minecraft.text.Text.literal("Steve").formatted(net.minecraft.util.Formatting.AQUA))
+            .append(net.minecraft.text.Text.literal(" → Alex 你好"));
+        var styled = ChatMessageStore.extractWhisperDisplayName(
+            line, net.minecraft.text.Text.literal("Steve"));
+        assertEquals("Steve", styled.getString());
+        final int[] rgb = {0};
+        styled.visit((style, str) -> {
+            if (str.contains("Steve") && style.getColor() != null) rgb[0] = style.getColor().getRgb();
+            return java.util.Optional.empty();
+        }, net.minecraft.text.Style.EMPTY);
+        assertEquals(net.minecraft.util.Formatting.AQUA.getColorValue().intValue(), rgb[0],
+            "decorated color must survive slicing");
     }
 
     private static void clearMessagesAndMetas() throws Exception {

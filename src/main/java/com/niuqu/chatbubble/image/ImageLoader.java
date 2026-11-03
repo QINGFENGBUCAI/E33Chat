@@ -9,14 +9,12 @@ import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.texture.NativeImage;
-import net.minecraft.client.texture.NativeImageBackedTexture;
 import net.minecraft.client.texture.TextureManager;
 import net.minecraft.util.Identifier;
 
@@ -59,7 +57,6 @@ public final class ImageLoader {
 
     private static final long FAILED_RETRY_MS = 120_000;
     private static final Deque<Long> RECENT_STARTS = new ArrayDeque<>();
-    private static volatile boolean enabled = true;
 
     public static final java.util.concurrent.atomic.AtomicInteger VERSION = new java.util.concurrent.atomic.AtomicInteger();
 
@@ -69,25 +66,8 @@ public final class ImageLoader {
     // 取缓存版本号
     public static int version() { return VERSION.get(); }
 
-    // 启停图片加载
-    public static void setEnabled(boolean e) {
-        enabled = e;
-        if (!e) {
-            MinecraftClient.getInstance().execute(() -> {
-                TextureManager tm = MinecraftClient.getInstance().getTextureManager();
-                for (String u : CACHE.keySet()) {
-                    tm.destroyTexture(Identifier.of("e33chat", "img/" + hash(u)));
-                }
-                CACHE.clear();
-                LRU.clear();
-                PENDING.clear();
-            });
-        }
-    }
-
     // 获取或加载图片
     public static ImageEntry getOrLoad(String url) {
-        if (!enabled) return null;
         ImageEntry entry = CACHE.get(url);
         if (entry == null) {
             entry = CACHE.computeIfAbsent(url, ImageLoader::startLoad);
@@ -204,7 +184,6 @@ public final class ImageLoader {
 
     // 处理待加载队列
     public static void tick() {
-        if (!enabled) return;
         while (true) {
             ImageEntry next;
             synchronized (PENDING) {

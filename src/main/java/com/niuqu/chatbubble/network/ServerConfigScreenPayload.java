@@ -5,7 +5,6 @@ import net.minecraft.network.codec.PacketCodec;
 import net.minecraft.network.packet.CustomPayload;
 //#endif
 import net.minecraft.util.Identifier;
-import java.util.ArrayList;
 import java.util.List;
 
 // 服务端配置界面包

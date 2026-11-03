@@ -22,7 +22,6 @@ import com.niuqu.chatbubble.server.DiskMediaStore;
 import net.fabricmc.api.ModInitializer;
 import com.mojang.brigadier.ParseResults;
 //#if MC >= 11900
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 //#endif
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -36,7 +35,6 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 //#if MC < 12005
-//$$ import net.minecraft.network.PacketByteBuf;
 //$$ import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 //#endif
 import java.util.*;

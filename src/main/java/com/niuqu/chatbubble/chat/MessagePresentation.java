@@ -213,6 +213,32 @@ public final class MessagePresentation {
         return partner.isEmpty() ? null : partner;
     }
 
+    // 判断私聊前缀装饰
+    public static boolean isWhisperDecoration(String text) {
+        if (text == null) return false;
+        String t = text.replaceAll("§.", "").trim();
+        if (t.isEmpty()) return false;
+        String lower = t.toLowerCase(java.util.Locale.ROOT);
+        return t.contains("悄悄") || t.contains("对你说") || t.contains("私聊")
+            || lower.contains("whisper to") || lower.contains("whispers to you")
+            || lower.contains("whispering to");
+    }
+
+    // 去色索引映射回原文
+    public static int[] cleanRangeToRaw(String raw, int cleanStart, int cleanLen) {
+        if (raw == null || cleanStart < 0 || cleanLen <= 0) return null;
+        int ci = 0, ri = 0, start = -1, end = -1;
+        while (ri < raw.length()) {
+            char ch = raw.charAt(ri);
+            if (ch == '§' && ri + 1 < raw.length()) { ri += 2; continue; }
+            if (ci == cleanStart) start = ri;
+            ci++;
+            ri++;
+            if (ci == cleanStart + cleanLen) { end = ri; break; }
+        }
+        return start >= 0 && end > start ? new int[]{start, end} : null;
+    }
+
     // 判断纯空白间隔
     public static boolean isWhitespaceOnlyGap(String text, int from, int to) {
         if (text == null || to <= from) return false;

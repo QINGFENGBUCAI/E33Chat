@@ -344,4 +344,50 @@ class MessagePresentationTest {
         assertEquals("Steve", parsed.orElseThrow().playerName());
         assertTrue(parsed.orElseThrow().content().endsWith("hi"));
     }
+
+    @Test void whisperDecorationDetected() {
+        assertTrue(MessagePresentation.isWhisperDecoration("你悄悄地对MiTao_G说"));
+        assertTrue(MessagePresentation.isWhisperDecoration("你悄悄地对Steve说："));
+        assertTrue(MessagePresentation.isWhisperDecoration("Steve 悄悄地对你说"));
+        assertTrue(MessagePresentation.isWhisperDecoration("Steve whispers to you"));
+        assertTrue(MessagePresentation.isWhisperDecoration("§7你悄悄地对§bSteve§7说"));
+        assertTrue(MessagePresentation.isWhisperDecoration("[私聊] Steve"));
+        assertTrue(MessagePresentation.isWhisperDecoration("你悄悄的对Steve说"));
+    }
+
+    @Test void outgoingWhisperPartnerFromDecoratedLine() {
+        assertEquals("Astrstag", MessagePresentation.outgoingWhisperPartner("你悄悄地对Astrstag说：你哈"));
+        assertEquals("MiTao_G", MessagePresentation.outgoingWhisperPartner("§b你悄悄地对§fMiTao_G§b说：§f你哈"));
+        assertEquals("Steve", MessagePresentation.outgoingWhisperPartner("You whisper to Steve: hi"));
+        assertEquals("Steve", MessagePresentation.outgoingWhisperPartner("你悄悄地对Steve: hi"));
+        assertNull(MessagePresentation.outgoingWhisperPartner("Astrstag 悄悄地对你说：你哈"));
+        assertNull(MessagePresentation.outgoingWhisperPartner("MiTao_G> 你哈"));
+    }
+
+    @Test void normalDecoratedNameIsNotWhisper() {
+        assertFalse(MessagePresentation.isWhisperDecoration("Steve"));
+        assertFalse(MessagePresentation.isWhisperDecoration("[VIP]Steve"));
+        assertFalse(MessagePresentation.isWhisperDecoration("[薄荷一区][主城] Ciao_Min"));
+        assertFalse(MessagePresentation.isWhisperDecoration(""));
+        assertFalse(MessagePresentation.isWhisperDecoration(null));
+    }
+
+    @Test void cleanRangeMapsBackToRawText() {
+        String raw = "§b你悄悄地对§fMiTao_G§b说：§f你哈";
+        String clean = raw.replaceAll("§.", "");
+        assertArrayEquals(new int[]{9, 16},
+            MessagePresentation.cleanRangeToRaw(raw, clean.indexOf("MiTao_G"), "MiTao_G".length()));
+    }
+
+    @Test void cleanRangeWithoutColorCodesMatchesDirectly() {
+        String raw = "Steve 悄悄地对你说：hi";
+        assertArrayEquals(new int[]{0, 5},
+            MessagePresentation.cleanRangeToRaw(raw, 0, 5));
+    }
+
+    @Test void cleanRangeRejectsOutOfBounds() {
+        assertNull(MessagePresentation.cleanRangeToRaw("Steve", 10, 3));
+        assertNull(MessagePresentation.cleanRangeToRaw(null, 0, 3));
+        assertNull(MessagePresentation.cleanRangeToRaw("Steve", 0, 0));
+    }
 }

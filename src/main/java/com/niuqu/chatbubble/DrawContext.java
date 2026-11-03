@@ -3,7 +3,6 @@ package com.niuqu.chatbubble;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawableHelper;
-import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.OrderedText;
@@ -14,7 +13,6 @@ import net.minecraft.util.math.Matrix4f;
 //#endif
 import com.mojang.blaze3d.systems.RenderSystem;
 //#if MC >= 11700
-import net.minecraft.client.render.GameRenderer;
 //#endif
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.BufferRenderer;

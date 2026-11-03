@@ -235,7 +235,8 @@ public final class GroupManager {
 
     // 发送群组列表
     public static void sendGroupList(ServerPlayerEntity player) {
-        boolean enabled = ChatBubbleMod.groupsEnabled();
+        MinecraftServer server = player.getServer();
+        boolean enabled = ChatBubbleMod.groupsEnabled() && isDedicated(server);
         List<String> names = new ArrayList<>(groups.keySet());
         List<Integer> counts = new ArrayList<>();
         List<String> mine = new ArrayList<>();
@@ -248,6 +249,16 @@ public final class GroupManager {
         //#else
         //$$ GroupListPayload gl = new GroupListPayload(enabled, names, counts, mine);
         //$$ ServerPlayNetworking.send(player, GroupListPayload.ID, gl.write(PacketByteBufs.create()));
+        //#endif
+    }
+
+    // 是否独立服务器
+    private static boolean isDedicated(MinecraftServer server) {
+        if (server == null) return false;
+        //#if MC >= 26000
+        return server.isDedicatedServer();
+        //#else
+        //$$ return server.isRemote();
         //#endif
     }
 

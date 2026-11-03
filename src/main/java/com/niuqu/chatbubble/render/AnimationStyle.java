@@ -1,5 +1,4 @@
 package com.niuqu.chatbubble.render;
-import com.niuqu.chatbubble.render.Animation;
 
 // 动画样式枚举
 public enum AnimationStyle {
